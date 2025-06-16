@@ -1,0 +1,71 @@
+<div class="dashboard-container">
+  <h4 class="mb-4">Automation Dashboard</h4>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4" *ngFor="let stat of stats">
+      <div class="card text-white" [ngClass]="stat.bg">
+        <div class="card-body">
+          <h6 class="card-title">{{ stat.title }}</h6>
+          <h4>{{ stat.count }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    *ngIf="refreshMessage"
+    class="alert alert-info alert-dismissible fade show mt-3"
+    role="alert"
+  >
+    {{ refreshMessage }}
+    <button
+      type="button"
+      class="btn-close"
+      (click)="refreshMessage = null"
+      aria-label="Close"
+    ></button>
+  </div>
+
+  <!-- Recent Queues Table -->
+  <div class="card shadow-sm border-0">
+    <div
+      class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+    >
+      <span>Recent Queues</span>
+      <button class="btn btn-outline-light btn-sm" (click)="loadQueues()">
+        Refresh
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Queue Name</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let q of recentQueues">
+            <td>{{ q.queueName }}</td>
+            <td>
+              <span class="badge" [ngClass]="getBadgeClass(q.queueStatus)">
+                {{ q.queueStatus }}
+              </span>
+            </td>
+            <td>{{ q.createdDate | date : "yyyy-MM-dd HH:mm:ss" }}</td>
+            <td>
+              <a
+                (click)="viewQueueDetails(q)"
+                class="btn btn-sm btn-outline-primary"
+                >Details</a
+              >
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

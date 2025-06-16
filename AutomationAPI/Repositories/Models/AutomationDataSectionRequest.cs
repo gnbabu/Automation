@@ -1,0 +1,9 @@
+﻿namespace AutomationAPI.Repositories.Models
+{
+    public class AutomationDataSectionRequest
+    {
+        public int SectionId { get; set; }
+        public string SectionName { get; set; }
+        public string FlowName { get; set; }
+    }
+}

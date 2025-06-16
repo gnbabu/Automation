@@ -1,0 +1,130 @@
+:root {
+    --sidebar-width: 280px;
+    --sidebar-width-collapsed: 80px;
+}
+
+/* Ensure full height layout */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow-x: hidden;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Layout wrapper */
+.wrapper {
+    display: flex;
+    width: 100%;
+    min-height: 100vh; /* Ensures full vertical height */
+}
+
+/* Sidebar styles */
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: linear-gradient(135deg, #1a1c2e 0%, #502e91 100%);
+    transition: width 0.3s ease;
+    flex-shrink: 0;
+}
+
+.wrapper.collapsed .sidebar {
+    width: var(--sidebar-width-collapsed);
+}
+
+/* Main content should grow and occupy remaining space */
+.main-content {
+    flex: 1;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 20px;
+    overflow: auto;
+    transition: all 0.3s ease;
+}
+
+/* Sidebar links and hover effects */
+.sidebar-link {
+    color: #a0a3bd;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    margin: 4px 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    display: block;
+    text-decoration: none;
+    padding: 1rem;
+}
+
+.sidebar-link:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.sidebar-link.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.logo-text {
+    background: linear-gradient(45deg, #fff, #fff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: opacity 0.3s ease;
+}
+
+.toggle-btn {
+    position: absolute;
+    right: -15px;
+    top: 20px;
+    background: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.wrapper.collapsed .toggle-btn {
+    transform: rotate(180deg);
+}
+
+.wrapper.collapsed .hide-on-collapse {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.wrapper.collapsed .logo-text,
+.wrapper.collapsed .profile-info {
+    opacity: 0;
+}
+
+.wrapper.collapsed .sidebar-link {
+    /* display: flex; */
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+.wrapper.collapsed .sidebar-link i {
+  margin: 0 !important;
+  font-size: 1.25rem;
+}
+
+.profile-info {
+    transition: opacity 0.2s ease;
+}
+
+
+/* .toast-container{
+    width: 500px !important;
+    max-width: 500px !important;
+} */
+
+.toast-container {
+  width: 500px !important;
+}
+

@@ -1,0 +1,35 @@
+<table class="table table-bordered table-hover">
+  <thead class="table-light">
+    <tr>
+      <th>Username</th>
+      <th>Email</th>
+      <th>Role</th>
+      <th>Name</th>
+      <th>Active</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let user of users">
+      <td>{{ user.userName }}</td>
+      <td>{{ user.email }}</td>
+      <td>{{ user.roleName }}</td>
+      <td>{{ user.firstName }} {{ user.lastName }}</td>
+      <td>
+        <div class="form-check form-switch">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            [checked]="user.active"
+            (change)="toggleActive(user)"
+          />
+        </div>
+      </td>
+      <td>
+        <button class="btn btn-primary btn-sm" (click)="editUserClicked(user)">
+          Edit
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>

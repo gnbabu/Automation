@@ -1,0 +1,11 @@
+<div [class.wrapper]="true" [class.collapsed]="isCollapsed">
+  <app-left-sidebar (toggle)="toggleSidebar()"></app-left-sidebar>
+  <!-- <app-main></app-main> -->
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container-fluid">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

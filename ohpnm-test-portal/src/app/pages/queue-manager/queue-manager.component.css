@@ -1,0 +1,10 @@
+.queue-manager-container {
+    max-width: 100%;
+    padding: 20px;
+  }
+  td.text-truncate {
+  max-width: 200px; /* adjust as needed */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

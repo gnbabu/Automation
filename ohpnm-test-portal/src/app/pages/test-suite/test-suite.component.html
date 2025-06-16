@@ -1,0 +1,157 @@
+<div class="test-suite-container">
+  <h4
+    class="text-white p-2 rounded"
+    style="background: linear-gradient(135deg, #1a1c2e 0%, #502e91 100%)"
+  >
+    Test Suites
+  </h4>
+
+  <div class="container-fluid mt-3">
+    <div class="row">
+      <!-- Left: Tree View -->
+      <div class="col-md-3 border-end">
+        <h5>Test Libraries</h5>
+        <ul class="list-unstyled">
+          <li *ngFor="let lib of libraries">
+            <div
+              class="tree-item fw-bold d-flex align-items-center"
+              [ngClass]="{ active: selectedLibraryName === lib.libraryName }"
+              (click)="toggleLibrary(lib.libraryName); onLibraryClick(lib)"
+            >
+              <i
+                class="bi me-1"
+                [ngClass]="
+                  isLibraryExpanded(lib.libraryName)
+                    ? 'bi-caret-down-fill'
+                    : 'bi-caret-right-fill'
+                "
+              ></i>
+              <span
+                class="text-truncate flex-grow-1"
+                style="max-width: 300px"
+                [title]="lib.libraryName"
+              >
+                {{ lib.libraryName }}
+              </span>
+              <button
+                class="btn btn-sm run-icon-btn ms-auto"
+                (click)="runLibrary(lib); $event.stopPropagation()"
+                title="Run all tests in this library"
+              >
+                <i class="bi bi-play-fill"></i>
+              </button>
+            </div>
+
+            <ul
+              *ngIf="isLibraryExpanded(lib.libraryName)"
+              class="ms-4 list-unstyled"
+            >
+              <li *ngFor="let cls of lib.classes">
+                <div
+                  class="tree-item fw-semibold d-flex align-items-center"
+                  [ngClass]="{ active: selectedClassName === cls.className }"
+                  (click)="toggleClass(cls.className); onClassClick(cls)"
+                >
+                  <i
+                    class="bi me-1"
+                    [ngClass]="
+                      isClassExpanded(cls.className)
+                        ? 'bi-caret-down-fill'
+                        : 'bi-caret-right-fill'
+                    "
+                  ></i>
+                  <span
+                    class="text-truncate flex-grow-1"
+                    style="max-width: 300px"
+                    [title]="cls.className"
+                  >
+                    {{ cls.className }}
+                  </span>
+                  <button
+                    class="btn btn-sm run-icon-btn ms-auto"
+                    (click)="runClass(lib, cls); $event.stopPropagation()"
+                    title="Run all tests in this class"
+                  >
+                    <i class="bi bi-play-fill"></i>
+                  </button>
+                </div>
+
+                <ul
+                  *ngIf="isClassExpanded(cls.className)"
+                  class="ms-4 list-unstyled"
+                >
+                  <li *ngFor="let method of cls.methods">
+                    <div
+                      class="tree-item d-flex align-items-center"
+                      [ngClass]="{
+                        active: selectedMethodName === method.methodName
+                      }"
+                      (click)="onMethodClick(method)"
+                    >
+                      <span
+                        class="text-truncate flex-grow-1"
+                        style="max-width: 300px"
+                        [title]="method.methodName"
+                      >
+                        {{ method.methodName }}
+                      </span>
+                      <button
+                        class="btn btn-sm run-icon-btn ms-auto"
+                        (click)="
+                          runMethod(lib, cls, method); $event.stopPropagation()
+                        "
+                        title="Run this method"
+                      >
+                        <i class="bi bi-play-fill"></i>
+                      </button>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Right: Grid View -->
+      <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0">Methods</h5>
+          <div class="d-flex gap-2">
+            <button
+              class="btn btn-primary btn-sm"
+              (click)="navigateToTestData()"
+            >
+              <i class="bi bi-gear-fill me-1"></i> Configure Test Data
+            </button>
+            <!-- <button
+              class="btn btn-primary btn-sm"
+              (click)="runTests()"
+              [disabled]="selectedMethods.length === 0"
+            >
+              <i class="bi bi-play-fill me-1"></i> Run Tests
+            </button> -->
+          </div>
+        </div>
+
+        <table class="table table-bordered table-striped">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Method Name</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let method of selectedMethods; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td>{{ method.methodName }}</td>
+            </tr>
+            <tr *ngIf="selectedMethods.length === 0">
+              <td colspan="2" class="text-center">No methods selected</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

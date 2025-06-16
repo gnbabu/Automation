@@ -1,0 +1,94 @@
+<div class="queue-manager-container">
+  <h4
+    *ngIf="queue"
+    class="text-white p-2 rounded"
+    style="background: linear-gradient(135deg, #1a1c2e 0%, #502e91 100%)"
+  >
+    Queue Details - {{ queue.queueName }}
+  </h4>
+
+  <!-- Back Button -->
+  <button class="btn btn-outline-secondary mb-3" (click)="goBack()">
+    <i class="bi bi-arrow-left"></i> Back
+  </button>
+
+  <!-- Queue Details -->
+  <div *ngIf="queue">
+    <div class="card-body">
+      <table class="table table-border">
+        <tbody>
+          <tr>
+            <th>Queue Name:</th>
+            <td>{{ queue.queueName }}</td>
+          </tr>
+          <tr>
+            <th>Status:</th>
+            <td>
+              <span
+                class="badge px-3 py-2 fs-6"
+                [ngClass]="getBadgeClass(queue.queueStatus)"
+              >
+                {{ queue.queueStatus }}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <th>Description:</th>
+            <td>{{ queue.queueDescription }}</td>
+          </tr>
+          <tr>
+            <th>Product Line:</th>
+            <td>{{ queue.productLine }}</td>
+          </tr>
+          <tr>
+            <th>Library Name:</th>
+            <td>{{ queue.libraryName }}</td>
+          </tr>
+          <tr>
+            <th>Class Name:</th>
+            <td>{{ queue.className }}</td>
+          </tr>
+          <tr>
+            <th>Method Name:</th>
+            <td>{{ queue.methodName || "-" }}</td>
+          </tr>
+          <tr>
+            <th>Created Date:</th>
+            <td>{{ queue.createdDate | date : "yyyy-MM-dd HH:mm:ss" }}</td>
+          </tr>
+          <tr>
+            <th>Tag:</th>
+            <td>{{ queue.tagName }}</td>
+          </tr>
+          <tr>
+            <th>Employee ID:</th>
+            <td>{{ queue.empId }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <app-data-grid
+        [columns]="columns"
+        [data]="testResults"
+        [pagingMode]="'client'"
+        [sortingMode]="'client'"
+        [pageSize]="pageSize"
+        [pagingEnabled]="true"
+      ></app-data-grid>
+    </div>
+  </div>
+</div>
+<ng-template #statusTemplate let-row let-value="value">
+  <span
+    class="badge text-uppercase px-2 py-1 rounded-pill fw-semibold"
+    [ngClass]="{
+      'bg-success': value === 'Passed',
+      'bg-warning text-dark': value === 'Pending',
+      'bg-danger': value === 'Failed'
+    }"
+  >
+    {{ value }}
+  </span>
+</ng-template>

@@ -1,0 +1,18 @@
+.dashboard-container {
+    padding: 20px;
+  }
+  
+  .card {
+    border-radius: 8px;
+  }
+  
+  .card-title {
+    font-weight: bold;
+  }
+  
+  .card-text {
+    font-size: 14px;
+  }
+  
+  /* Add any other custom styles here for the dashboard */
+  

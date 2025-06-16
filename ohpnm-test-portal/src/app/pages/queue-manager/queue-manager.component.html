@@ -1,0 +1,77 @@
+<div class="queue-manager-container">
+  <h4
+    class="text-white p-2 rounded"
+    style="background: linear-gradient(135deg, #1a1c2e 0%, #502e91 100%)"
+  >
+    Queue Manager
+  </h4>
+
+  <!-- Scrollable table wrapper -->
+  <div class="table-responsive">
+    <table *ngIf="queues.length > 0" class="table table-bordered table-striped">
+      <thead
+        class="table-light"
+        style="position: sticky; top: 0; background-color: white; z-index: 1"
+      >
+        <tr>
+          <th>Queue Name</th>
+          <th>Status</th>
+          <th>Employee</th>
+          <th>Product Line</th>
+          <th>Library</th>
+          <th>Class</th>
+          <th>Method</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let q of queues">
+          <td [title]="q.queueName" class="text-truncate">
+            <!-- {{ q.queueName }} -->
+            <a
+              (click)="viewQueueDetails(q)"
+              class="text-info text-decoration-underline"
+            >
+              {{ q.queueName }}
+            </a>
+          </td>
+          <td [title]="q.queueStatus" class="text-truncate">
+            <span
+              class="badge"
+              [ngClass]="{
+                'bg-info': q.queueStatus === 'New',
+                'bg-secondary': q.queueStatus === 'Pending',
+                'bg-warning text-dark': q.queueStatus === 'Running',
+                'bg-success': q.queueStatus === 'Completed',
+                'bg-danger': q.queueStatus === 'Failed'
+              }"
+            >
+              {{ q.queueStatus }}
+            </span>
+          </td>
+          <td [title]="q.empId" class="text-truncate">{{ q.empId }}</td>
+          <td [title]="q.productLine" class="text-truncate">
+            {{ q.productLine }}
+          </td>
+          <td [title]="q.libraryName" class="text-truncate">
+            {{ q.libraryName }}
+          </td>
+          <td [title]="q.className" class="text-truncate">{{ q.className }}</td>
+          <td [title]="q.methodName" class="text-truncate">
+            {{ q.methodName }}
+          </td>
+          <td
+            [title]="q.createdDate | date : 'MM-dd-yyyy HH:mm:ss'"
+            class="text-truncate"
+          >
+            {{ q.createdDate | date : "MM-dd-yyyy HH:mm:ss" }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="queues.length === 0" class="alert alert-warning">
+    No queues available.
+  </div>
+</div>

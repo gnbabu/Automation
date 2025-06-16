@@ -1,0 +1,134 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Projects\\Automation\\Source\\AutomationAPI\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|d:\\projects\\automation\\source\\automationapi\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|solutionrelative:controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|d:\\projects\\automation\\source\\automationapi\\controllers\\testsuitescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|solutionrelative:controllers\\testsuitescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|d:\\projects\\automation\\source\\automationapi\\controllers\\testrunnercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|solutionrelative:controllers\\testrunnercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|d:\\projects\\automation\\source\\automationapi\\controllers\\testresultscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|solutionrelative:controllers\\testresultscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|d:\\projects\\automation\\source\\automationapi\\controllers\\queuecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|solutionrelative:controllers\\queuecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|d:\\projects\\automation\\source\\automationapi\\controllers\\automationcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|solutionrelative:controllers\\automationcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|d:\\projects\\automation\\source\\automationapi\\controllers\\authenticationcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12EABCFD-F1DE-44EF-A841-C92EC54B48DA}|AutomationAPI.csproj|solutionrelative:controllers\\authenticationcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "UsersController.cs",
+              "DocumentMoniker": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\UsersController.cs",
+              "RelativeDocumentMoniker": "Controllers\\UsersController.cs",
+              "ToolTip": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\UsersController.cs",
+              "RelativeToolTip": "Controllers\\UsersController.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAQwBcAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T15:36:17.051Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "TestSuitesController.cs",
+              "DocumentMoniker": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\TestSuitesController.cs",
+              "RelativeDocumentMoniker": "Controllers\\TestSuitesController.cs",
+              "ToolTip": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\TestSuitesController.cs",
+              "RelativeToolTip": "Controllers\\TestSuitesController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T15:36:15.372Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "TestRunnerController.cs",
+              "DocumentMoniker": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\TestRunnerController.cs",
+              "RelativeDocumentMoniker": "Controllers\\TestRunnerController.cs",
+              "ToolTip": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\TestRunnerController.cs",
+              "RelativeToolTip": "Controllers\\TestRunnerController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T15:36:14.006Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "TestResultsController.cs",
+              "DocumentMoniker": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\TestResultsController.cs",
+              "RelativeDocumentMoniker": "Controllers\\TestResultsController.cs",
+              "ToolTip": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\TestResultsController.cs",
+              "RelativeToolTip": "Controllers\\TestResultsController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T15:36:12.567Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "QueueController.cs",
+              "DocumentMoniker": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\QueueController.cs",
+              "RelativeDocumentMoniker": "Controllers\\QueueController.cs",
+              "ToolTip": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\QueueController.cs",
+              "RelativeToolTip": "Controllers\\QueueController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T15:36:10.595Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "AutomationController.cs",
+              "DocumentMoniker": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\AutomationController.cs",
+              "RelativeDocumentMoniker": "Controllers\\AutomationController.cs",
+              "ToolTip": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\AutomationController.cs",
+              "RelativeToolTip": "Controllers\\AutomationController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T15:36:06.532Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "AuthenticationController.cs",
+              "DocumentMoniker": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\AuthenticationController.cs",
+              "RelativeDocumentMoniker": "Controllers\\AuthenticationController.cs",
+              "ToolTip": "D:\\Projects\\Automation\\Source\\AutomationAPI\\Controllers\\AuthenticationController.cs",
+              "RelativeToolTip": "Controllers\\AuthenticationController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T15:36:04.377Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

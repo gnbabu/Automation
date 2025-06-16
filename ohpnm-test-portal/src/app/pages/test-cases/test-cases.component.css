@@ -1,0 +1,18 @@
+.test-cases-container {
+    max-width: 100%;
+    padding: 20px;
+  }
+  
+  .table thead th {
+    vertical-align: middle;
+  }
+  
+  .badge {
+    font-size: 0.875rem;
+    padding: 0.5em 0.75em;
+  }
+  
+  .card {
+    border-radius: 12px;
+  }
+  
