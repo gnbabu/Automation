@@ -23,6 +23,7 @@ export class DataGridComponent implements AfterViewInit {
   @Input() pagingEnabled: boolean = true;
   @Input() pagingMode: 'client' | 'server' = 'client';
   @Input() sortingMode: 'client' | 'server' = 'client';
+  @Input() noDataMessage: string = 'No records found';
 
   @Input() pageSize = 5;
   @Input() totalRecords = 0;

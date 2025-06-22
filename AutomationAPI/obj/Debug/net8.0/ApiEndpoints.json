@@ -270,6 +270,22 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "AutomationAPI.Controllers.QueueController",
+    "Method": "GetQueueReports",
+    "RelativePath": "api/Queue/queue-reports",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "payload",
+        "Type": "AutomationAPI.Repositories.Models.QueueReportFilterRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "AutomationAPI.Controllers.TestResultsController",
     "Method": "InsertTestResultsAsync",
     "RelativePath": "api/TestResults",

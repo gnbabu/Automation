@@ -1,0 +1,88 @@
+# Angular
+node_modules/
+dist/
+out-tsc/
+.angular/
+.env
+.env.*
+
+# Angular logs and IDE
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.idea/
+.vscode/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ASP.NET publish
+*.Publish.xml
+*.dbmdl
+*.pdb
+*.cache
+*.log
+*.vspscc
+*.vssscc
+*.ncb
+*.aps
+*.res
+*.bak
+*.tmp
+
+# Visual Studio
+.vs/
+.vscode/
+*.psess
+*.vsp
+*.pidb
+*.sdf
+*.opensdf
+*.tlog
+
+# Rider
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# .NET Debug & Build Outputs
+bin/
+obj/
+*.pdb
+*.dll
+*.exe
+*.cache
+*.log
+*.tmp
+*.dbg
+*.bak
+*.db
+
+# Visual Studio Debugger
+*.vshost.*
+*.vsp
+*.psess
+
+# Angular Debug
+.angular/
+*.log
+*.map
+
+# OS & IDE Junk (just in case)
+.DS_Store
+Thumbs.db
+*.suo
+*.user
+

@@ -120,3 +120,27 @@ export interface PagedResult<T> {
   data: T[];
   totalCount: number;
 }
+
+export interface IQueueReport {
+  id: number;
+  queueName: string;
+  queueStatus:
+    | 'Completed'
+    | 'Failed'
+    | 'In Progress'
+    | 'Awaiting'
+    | 'Retried'
+    | 'Cancelled';
+  startedAt: string;
+  endedAt: string;
+  durationInSeconds: number;
+}
+
+// models/queue-report-filter-request.model.ts
+export interface QueueReportFilterRequest {
+  status?: string;
+  fromDate?: string | null;
+  toDate?: string | null;
+  page: number;
+  pageSize: number;
+}

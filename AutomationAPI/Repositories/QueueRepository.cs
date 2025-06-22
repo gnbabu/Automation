@@ -4,6 +4,7 @@ using AutomationAPI.Repositories.Helpers;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using AutomationAPI.Repositories.SQL;
+using System.Reflection.PortableExecutable;
 
 namespace AutomationAPI.Repositories
 {
@@ -130,6 +131,67 @@ namespace AutomationAPI.Repositories
             int rowsAffected = await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.DeleteQueue, parameters);
 
             return rowsAffected > 0;
+        }
+
+        public async Task<PagedResult<QueueInfo>> GetQueueReportsAsync(QueueReportFilterRequest filter)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@Status", SqlDbType.NVarChar, 100)
+                {
+                    Value = filter.Status ?? (object)DBNull.Value
+                },
+                new SqlParameter("@FromDate", SqlDbType.DateTime)
+                {
+                    Value = filter.FromDate ?? (object)DBNull.Value
+                },
+                new SqlParameter("@ToDate", SqlDbType.DateTime)
+                {
+                    Value = filter.ToDate ?? (object)DBNull.Value
+                },
+                new SqlParameter("@Page", SqlDbType.Int)
+                {
+                    Value = filter.Page
+                },
+                new SqlParameter("@PageSize", SqlDbType.Int)
+                {
+                    Value = filter.PageSize
+                }
+            };
+
+            IEnumerable<QueueInfo> results = new List<QueueInfo>();
+            int totalCount = 0;
+
+            results = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetQueueReports, parameters.ToArray(),
+                   reader =>
+                   {
+                       if (totalCount == 0 && !reader.IsDBNull(reader.GetOrdinal("TotalCount")))
+                       {
+                           totalCount = reader.GetInt32(reader.GetOrdinal("TotalCount"));
+                       }
+
+                       return new QueueInfo
+                       {
+                           QueueId = reader.GetNullableString("QueueId"),
+                           TagName = reader.GetNullableString("TagName"),
+                           EmpId = reader.GetNullableString("EmpId"),
+                           QueueName = reader.GetNullableString("QueueName"),
+                           QueueDescription = reader.GetNullableString("QueueDescription"),
+                           ProductLine = reader.GetNullableString("ProductLine"),
+                           QueueStatus = reader.GetNullableString("QueueStatus"),
+                           CreatedDate = reader.GetNullableDateTime("CreatedDate"),
+                           Id = reader.GetNullableInt("Id") ?? 0,
+                           LibraryName = reader.GetNullableString("LibraryName"),
+                           ClassName = reader.GetNullableString("ClassName"),
+                           MethodName = reader.GetNullableString("MethodName")
+                       };
+                   });
+
+            return new PagedResult<QueueInfo>
+            {
+                Data = results,
+                TotalCount = totalCount
+            };
         }
 
     }

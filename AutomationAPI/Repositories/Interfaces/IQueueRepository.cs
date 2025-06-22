@@ -10,5 +10,6 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<int> InsertQueueAsync(QueueInfo queue);
         Task<int> UpdateQueueStatusAsync(string queueId, string queueStatus);
         Task<bool> DeleteQueueAsync(string queueId);
+        Task<PagedResult<QueueInfo>> GetQueueReportsAsync(QueueReportFilterRequest filter);
     }
 }

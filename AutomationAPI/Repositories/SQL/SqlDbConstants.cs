@@ -20,6 +20,7 @@
         public const string InsertQueue = "[aut].[usp_InsertQueue]";
         public const string UpdateQueue = "[aut].[usp_UpdateQueue]";
         public const string DeleteQueue = "[aut].[usp_DeleteQueue]";
+        public const string GetQueueReports = "[aut].[usp_GetQueueReports]";
 
         //Automation Data
         public const string GetAutomationData = "[aut].[usp_GetAutomationData]";

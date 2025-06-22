@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using Microsoft.AspNetCore.Authorization;
+using AutomationAPI.Repositories;
 
 namespace AutomationAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class QueueController : ControllerBase
     {
         private readonly IQueueRepository _queueRepository;
@@ -169,6 +170,26 @@ namespace AutomationAPI.Controllers
                 _logger.LogError(ex, "Error deleting queue with ID: {QueueId}", queueId);
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
+        }
+
+        [HttpPost("queue-reports")]
+        public async Task<IActionResult> GetQueueReports([FromBody] QueueReportFilterRequest payload)
+        {
+            try
+            {
+                if (payload == null)
+                    return BadRequest("Payload cannot be null.");
+
+                var pagedResult = await _queueRepository.GetQueueReportsAsync(payload);
+
+                return Ok(pagedResult);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching paged queues.");
+                return StatusCode(500, "Internal server error.");
+            }
+
         }
     }
 }

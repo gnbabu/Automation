@@ -34,6 +34,12 @@
     </tr>
   </thead>
   <tbody>
+    <tr *ngIf="pagedData.length === 0">
+      <td [attr.colspan]="columns.length" class="text-center text-muted">
+        {{ noDataMessage || "No records found" }}
+      </td>
+    </tr>
+
     <tr *ngFor="let row of pagedData">
       <td *ngFor="let col of columns">
         <ng-container *ngIf="col.cellTemplate; else defaultCell">
@@ -48,17 +54,23 @@
         <ng-template #defaultCell>
           <ng-container [ngSwitch]="col.type">
             <!-- Format for date type -->
-            <span *ngSwitchCase="'date'">
+            <span
+              *ngSwitchCase="'date'"
+              [title]="row[col.field] | date : 'MM-dd-yyyy'"
+            >
               {{ row[col.field] | date : "MM-dd-yyyy" }}
             </span>
 
             <!-- Format for datetime type -->
-            <span *ngSwitchCase="'datetime'">
+            <span
+              *ngSwitchCase="'datetime'"
+              [title]="row[col.field] | date : 'MM-dd-yyyy HH:mm:ss'"
+            >
               {{ row[col.field] | date : "MM-dd-yyyy HH:mm:ss" }}
             </span>
 
             <!-- Default case -->
-            <span *ngSwitchDefault>
+            <span *ngSwitchDefault [title]="row[col.field]">
               {{ row[col.field] }}
             </span>
           </ng-container>

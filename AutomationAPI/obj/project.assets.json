@@ -2427,11 +2427,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Projects\\Automation\\Source\\AutomationAPI\\AutomationAPI.csproj",
+      "projectUniqueName": "D:\\OHPNM-Automation\\AutomationAPI\\AutomationAPI.csproj",
       "projectName": "AutomationAPI",
-      "projectPath": "D:\\Projects\\Automation\\Source\\AutomationAPI\\AutomationAPI.csproj",
+      "projectPath": "D:\\OHPNM-Automation\\AutomationAPI\\AutomationAPI.csproj",
       "packagesPath": "C:\\Users\\Naresh\\.nuget\\packages\\",
-      "outputPath": "D:\\Projects\\Automation\\Source\\AutomationAPI\\obj\\",
+      "outputPath": "D:\\OHPNM-Automation\\AutomationAPI\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

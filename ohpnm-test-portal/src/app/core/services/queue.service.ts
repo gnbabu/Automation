@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { IQueueInfo } from '@interfaces';
+import { IQueueInfo, PagedResult, QueueReportFilterRequest } from '@interfaces';
 import { Mappers } from '@mappers';
 import { HttpService } from '@services';
 import { Observable } from 'rxjs';
@@ -20,6 +20,15 @@ export class QueueService {
       `Queue/${queueId}`,
       {},
       Mappers.QueueInfoMapper.fromApi
+    );
+  }
+
+  getQueueReports(
+    payload: QueueReportFilterRequest
+  ): Observable<PagedResult<IQueueInfo>> {
+    return this.httpService.post<PagedResult<IQueueInfo>>(
+      'Queue/queue-reports',
+      payload
     );
   }
 }
