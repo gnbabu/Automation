@@ -86,3 +86,14 @@ Thumbs.db
 *.suo
 *.user
 
+# Ensure Visual Studio hidden folder is excluded
+.vs/
+
+# Exclude versioned folders like v17/, v16/, etc., anywhere in the repo
+**/v*/        # Catches version folders at any depth
+
+
+*.json
+AutomationAPI/.vs/AutomationAPI/v17/.suo
+AutomationAPI/.vs/AutomationAPI/v17/DocumentLayout.backup.json
+AutomationAPI/.vs/AutomationAPI/v17/DocumentLayout.json

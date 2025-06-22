@@ -1,0 +1,26 @@
+.main-loader-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circle-loader {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: conic-gradient(#00f0ff, #8f00ff, #ff00c8, #00f0ff);
+  mask: radial-gradient(farthest-side, transparent 60%, black 61%);
+  -webkit-mask: radial-gradient(farthest-side, transparent 60%, black 61%);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -10,11 +10,17 @@ import { Router } from '@angular/router';
 import { ForgotPasswordModalComponent } from '../forgot-password/forgot-password-modal.component';
 import { AuthService, ModalService, CommonToasterService } from '@services';
 import { LoginRequest } from '@interfaces';
+import { LoadingOverlayComponent } from 'app/core/components/loader/loading-overlay.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ForgotPasswordModalComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    ForgotPasswordModalComponent,
+    LoadingOverlayComponent,
+  ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
 })
