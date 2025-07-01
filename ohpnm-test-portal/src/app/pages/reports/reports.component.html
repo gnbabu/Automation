@@ -67,10 +67,7 @@
         <div style="max-width: 400px; margin: 0 auto">
           <canvas
             baseChart
-            [data]="{
-              labels: queuePieLabels,
-              datasets: [{ data: queuePieData }]
-            }"
+            [data]="pieChartData"
             [type]="'pie'"
             [options]="pieChartOptions"
           ></canvas>
