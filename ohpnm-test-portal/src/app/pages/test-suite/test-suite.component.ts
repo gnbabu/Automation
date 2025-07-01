@@ -145,6 +145,7 @@ export class TestSuiteComponent implements OnInit {
       productLine: lib.libraryName,
       queueStatus: 'New', // Change to New New -> Running ->Completed -> Failed
       libraryName: lib.libraryName,
+      userId: this.loggedInUser?.userId,
     };
 
     this.testRunnerService.runTest(queue).subscribe({
@@ -169,6 +170,7 @@ export class TestSuiteComponent implements OnInit {
       queueStatus: 'New',
       libraryName: lib.libraryName,
       className: cls.className,
+      userId: this.loggedInUser?.userId,
     };
 
     this.testRunnerService.runTest(queue).subscribe({
@@ -192,6 +194,7 @@ export class TestSuiteComponent implements OnInit {
       libraryName: lib.libraryName,
       className: cls.className,
       methodName: method.methodName,
+      userId: this.loggedInUser?.userId,
     };
 
     this.testRunnerService.runTest(queue).subscribe({

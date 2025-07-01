@@ -96,6 +96,7 @@ export interface IQueueInfo {
   libraryName?: string;
   className?: string;
   methodName?: string;
+  userId?: number;
 }
 
 export interface ITestResult {

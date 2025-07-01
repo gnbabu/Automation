@@ -104,6 +104,8 @@ namespace AutomationAPI.Repositories
                 new SqlParameter("@LibraryName", SqlDbType.NVarChar, -1) { Value = (object?)queue.LibraryName ?? DBNull.Value },
                 new SqlParameter("@MethodName", SqlDbType.NVarChar, -1) { Value = (object?)queue.MethodName ?? DBNull.Value },
                 new SqlParameter("@ClassName", SqlDbType.NVarChar, -1) { Value = (object?)queue.ClassName ?? DBNull.Value },
+                new SqlParameter("@UserID", queue.UserId),
+
             };
 
             return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.InsertQueue, parameters);

@@ -126,6 +126,7 @@ export const QueueInfoMapper = {
       libraryName: data.libraryName,
       className: data.className,
       methodName: data.methodName,
+      userId: data.userId,
     };
   },
   toApi(queue: IQueueInfo): any {
@@ -140,6 +141,7 @@ export const QueueInfoMapper = {
       libraryName: queue.libraryName,
       className: queue.className,
       methodName: queue.methodName,
+      userId: queue.userId,
     };
   },
   empty(): IQueueInfo {
@@ -156,6 +158,7 @@ export const QueueInfoMapper = {
       libraryName: '',
       className: '',
       methodName: '',
+      userId: 0,
     };
   },
 };
