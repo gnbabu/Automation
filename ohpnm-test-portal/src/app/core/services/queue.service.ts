@@ -1,13 +1,16 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { IQueueInfo, PagedResult, QueueReportFilterRequest } from '@interfaces';
 import { Mappers } from '@mappers';
 import { HttpService } from '@services';
 import { Observable } from 'rxjs';
+import { environment } from 'environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class QueueService {
+  AppTitle = signal<string>(environment.displayName);
+
   constructor(private httpService: HttpService) {}
 
   getAllQueues(): Observable<IQueueInfo[]> {

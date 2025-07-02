@@ -13,7 +13,7 @@ import { QueueService } from '@services';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   // You can add any logic for the dashboard component here if needed
-  constructor(private queueService: QueueService, private router: Router) {}
+  constructor(public queueService: QueueService, private router: Router) {}
   stats = [
     { title: 'Total Queues', count: 0, bg: 'bg-secondary' },
     { title: 'In Progress', count: 0, bg: 'bg-warning' },

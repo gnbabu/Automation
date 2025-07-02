@@ -1,5 +1,5 @@
 export const environment = {
-  production: true,
+  production: false,
   apiUrl: 'http://localhost:9908/api',
-  displayName: 'Production Environment',
+  displayName: 'QA Environment',
 };
