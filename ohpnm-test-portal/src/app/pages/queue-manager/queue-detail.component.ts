@@ -64,13 +64,11 @@ export class QueueDetailsComponent implements OnInit {
 
     this.queueService.getQueueById(queueId!).subscribe({
       next: (data) => {
-        debugger;
         this.queue = data;
       },
       error: (err) => console.error('Failed to load queue', err),
     });
 
-    debugger;
     this.testResultService.getTestResultsByQueueId(queueId).subscribe({
       next: (res) => {
         this.testResults = res ?? [];

@@ -23,7 +23,6 @@ export class TestResultService {
   }
 
   getTestResultsByQueueId(queueId: any): Observable<ITestResult[]> {
-    debugger;
     return this.httpService.get<ITestResult[]>(`TestResults/${queueId}`);
   }
 }

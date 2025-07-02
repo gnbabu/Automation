@@ -65,9 +65,8 @@ export class TestCasesComponent implements OnInit {
       sortColumn,
       sortDirection,
     };
-    debugger;
+
     this.testResultService.search(payload).subscribe((res) => {
-      debugger;
       this.testResults = res.data;
       this.totalRecords = res.totalCount;
     });

@@ -3,10 +3,14 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { CommonToasterService } from '@services';
 
 @Injectable({ providedIn: 'root' })
 export class HttpService {
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private toaster: CommonToasterService
+  ) {}
 
   private getHeaders(): HttpHeaders {
     return new HttpHeaders({
@@ -48,7 +52,7 @@ export class HttpService {
       })
       .pipe(
         map((res) => (fromApi ? fromApi(res) : res)),
-        catchError(this.handleError)
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -65,7 +69,7 @@ export class HttpService {
       })
       .pipe(
         map((res) => (fromApi ? fromApi(res) : res)),
-        catchError(this.handleError)
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -74,11 +78,31 @@ export class HttpService {
       .delete<any>(this.fullUrl(url), {
         headers: this.getHeaders(),
       })
-      .pipe(catchError(this.handleError));
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   private handleError(error: any) {
-    console.error('HTTP error:', error);
+    if (error.status === 0) {
+      // Network error or CORS or server down
+      this.toaster.error(
+        'Server is unreachable. Please try again later.',
+        'Network Error'
+      );
+    } else if (error.status >= 500) {
+      // Internal Server Error
+      this.toaster.error(
+        'Server error occurred. Please try again.',
+        `Error ${error.status}`
+      );
+    } else {
+      // Other errors (like 400, 404)
+      this.toaster.warning(
+        error.message || 'Unexpected error occurred.',
+        `Error ${error.status}`
+      );
+    }
+
+    // You can log or format the error here as needed
     return throwError(() => error);
   }
 }

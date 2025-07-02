@@ -136,7 +136,6 @@ export class TestSuiteComponent implements OnInit {
   }
 
   runLibrary(lib: any) {
-    debugger;
     const queue: IQueueInfo = {
       ...QueueInfoMapper.empty(),
       queueName: `Run ${lib.libraryName}`,
@@ -150,11 +149,9 @@ export class TestSuiteComponent implements OnInit {
 
     this.testRunnerService.runTest(queue).subscribe({
       next: (msg) => {
-        debugger;
         this.toaster.success(`Library tests queued successfully`);
       },
       error: (err) => {
-        debugger;
         this.toaster.error(`Error on Library tests queued : ${err.message}`);
       },
     });
