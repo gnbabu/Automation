@@ -21,6 +21,8 @@
         public const string UpdateQueue = "[aut].[usp_UpdateQueue]";
         public const string DeleteQueue = "[aut].[usp_DeleteQueue]";
         public const string GetQueueReports = "[aut].[usp_GetQueueReports]";
+        public const string SearchQueues = "[aut].[usp_SearchQueues]";
+
 
         //Automation Data
         public const string GetAutomationData = "[aut].[usp_GetAutomationData]";

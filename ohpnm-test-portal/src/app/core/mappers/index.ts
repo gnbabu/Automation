@@ -7,6 +7,7 @@ import {
   IUserRole,
   LibraryInfo,
   LibraryMethodInfo,
+  PagedResult,
 } from '@interfaces';
 
 export const UserMapper = {
@@ -127,6 +128,7 @@ export const QueueInfoMapper = {
       className: data.className,
       methodName: data.methodName,
       userId: data.userId,
+      userName: data.userName,
     };
   },
   toApi(queue: IQueueInfo): any {
@@ -159,6 +161,15 @@ export const QueueInfoMapper = {
       className: '',
       methodName: '',
       userId: 0,
+      userName: '',
+    };
+  },
+  mapPagedResult(apiResult: any): PagedResult<IQueueInfo> {
+    return {
+      data: Array.isArray(apiResult.data)
+        ? apiResult.data.map(QueueInfoMapper.fromApi)
+        : [],
+      totalCount: apiResult.totalCount ?? 0,
     };
   },
 };

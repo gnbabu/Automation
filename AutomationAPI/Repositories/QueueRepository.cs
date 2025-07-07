@@ -36,6 +36,54 @@ namespace AutomationAPI.Repositories
             });
         }
 
+        public async Task<PagedResult<QueueInfo>> SearchQueuesAsync(QueueSearchPayload payload)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@UserId",payload.UserId),
+                new SqlParameter("@Page", payload.Page),
+                new SqlParameter("@PageSize", payload.PageSize),
+                new SqlParameter("@SortColumn", payload.SortColumn),
+                new SqlParameter("@SortDirection", payload.SortDirection),
+            };
+
+
+            IEnumerable<QueueInfo> results = new List<QueueInfo>();
+            int totalCount = 0;
+
+            results = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.SearchQueues, parameters.ToArray(),
+                   reader =>
+                   {
+                       if (totalCount == 0 && !reader.IsDBNull(reader.GetOrdinal("TotalCount")))
+                       {
+                           totalCount = reader.GetInt32(reader.GetOrdinal("TotalCount"));
+                       }
+
+                       return new QueueInfo
+                       {
+                           QueueId = reader.GetNullableString("QueueId"),
+                           TagName = reader.GetNullableString("TagName"),
+                           QueueName = reader.GetNullableString("QueueName"),
+                           QueueDescription = reader.GetNullableString("QueueDescription"),
+                           ProductLine = reader.GetNullableString("ProductLine"),
+                           QueueStatus = reader.GetNullableString("QueueStatus"),
+                           CreatedDate = reader.GetNullableDateTime("CreatedDate"),
+                           Id = reader.GetNullableInt("Id") ?? 0,
+                           LibraryName = reader.GetNullableString("LibraryName"),
+                           ClassName = reader.GetNullableString("ClassName"),
+                           MethodName = reader.GetNullableString("MethodName"),
+                           UserName = reader.GetNullableString("UserName"),
+                           UserId = reader.GetNullableInt("UserID") ?? 0
+                       };
+                   });
+
+            return new PagedResult<QueueInfo>
+            {
+                Data = results,
+                TotalCount = totalCount
+            };
+        }
+
         public async Task<IEnumerable<QueueInfo>> GetQueuesAsync(string? queueId, string? queueStatus)
         {
             var parameters = new[]

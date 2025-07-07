@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { IQueueInfo } from '@interfaces';
-import { QueueService } from '@services';
+import { IQueueInfo, IQueueSearchPayload } from '@interfaces';
+import { AuthService, QueueService } from '@services';
 
 @Component({
   selector: 'app-dashboard',
@@ -13,7 +13,11 @@ import { QueueService } from '@services';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   // You can add any logic for the dashboard component here if needed
-  constructor(public queueService: QueueService, private router: Router) {}
+  constructor(
+    public queueService: QueueService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
   stats = [
     { title: 'Total Queues', count: 0, bg: 'bg-secondary' },
     { title: 'In Progress', count: 0, bg: 'bg-warning' },
@@ -36,7 +40,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadQueues(): void {
-    this.queueService.getAllQueues().subscribe((data) => {
+    const payload: IQueueSearchPayload = {
+      userId: this.authService.getLoggedInUserId(),
+      page: 1,
+      pageSize: 0,
+      sortColumn: 'CreatedDate',
+      sortDirection: 'DESC', // Optional: ASC or DESC
+    };
+
+    this.queueService.search(payload).subscribe((response) => {
+      var data = response.data;
       this.refreshMessage = 'Queue data updated successfully.';
       this.recentQueues = data.slice(0, 10);
 

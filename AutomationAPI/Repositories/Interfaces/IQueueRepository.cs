@@ -11,5 +11,6 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<int> UpdateQueueStatusAsync(string queueId, string queueStatus);
         Task<bool> DeleteQueueAsync(string queueId);
         Task<PagedResult<QueueInfo>> GetQueueReportsAsync(QueueReportFilterRequest filter);
+        Task<PagedResult<QueueInfo>> SearchQueuesAsync(QueueSearchPayload payload);
     }
 }

@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
-import { GridColumn, IQueueInfo } from '@interfaces';
-import { QueueService } from '@services';
+import { GridColumn, IQueueInfo, IQueueSearchPayload } from '@interfaces';
+import { AuthService, QueueService } from '@services';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 
 @Component({
@@ -22,7 +22,11 @@ export class QueueManagerComponent implements OnInit {
   @ViewChild('queueNameTemplate', { static: true })
   queueNameTemplate!: TemplateRef<any>;
 
-  constructor(private queueService: QueueService, private router: Router) {}
+  constructor(
+    private queueService: QueueService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.columns = [
@@ -39,7 +43,7 @@ export class QueueManagerComponent implements OnInit {
         cellTemplate: this.statusTemplate,
       },
       {
-        field: 'empId',
+        field: 'userName',
         header: 'Employee',
         sortable: true,
       },
@@ -71,9 +75,21 @@ export class QueueManagerComponent implements OnInit {
       },
     ];
 
-    this.queueService.getAllQueues().subscribe({
-      next: (data) => {
-        this.queues = data;
+    this.loadQueues();
+  }
+
+  loadQueues(): void {
+    const payload: IQueueSearchPayload = {
+      userId: this.authService.getLoggedInUserId(),
+      page: 1,
+      pageSize: 0,
+      sortColumn: 'CreatedDate',
+      sortDirection: 'DESC', // Optional: ASC or DESC
+    };
+
+    this.queueService.search(payload).subscribe({
+      next: (response) => {
+        this.queues = response.data;
       },
       error: (err) => {
         console.error('Failed to load queues:', err);

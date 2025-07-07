@@ -97,6 +97,7 @@ export interface IQueueInfo {
   className?: string;
   methodName?: string;
   userId?: number;
+  userName?: string;
 }
 
 export interface ITestResult {
@@ -117,9 +118,21 @@ export interface TestResultPayload {
   sortColumn?: string;
   sortDirection?: 'asc' | 'desc';
 }
+
 export interface PagedResult<T> {
   data: T[];
   totalCount: number;
+}
+
+export interface IPage {
+  page: number; // Current page number (1-based)
+  pageSize: number; // Number of items per page
+  sortColumn?: string; // Optional: name of the column to sort
+  sortDirection: 'ASC' | 'DESC'; // Sort direction
+}
+
+export interface IQueueSearchPayload extends IPage {
+  userId: number;
 }
 
 export interface IQueueReport {

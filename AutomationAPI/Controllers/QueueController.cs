@@ -4,12 +4,13 @@ using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using Microsoft.AspNetCore.Authorization;
 using AutomationAPI.Repositories;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AutomationAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class QueueController : ControllerBase
     {
         private readonly IQueueRepository _queueRepository;
@@ -21,24 +22,21 @@ namespace AutomationAPI.Controllers
             _logger = logger;
         }
 
-        // GET: api/queue/all
-        [HttpGet("all")]
-        public async Task<IActionResult> GetAllQueues()
+        [HttpPost("search")]
+        public async Task<IActionResult> SearchQueuesAsync([FromBody] QueueSearchPayload payload)
         {
             _logger.LogInformation("GET request received to fetch all queues.");
 
             try
             {
-                var queues = await _queueRepository.GetAllQueuesAsync();
+                if (payload == null)
+                    return BadRequest("Payload cannot be null.");
 
-                if (queues == null || !queues.Any())
-                {
-                    _logger.LogWarning("No queues found.");
-                    return NotFound("No queues found.");
-                }
+                if (payload.UserId == 0)
+                    return BadRequest("Please provide User Id.");
 
-                _logger.LogInformation("Successfully retrieved {Count} queue(s)", queues.Count());
-                return Ok(queues.OrderByDescending(q => q.CreatedDate));
+                var pagedResult = await _queueRepository.SearchQueuesAsync(payload);
+                return Ok(pagedResult);
             }
             catch (Exception ex)
             {
@@ -47,18 +45,13 @@ namespace AutomationAPI.Controllers
             }
         }
 
+
         [HttpGet("{queueId}")]
         public async Task<IActionResult> GetQueueById(string queueId)
         {
             try
             {
                 var queue = await _queueRepository.GetQueueByIdAsync(queueId);
-
-                if (queue == null)
-                {
-                    return NotFound("No queue found.");
-                }
-
                 return Ok(queue);
             }
             catch (Exception ex)
@@ -75,12 +68,6 @@ namespace AutomationAPI.Controllers
             try
             {
                 var queues = await _queueRepository.GetQueuesAsync(queueId, queueStatus);
-
-                if (queues == null || !queues.Any())
-                {
-                    return NotFound("No queues found.");
-                }
-
                 return Ok(queues);
             }
             catch (Exception ex)
@@ -151,7 +138,7 @@ namespace AutomationAPI.Controllers
         {
             if (string.IsNullOrEmpty(queueId))
             {
-                return BadRequest("Queue ID is required.");
+                return BadRequest("Queue Id is required.");
             }
 
             try
