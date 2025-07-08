@@ -187,6 +187,8 @@ namespace AutomationAPI.Repositories
         {
             var parameters = new[]
             {
+                new SqlParameter("@UserId",filter.UserId),
+
                 new SqlParameter("@Status", SqlDbType.NVarChar, 100)
                 {
                     Value = filter.Status ?? (object)DBNull.Value
@@ -224,7 +226,6 @@ namespace AutomationAPI.Repositories
                        {
                            QueueId = reader.GetNullableString("QueueId"),
                            TagName = reader.GetNullableString("TagName"),
-                           EmpId = reader.GetNullableString("EmpId"),
                            QueueName = reader.GetNullableString("QueueName"),
                            QueueDescription = reader.GetNullableString("QueueDescription"),
                            ProductLine = reader.GetNullableString("ProductLine"),
@@ -233,7 +234,9 @@ namespace AutomationAPI.Repositories
                            Id = reader.GetNullableInt("Id") ?? 0,
                            LibraryName = reader.GetNullableString("LibraryName"),
                            ClassName = reader.GetNullableString("ClassName"),
-                           MethodName = reader.GetNullableString("MethodName")
+                           MethodName = reader.GetNullableString("MethodName"),
+                           UserName = reader.GetNullableString("UserName"),
+                           UserId = reader.GetNullableInt("UserID") ?? 0
                        };
                    });
 

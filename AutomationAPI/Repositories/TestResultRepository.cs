@@ -21,12 +21,13 @@ namespace AutomationAPI.Repositories
             try
             {
                 var parameters = new List<SqlParameter>
-        {
-            new SqlParameter("@Page", payload.Page),
-            new SqlParameter("@PageSize", payload.PageSize),
-            new SqlParameter("@SortColumn", payload.SortColumn),
-            new SqlParameter("@SortDirection", payload.SortDirection),
-        };
+                {
+                    new SqlParameter("@UserId", payload.UserId),
+                    new SqlParameter("@Page", payload.Page),
+                    new SqlParameter("@PageSize", payload.PageSize),
+                    new SqlParameter("@SortColumn", payload.SortColumn),
+                    new SqlParameter("@SortDirection", payload.SortDirection),
+                };
 
                 IEnumerable<TestResult> results = new List<TestResult>();
                 int totalCount = 0;

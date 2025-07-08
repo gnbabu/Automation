@@ -113,6 +113,7 @@ export interface ITestResult {
 }
 
 export interface TestResultPayload {
+  userId: number;
   page: number;
   pageSize: number;
   sortColumn?: string;
@@ -151,10 +152,9 @@ export interface IQueueReport {
 }
 
 // models/queue-report-filter-request.model.ts
-export interface QueueReportFilterRequest {
+export interface IQueueReportFilterRequest extends IPage {
+  userId: number;
   status?: string;
   fromDate?: string | null;
   toDate?: string | null;
-  page: number;
-  pageSize: number;
 }

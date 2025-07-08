@@ -1,7 +1,7 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { GridColumn, ITestResult, TestResultPayload } from '@interfaces';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
-import { TestResultService } from '@services';
+import { AuthService, TestResultService } from '@services';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -13,7 +13,10 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./test-cases.component.css'],
 })
 export class TestCasesComponent implements OnInit {
-  constructor(private testResultService: TestResultService) {}
+  constructor(
+    private testResultService: TestResultService,
+    private authService: AuthService
+  ) {}
 
   @ViewChild('statusTemplate', { static: true })
   statusTemplate!: TemplateRef<any>;
@@ -60,6 +63,7 @@ export class TestCasesComponent implements OnInit {
     sortDirection?: 'asc' | 'desc'
   ) => {
     const payload: TestResultPayload = {
+      userId: this.authService.getLoggedInUserId(),
       page,
       pageSize,
       sortColumn,

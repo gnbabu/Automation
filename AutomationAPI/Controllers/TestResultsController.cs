@@ -32,6 +32,9 @@ namespace AutomationAPI.Controllers
                 if (payload == null)
                     return BadRequest("Payload cannot be null.");
 
+                if (payload.UserId == 0)
+                    return BadRequest("Please provide User Id.");
+
                 var pagedResult = await _testResultRepository.SearchTestResultsAsync(payload);
 
                 if (pagedResult == null || !pagedResult.Data.Any())

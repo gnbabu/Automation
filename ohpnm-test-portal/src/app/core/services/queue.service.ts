@@ -3,7 +3,7 @@ import {
   IQueueInfo,
   IQueueSearchPayload,
   PagedResult,
-  QueueReportFilterRequest,
+  IQueueReportFilterRequest,
 } from '@interfaces';
 import { Mappers } from '@mappers';
 import { HttpService } from '@services';
@@ -36,7 +36,7 @@ export class QueueService {
   }
 
   getQueueReports(
-    payload: QueueReportFilterRequest
+    payload: IQueueReportFilterRequest
   ): Observable<PagedResult<IQueueInfo>> {
     return this.httpService.post<PagedResult<IQueueInfo>>(
       'Queue/queue-reports',

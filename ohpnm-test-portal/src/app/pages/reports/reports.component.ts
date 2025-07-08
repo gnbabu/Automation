@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgChartsModule } from 'ng2-charts';
 import { ChartOptions } from 'chart.js';
-import { GridColumn, IQueueInfo, QueueReportFilterRequest } from '@interfaces';
-import { QueueService } from '@services';
+import { GridColumn, IQueueInfo, IQueueReportFilterRequest } from '@interfaces';
+import { AuthService, QueueService } from '@services';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 
 @Component({
@@ -73,7 +73,10 @@ export class ReportsComponent implements OnInit {
     },
   };
 
-  constructor(private queueService: QueueService) {}
+  constructor(
+    private queueService: QueueService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.columns = [
@@ -84,7 +87,7 @@ export class ReportsComponent implements OnInit {
         sortable: true,
         cellTemplate: this.statusTemplate,
       },
-      { field: 'empId', header: 'Employee', sortable: true },
+      { field: 'userName', header: 'Employee', sortable: true },
       { field: 'productLine', header: 'Product Line', sortable: true },
       { field: 'libraryName', header: 'Library', sortable: true },
       { field: 'className', header: 'Class', sortable: true },
@@ -104,12 +107,15 @@ export class ReportsComponent implements OnInit {
     const toNullableString = (value?: string): string | undefined =>
       value?.trim() ? value : undefined;
 
-    const filter: QueueReportFilterRequest = {
+    const filter: IQueueReportFilterRequest = {
+      userId: this.authService.getLoggedInUserId(),
       status: this.queueFilters.status,
       fromDate: toNullableString(this.queueFilters.fromDate),
       toDate: toNullableString(this.queueFilters.toDate),
       page: 1,
       pageSize: 0,
+      sortColumn: 'CreatedDate',
+      sortDirection: 'DESC', // Optional: ASC or DESC
     };
 
     this.queueService.getQueueReports(filter).subscribe((res) => {
