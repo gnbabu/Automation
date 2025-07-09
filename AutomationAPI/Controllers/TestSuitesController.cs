@@ -20,10 +20,6 @@ namespace AutomationAPI.Controllers
         public async Task<IActionResult> GetTestLibraries()
         {
             var libraries = await _testSuitesRepository.GetLibrariesAsync();
-
-            if (libraries == null || !libraries.Any())
-                return NotFound("No test libraries found.");
-
             return Ok(libraries);
         }
     }

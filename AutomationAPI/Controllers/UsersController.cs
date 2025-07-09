@@ -40,9 +40,6 @@ namespace AutomationAPI.Controllers
             try
             {
                 var user = await _userRepository.GetUserByIdAsync(id);
-                if (user == null)
-                    return NotFound();
-
                 return Ok(user);
             }
             catch (Exception ex)

@@ -37,11 +37,6 @@ namespace AutomationAPI.Controllers
 
                 var pagedResult = await _testResultRepository.SearchTestResultsAsync(payload);
 
-                if (pagedResult == null || !pagedResult.Data.Any())
-                {
-                    return NotFound("No test results found.");
-                }
-
                 return Ok(pagedResult);
             }
             catch (Exception ex)
@@ -63,12 +58,7 @@ namespace AutomationAPI.Controllers
             try
             {
                 var results = await _testResultRepository.GetAllTestResultsAsync();
-
-                if (results == null || !results.Any())
-                {
-                    return NotFound("No test results found.");
-                }
-
+              
                 return Ok(results);
             }
             catch (Exception ex)
@@ -89,12 +79,6 @@ namespace AutomationAPI.Controllers
             try
             {
                 var results = await _testResultRepository.GetTestResultsByQueueIdAsync(queueId);
-
-                if (results == null || !results.Any())
-                {
-                    return NotFound($"No test results found for QueueId: {queueId}");
-                }
-
                 return Ok(results);
             }
             catch (Exception ex)
