@@ -1,5 +1,6 @@
 import {
   ClassInfo,
+  IAutomationData,
   IAutomationDataSection,
   IAutomationFlow,
   IQueueInfo,
@@ -106,8 +107,19 @@ export const AutomationDataSectionMapper = {
     return {
       sectionId: data.sectionId,
       sectionName: data.sectionName,
-      testContent: data.testContent,
+      flowName: data.flowName,
+    };
+  },
+};
+
+export const AutomationDataMapper = {
+  fromApi(data: any): IAutomationData {
+    return {
       id: data.id,
+      sectionId: data.sectionId,
+      sectionName: data.sectionName,
+      testContent: data.testContent,
+      userId: data.userId,
     };
   },
 };
@@ -183,4 +195,5 @@ export const Mappers = {
   AutomationFlowMapper: AutomationFlowMapper,
   AutomationDataSectionMapper: AutomationDataSectionMapper,
   QueueInfoMapper: QueueInfoMapper,
+  AutomationDataMapper: AutomationDataMapper,
 };

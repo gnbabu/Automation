@@ -75,6 +75,7 @@
       <span class="hide-on-collapse">Test Results</span>
     </a>
     <a
+      *ngIf="isAdmin"
       [routerLink]="['/users']"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"

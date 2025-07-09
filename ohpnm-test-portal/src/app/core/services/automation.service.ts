@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import {
+  IAutomationData,
   IAutomationDataRequest,
   IAutomationDataSection,
   IAutomationFlow,
@@ -20,17 +21,30 @@ export class AutomationService {
     );
   }
 
-  getAutomationSectionDataByFlowName(
-    flowName: string
-  ): Observable<IAutomationDataSection[]> {
+  getSections(flowName: string): Observable<IAutomationDataSection[]> {
     return this.httpService.get<any[]>(
-      `Automation/data/flow/${flowName}`,
+      `Automation/sections/${flowName}`,
       {},
       (res: any[]) => res.map(Mappers.AutomationDataSectionMapper.fromApi)
     );
   }
 
+  getAutomationData(
+    sectionId: number,
+    userId: number
+  ): Observable<IAutomationData> {
+    return this.httpService.get<IAutomationData>(
+      `Automation/sections/data?sectionId=${sectionId}&userId=${userId}`,
+      {},
+      Mappers.AutomationDataMapper.fromApi
+    );
+  }
+
   updateAutomationData(data: IAutomationDataRequest): Observable<any> {
     return this.httpService.put(`Automation/data/`, data, undefined);
+  }
+
+  createAutomationData(data: IAutomationDataRequest): Observable<any> {
+    return this.httpService.post(`Automation/data/`, data, undefined);
   }
 }

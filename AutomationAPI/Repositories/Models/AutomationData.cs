@@ -6,6 +6,7 @@
         public int SectionId { get; set; }
         public string? TestContent { get; set; }
         public string? SectionName { get; set; }
+        public int? UserId { get; set; }
     }
 
 }

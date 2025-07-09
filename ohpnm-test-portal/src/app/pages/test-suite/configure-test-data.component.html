@@ -81,7 +81,8 @@
         type="submit"
         [disabled]="!testDataForm.valid || !testContent.trim()"
       >
-        <i class="bi bi-save me-1"></i> Save
+        <i class="bi bi-save me-1"></i>
+        {{ existingSectionData?.id ? "Update" : "Save" }}
       </button>
     </div>
   </div>

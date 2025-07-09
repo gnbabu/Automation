@@ -57,22 +57,24 @@ export interface IAutomationFlow {
 }
 
 export interface IAutomationDataSection {
-  id: number;
   sectionId: number;
-  testContent: string;
+  flowName: string;
   sectionName: string;
 }
 
 export interface IAutomationDataRequest {
-  sectionID: number;
+  id?: number;
+  sectionId?: number;
   testContent: string;
+  userId?: number;
 }
 
 export interface IAutomationData {
-  id: number;
+  id?: number;
   sectionId: number;
-  testContent?: string;
+  testContent: string;
   sectionName?: string;
+  userId?: number;
 }
 
 export enum QueueStatus {

@@ -3,11 +3,16 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
+  IAutomationData,
   IAutomationDataRequest,
   IAutomationDataSection,
   IAutomationFlow,
 } from '@interfaces';
-import { AutomationService, CommonToasterService } from '@services';
+import {
+  AuthService,
+  AutomationService,
+  CommonToasterService,
+} from '@services';
 
 @Component({
   selector: 'app-configure-test-data',
@@ -22,11 +27,13 @@ export class ConfigureTestDataComponent implements OnInit {
   selectedFlow?: IAutomationFlow;
   selectedSection?: IAutomationDataSection;
   testContent: string = '';
+  existingSectionData?: IAutomationData;
 
   constructor(
     private router: Router,
     private automationService: AutomationService,
-    private toaster: CommonToasterService
+    private toaster: CommonToasterService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -46,41 +53,58 @@ export class ConfigureTestDataComponent implements OnInit {
     this.testContent = '';
 
     if (this.selectedFlow) {
-      this.automationService
-        .getAutomationSectionDataByFlowName(this.selectedFlow.flowName)
-        .subscribe({
-          next: (res) => (this.sections = res),
-          error: (err) => console.error('Error loading sections:', err),
-        });
+      this.automationService.getSections(this.selectedFlow.flowName).subscribe({
+        next: (res) => {
+          this.sections = res;
+        },
+        error: (err) => console.error('Error loading sections:', err),
+      });
     }
   }
 
   onSectionChange() {
     this.testContent = '';
+    this.existingSectionData = undefined;
 
     if (this.selectedFlow && this.selectedSection) {
-      const formattedJson = JSON.stringify(
-        JSON.parse(this.selectedSection.testContent),
-        null,
-        2
-      );
-      this.testContent = formattedJson;
+      const userId = this.authService.getLoggedInUserId();
+      const sectionId = this.selectedSection.sectionId;
+      this.automationService.getAutomationData(sectionId, userId).subscribe({
+        next: (res) => {
+          this.existingSectionData = res;
+          this.testContent = res.testContent;
+        },
+        error: (err) => console.error('Error loading sections:', err),
+      });
     }
   }
-  onSubmit(form: NgForm) {
+  onSubmit(form: NgForm): void {
     if (!form.valid || !this.selectedSection) return;
 
-    if (!this.isValidJson()) {
-      this.toaster.info('Test content is not valid!');
+    if (!this.validateTestContentFormat(this.testContent)) {
+      this.toaster.info('Test content format is invalid!');
       return;
     }
 
-    const request: IAutomationDataRequest = {
-      sectionID: this.selectedSection.sectionId,
-      testContent: this.testContent,
-    };
+    let request: IAutomationDataRequest;
+    let request$;
 
-    this.automationService.updateAutomationData(request).subscribe({
+    if (this.existingSectionData?.id) {
+      request = {
+        id: this.existingSectionData.id,
+        testContent: this.testContent,
+      };
+      request$ = this.automationService.updateAutomationData(request);
+    } else {
+      request = {
+        sectionId: this.selectedSection.sectionId,
+        testContent: this.testContent,
+        userId: this.authService.getLoggedInUserId(),
+      };
+      request$ = this.automationService.createAutomationData(request);
+    }
+
+    request$.subscribe({
       next: () => {
         this.toaster.success('Test content saved successfully');
         this.router.navigate(['/test-suite']);
@@ -91,13 +115,22 @@ export class ConfigureTestDataComponent implements OnInit {
     });
   }
 
-  isValidJson(): boolean {
-    try {
-      JSON.parse(this.testContent); // Try parsing testContent as JSON
-      return true; // Return true if valid JSON
-    } catch (e) {
-      return false; // Return false if invalid JSON
+  validateTestContentFormat(content: string): boolean {
+    if (!content) return false;
+
+    const lines = content.trim().split(/\r?\n/);
+
+    for (const line of lines) {
+      const parts = line.split('|');
+      if (parts.length !== 2) return false;
+
+      const key = parts[0].trim();
+      const value = parts[1].trim();
+
+      if (!key || !value) return false;
     }
+
+    return true;
   }
 
   goBack() {

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterModule } from '@angular/router';
 import { AuthService } from '@services';
@@ -12,8 +12,10 @@ import { AuthService } from '@services';
 })
 export class LeftSidebarComponent {
   @Output() toggle = new EventEmitter<void>();
-
-  constructor(private authService: AuthService) {}
+  isAdmin: boolean;
+  constructor(private authService: AuthService) {
+    this.isAdmin = this.authService.isAdmin();
+  }
   logout() {
     this.authService.logout();
   }

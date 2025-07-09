@@ -4,9 +4,10 @@ namespace AutomationAPI.Repositories.Interfaces
 {
     public interface IAutomationRepository
     {
-        Task<IEnumerable<AutomationDataSection>> GetAutomationDataSectionsAsync(string flowName = null);
+
         Task<IEnumerable<AutomationFlow>> GetAutomationFlowNamesAsync();
-        Task<IEnumerable<AutomationData>> GetAutomationDataAsync(int sectionId);
+        Task<IEnumerable<AutomationDataSection>> GetAutomationDataSectionsAsync(string flowName = null);
+        Task<AutomationData> GetAutomationDataAsync(int sectionId, int userId);
         Task<IEnumerable<AutomationData>> GetAutomationDataByFlowNameAsync(string flowName);
         Task<int> InsertAutomationDataAsync(AutomationDataRequest automationDataRequest);
         Task UpdateAutomationDataAsync(AutomationDataRequest automationDataRequest);
@@ -14,6 +15,5 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<int> InsertAutomationDataSectionAsync(AutomationDataSectionRequest request);
         Task UpdateAutomationDataSectionAsync(AutomationDataSectionRequest request);
         Task DeleteAutomationDataSectionAsync(int sectionId);
-
     }
 }

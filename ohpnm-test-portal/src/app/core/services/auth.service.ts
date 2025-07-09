@@ -72,6 +72,19 @@ export class AuthService {
     }
   }
 
+  isAdmin(): boolean {
+    const loggedInUser = localStorage.getItem('currentUser');
+
+    if (!loggedInUser) return false;
+
+    try {
+      const user: IUser = JSON.parse(loggedInUser);
+      return user.roleName.toLowerCase() == 'admin';
+    } catch (e) {
+      console.error('Error parsing currentUser from localStorage', e);
+      return false;
+    }
+  }
   startAutoLogout(token?: string): void {
     const jwt = token ?? this.getToken();
     if (!jwt) return;

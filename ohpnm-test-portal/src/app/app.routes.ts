@@ -79,6 +79,7 @@ export const routes: Routes = [
           import('./pages/queue-manager/queue-detail.component').then(
             (m) => m.QueueDetailsComponent
           ),
+        canActivate: [authGuard],
       },
 
       {

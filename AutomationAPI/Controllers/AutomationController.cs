@@ -20,19 +20,55 @@ namespace AutomationAPI.Controllers
             _logger = logger;
         }
 
-        // 1. Get Automation Data by Section ID
-        [HttpGet("data/{sectionId}")]
-        public async Task<IActionResult> GetAutomationDataAsync(int sectionId)
+        // Get Automation Flow Names
+        [HttpGet("flows")]
+        public async Task<IActionResult> GetAutomationFlowNamesAsync()
         {
             try
             {
-                _logger.LogInformation("Retrieving automation data for SectionID: {SectionID}", sectionId);
-                var data = await _automationRepository.GetAutomationDataAsync(sectionId);
+                var flows = await _automationRepository.GetAutomationFlowNamesAsync();
+                return Ok(flows);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving automation flow names.");
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
+
+        //Get Automation Data Sections
+        [HttpGet("sections/{flowName}")]
+        public async Task<IActionResult> GetAutomationDataSectionsAsync(string flowName)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(flowName))
+                {
+                    return BadRequest("Flow Name is not provider.");
+                }
+                var sections = await _automationRepository.GetAutomationDataSectionsAsync(flowName);
+                return Ok(sections);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving automation data sections for FlowName: {FlowName}", flowName);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
+
+
+        //Get Automation Data by Section ID
+        [HttpGet("sections/data")]
+        public async Task<IActionResult> GetAutomationDataAsync([FromQuery] int sectionId, [FromQuery] int userId)
+        {
+            try
+            {
+                var data = await _automationRepository.GetAutomationDataAsync(sectionId, userId);
                 return Ok(data);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while retrieving automation data for SectionID: {SectionID}", sectionId);
+                _logger.LogError(ex, "Error occurred while retrieving automation data for SectionID: {SectionID} and UserId: {userId}", sectionId, userId);
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
@@ -62,7 +98,7 @@ namespace AutomationAPI.Controllers
             {
                 _logger.LogInformation("Inserting automation data for SectionID: {SectionID}", request.SectionId);
                 var newId = await _automationRepository.InsertAutomationDataAsync(request);
-                return CreatedAtAction(nameof(GetAutomationDataAsync), new { sectionId = request.SectionId }, newId);
+                return Ok(newId);
             }
             catch (Exception ex)
             {
@@ -105,22 +141,7 @@ namespace AutomationAPI.Controllers
             }
         }
 
-        // 6. Get Automation Data Sections
-        [HttpGet("sections/{flowName}")]
-        public async Task<IActionResult> GetAutomationDataSectionsAsync(string? flowName)
-        {
-            try
-            {
-                _logger.LogInformation("Retrieving automation data sections for FlowName: {FlowName}", flowName);
-                var sections = await _automationRepository.GetAutomationDataSectionsAsync(flowName);
-                return Ok(sections);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while retrieving automation data sections for FlowName: {FlowName}", flowName);
-                return StatusCode(500, "An error occurred while processing your request.");
-            }
-        }
+
 
         // 7. Insert Automation Data Section
         [HttpPost("sections")]
@@ -173,21 +194,6 @@ namespace AutomationAPI.Controllers
             }
         }
 
-        // 10. Get Automation Flow Names
-        [HttpGet("flows")]
-        public async Task<IActionResult> GetAutomationFlowNamesAsync()
-        {
-            try
-            {
-                _logger.LogInformation("Retrieving automation flow names.");
-                var flows = await _automationRepository.GetAutomationFlowNamesAsync();
-                return Ok(flows);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while retrieving automation flow names.");
-                return StatusCode(500, "An error occurred while processing your request.");
-            }
-        }
+
     }
 }

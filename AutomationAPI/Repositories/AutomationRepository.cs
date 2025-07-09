@@ -4,6 +4,7 @@ using AutomationAPI.Repositories.Helpers;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using AutomationAPI.Repositories.SQL;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace AutomationAPI.Repositories
 {
@@ -16,21 +17,100 @@ namespace AutomationAPI.Repositories
             _sqlDataAccessHelper = sqlDataAccessHelper;
         }
 
-       
-        public async Task<IEnumerable<AutomationData>> GetAutomationDataAsync(int sectionId)
+        public async Task<IEnumerable<AutomationFlow>> GetAutomationFlowNamesAsync()
+        {
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationFlowNames, null, reader => new AutomationFlow
+            {
+                FlowName = reader.GetNullableString("FlowName")
+            });
+        }
+
+        public async Task<IEnumerable<AutomationDataSection>> GetAutomationDataSectionsAsync(string? flowName)
         {
             var parameters = new[]
             {
-                new SqlParameter("@SectionID", sectionId)
+                new SqlParameter("@FlowName", SqlDbType.NVarChar, 200)
+                {
+                    Value = string.IsNullOrEmpty(flowName) ? DBNull.Value : flowName
+                }
             };
 
-            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationData, parameters, reader => new AutomationData
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationDataSection, parameters, reader => new AutomationDataSection
+            {
+                SectionId = reader.GetNullableInt("SectionID") ?? 0,
+                SectionName = reader.GetNullableString("SectionName"),
+                FlowName = reader.GetNullableString("FlowName")
+            });
+
+        }
+
+        public async Task<AutomationData> GetAutomationDataAsync(int sectionId, int userId)
+        {
+            AutomationData automationData = new AutomationData();
+            var parameters = new[]
+            {
+                new SqlParameter("@SectionID", sectionId),
+                new SqlParameter("@UserId", userId)
+            };
+
+            var data = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationData, parameters, reader => new AutomationData
             {
                 Id = reader.GetNullableInt("Id") ?? 0,
                 SectionId = reader.GetNullableInt("SectionID") ?? 0,
-                TestContent = reader.GetNullableString("TestContent")
+                TestContent = reader.GetNullableString("TestContent"),
+                UserId = reader.GetNullableInt("UserID") ?? 0,
+
             });
+
+
+            if (data?.Any() == true)
+            {
+                var first = data.First();
+
+                if (!string.IsNullOrWhiteSpace(first.TestContent))
+                {
+                    first.TestContent = AutomationDataHelper.BuildFieldSummary(first.TestContent);
+                }
+
+                automationData = first;
+            }
+
+            return automationData;
         }
+
+        public async Task<int> InsertAutomationDataAsync(AutomationDataRequest automationDataRequest)
+        {
+
+            if (!string.IsNullOrEmpty(automationDataRequest.TestContent))
+            {
+                automationDataRequest.TestContent = AutomationDataHelper.ConvertToJson(automationDataRequest.TestContent);
+            }
+            var parameters = new[]
+            {
+                new SqlParameter("@SectionID", automationDataRequest.SectionId),
+                new SqlParameter("@TestContent", automationDataRequest.TestContent),
+                new SqlParameter("@UserID",automationDataRequest.UserId)
+            };
+
+            return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.InsertAutomationData, parameters);
+        }
+
+        public async Task UpdateAutomationDataAsync(AutomationDataRequest automationDataRequest)
+        {
+            if (!string.IsNullOrEmpty(automationDataRequest.TestContent))
+            {
+                automationDataRequest.TestContent = AutomationDataHelper.ConvertToJson(automationDataRequest.TestContent);
+            }
+
+            var parameters = new[]
+            {
+                new SqlParameter("@ID", automationDataRequest.Id),
+                new SqlParameter("@TestContent", automationDataRequest.TestContent?? (object)DBNull.Value)
+            };
+            await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.UpdateAutomationData, parameters);
+        }
+
+
         public async Task<IEnumerable<AutomationData>> GetAutomationDataByFlowNameAsync(string flowName)
         {
             var parameters = new[]
@@ -47,26 +127,7 @@ namespace AutomationAPI.Repositories
             });
         }
 
-        public async Task<int> InsertAutomationDataAsync(AutomationDataRequest automationDataRequest)
-        {
-            var parameters = new[]
-            {
-                new SqlParameter("@SectionID", automationDataRequest.SectionId),
-                new SqlParameter("@TestContent", automationDataRequest.TestContent)
-            };
 
-            return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.InsertAutomationData, parameters);
-        }
-
-        public async Task UpdateAutomationDataAsync(AutomationDataRequest automationDataRequest)
-        {
-            var parameters = new[]
-            {
-                new SqlParameter("@SectionID", automationDataRequest.SectionId),
-                new SqlParameter("@TestContent", automationDataRequest.TestContent?? (object)DBNull.Value)
-            };
-            await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.UpdateAutomationData, parameters);
-        }
 
         public async Task DeleteAutomationDataAsync(int sectionId)
         {
@@ -78,23 +139,6 @@ namespace AutomationAPI.Repositories
             await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.DeleteAutomationData, parameters);
         }
 
-        public async Task<IEnumerable<AutomationDataSection>> GetAutomationDataSectionsAsync(string? flowName)
-        {
-            var parameters = new[]
-            {
-                new SqlParameter("@FlowName", SqlDbType.NVarChar, 200)
-                {
-                    Value = string.IsNullOrEmpty(flowName) ? DBNull.Value : flowName
-                }
-            };
-
-            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationDataSection, parameters, reader => new AutomationDataSection
-            {
-                SectionID = reader.GetNullableInt("SectionID") ?? 0,
-                SectionName = reader.GetNullableString("SectionName"),
-                FlowName = reader.GetNullableString("FlowName")
-            });
-        }
 
         public async Task<int> InsertAutomationDataSectionAsync(AutomationDataSectionRequest request)
         {
@@ -129,13 +173,7 @@ namespace AutomationAPI.Repositories
             await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.DeleteAutomationDataSection, parameters);
         }
 
-        public async Task<IEnumerable<AutomationFlow>> GetAutomationFlowNamesAsync()
-        {
-            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationFlowNames, null, reader => new AutomationFlow
-            {
-                FlowName = reader.GetNullableString("FlowName")
-            });
-        }
+
 
     }
 }
