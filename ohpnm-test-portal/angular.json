@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "ohpnm-test-portal": {
+    "AtomationPortal": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/ohpnm-test-portal",
+            "outputPath": "dist/AtomationPortal",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -77,14 +77,14 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "ohpnm-test-portal:build:production"
+              "buildTarget": "AtomationPortal:build:production"
             },
             "development": {
-              "buildTarget": "ohpnm-test-portal:build:development",
+              "buildTarget": "AtomationPortal:build:development",
               "open": true              
             },
             "qa": {
-              "buildTarget": "ohpnm-test-portal:build:qa",
+              "buildTarget": "AtomationPortal:build:qa",
               "open": true              
             }
           },
