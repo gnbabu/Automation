@@ -1,0 +1,59 @@
+<div class="row g-3">
+  <div class="col-md-3 col-sm-6" *ngFor="let img of screenshots">
+    <div
+      class="card h-100 d-flex flex-column shadow-sm border-0 rounded-3 hover-card"
+      (click)="openModal(img)"
+      style="cursor: pointer"
+    >
+      <div class="ratio ratio-4x3">
+        <img
+          [src]="img.screenshot"
+          class="card-img-top img-fluid rounded-top"
+          style="object-fit: cover"
+        />
+      </div>
+      <div
+        style="
+          background: linear-gradient(135deg, #1a1c2e 0%, #502e91 100%);
+          color: #fff;
+          height: 50px;
+        "
+        class="card-body d-flex align-items-center justify-content-center p-2"
+      >
+        <h6
+          class="card-title text-truncate text-center m-0"
+          style="max-width: 100%"
+          [title]="img.caption"
+        >
+          {{ img.caption }}
+        </h6>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-body text-center">
+        <img
+          *ngIf="selectedImage"
+          [src]="selectedImage.screenshot"
+          class="img-fluid"
+        />
+        <h5 *ngIf="selectedImage" class="mt-2">
+          {{ selectedImage.caption }}
+        </h5>
+        <p *ngIf="selectedImage">
+          Taken At: {{ selectedImage.takenAt | date : "short" }}
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

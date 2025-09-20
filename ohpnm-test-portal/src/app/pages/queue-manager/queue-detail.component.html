@@ -78,6 +78,13 @@
         [pagingEnabled]="true"
       ></app-data-grid>
     </div>
+
+    <div>
+      <app-test-screenshot-gallery
+        [screenshots]="screenshots"
+        *ngIf="screenshots.length > 0"
+      ></app-test-screenshot-gallery>
+    </div>
   </div>
 </div>
 <ng-template #statusTemplate let-row let-value="value">
@@ -91,4 +98,10 @@
   >
     {{ value }}
   </span>
+</ng-template>
+
+<ng-template #screenshotTemplate let-row>
+  <a href="javascript:void(0)" (click)="viewSceenshots(row.id)">
+    View Screenshots
+  </a>
 </ng-template>

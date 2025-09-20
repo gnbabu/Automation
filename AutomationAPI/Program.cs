@@ -46,6 +46,7 @@ builder.Services.AddScoped<IQueueRepository, QueueRepository>();
 builder.Services.AddScoped<IAutomationRepository, AutomationRepository>();
 builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
 builder.Services.AddScoped<ITestSuitesRepository, TestSuitesRepository>();
+builder.Services.AddScoped<ITestScreenshotRepository, TestScreenshotRepository>();
 
 builder.Services.AddScoped<ITestRunner, ReflectionTestRunner>();
 

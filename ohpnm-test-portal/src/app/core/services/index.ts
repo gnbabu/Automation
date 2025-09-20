@@ -8,4 +8,5 @@ export * from './common-toaster.service';
 export * from './queue.service';
 export * from './test-runner.service';
 export * from './test-result.service';
+export * from './screenshot.service';
 export * from './loading.service';

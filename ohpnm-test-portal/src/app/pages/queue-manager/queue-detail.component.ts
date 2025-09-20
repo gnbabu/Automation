@@ -2,34 +2,45 @@ import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { GridColumn, IQueueInfo, ITestResult } from '@interfaces';
-import { QueueService, TestResultService } from '@services';
+import {
+  GridColumn,
+  IQueueInfo,
+  ITestResult,
+  ITestScreenshot,
+} from '@interfaces';
+import { QueueService, ScreenshotService, TestResultService } from '@services';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
+import { TestScreenshotGalleryComponent } from './test-screenshot-gallery/test-screenshot-gallery.component';
 
 @Component({
   selector: 'app-queue-detail',
   standalone: true,
-  imports: [CommonModule, DataGridComponent],
+  imports: [CommonModule, DataGridComponent, TestScreenshotGalleryComponent],
   templateUrl: './queue-detail.component.html',
   styleUrl: './queue-detail.component.css',
 })
 export class QueueDetailsComponent implements OnInit {
   queue: IQueueInfo | null = null;
-
+  screenshots: ITestScreenshot[] = [];
   @ViewChild('statusTemplate', { static: true })
   statusTemplate!: TemplateRef<any>;
+
+  @ViewChild('screenshotTemplate', { static: true })
+  screenshotTemplate!: TemplateRef<any>;
 
   columns: GridColumn[] = [];
 
   testResults: ITestResult[] = [];
   totalRecords = 0;
   pageSize = 10;
+  selectedTestId: number | null = null;
 
   constructor(
     private queueService: QueueService,
     private testResultService: TestResultService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private screenshotService: ScreenshotService
   ) {}
 
   ngOnInit(): void {
@@ -57,6 +68,11 @@ export class QueueDetailsComponent implements OnInit {
         header: 'End Time',
         sortable: true,
         type: 'datetime',
+      },
+      {
+        field: 'screenshots',
+        header: 'Screenshots',
+        cellTemplate: this.screenshotTemplate,
       },
     ];
 
@@ -100,5 +116,22 @@ export class QueueDetailsComponent implements OnInit {
   }
   goBack(): void {
     this.router.navigate(['/queue-manager']);
+  }
+
+  viewSceenshots(testResultId: any) {
+    debugger;
+    this.screenshotService
+      .getScreenshotsByTestResultIdAsync(testResultId)
+      .subscribe({
+        next: (res) => {
+          debugger;
+          this.screenshots = res ?? [];
+        },
+        error: (err) => {
+          console.error('Failed to load test results:', err);
+          this.testResults = [];
+          this.totalRecords = 0;
+        },
+      });
   }
 }

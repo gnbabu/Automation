@@ -160,3 +160,11 @@ export interface IQueueReportFilterRequest extends IPage {
   fromDate?: string | null;
   toDate?: string | null;
 }
+export interface ITestScreenshot {
+  id: number;
+  testResultId: number;
+  queueId: number;
+  caption: string;
+  screenshot: string; // Base64 string for frontend display
+  takenAt: Date;
+}

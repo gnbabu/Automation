@@ -45,5 +45,13 @@
         public const string GetTestResults = "[aut].[usp_GetTestResults]";
         public const string InsertTestResults = "[aut].[usp_InsertTestResults]";
 
+        // Test Sceenshots
+        public const string InsertTestScreenshot = "[aut].[usp_InsertTestScreenshot]";
+        public const string BulkInsertTestScreenshots = "[aut].[usp_BulkInsertTestScreenshots]";
+        public const string GetScreenshotsByTestResultId = "[aut].[usp_GetScreenshotsByTestResultId]";
+        public const string GetScreenshotById = "[aut].[usp_GetScreenshotById]";
+        
+
+
     }
 }
