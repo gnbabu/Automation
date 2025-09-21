@@ -1,19 +1,76 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  OnInit,
+  Output,
+  TemplateRef,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IUser } from '@interfaces';
+import { GridColumn, IUser } from '@interfaces';
 import { UsersService } from '@services';
+import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DataGridComponent],
   templateUrl: './user-list.component.html',
+  styleUrls: ['./user-list.component.css'],
 })
-export class UserListComponent {
+export class UserListComponent implements OnInit {
   @Output() editUser = new EventEmitter<IUser>();
   users: IUser[] = [];
+  columns: GridColumn[] = [];
+  pageSize = 10;
 
-  constructor(private usersService: UsersService) {
+  @ViewChild('nameTemplate', { static: true })
+  nameTemplate!: TemplateRef<any>;
+
+  @ViewChild('activeTemplate', { static: true })
+  activeTemplate!: TemplateRef<any>;
+
+  @ViewChild('actionsTemplate', { static: true })
+  actionsTemplate!: TemplateRef<any>;
+
+  constructor(private usersService: UsersService) {}
+
+  ngOnInit(): void {
+    this.columns = [
+      {
+        field: 'userName',
+        header: 'Username',
+        sortable: true,
+      },
+      {
+        field: 'email',
+        header: 'Email',
+        sortable: true,
+      },
+      {
+        field: 'roleName',
+        header: 'Role',
+        sortable: true,
+      },
+      {
+        field: 'fullName',
+        header: 'Name',
+        sortable: true,
+        cellTemplate: this.nameTemplate, // custom template (firstName + lastName)
+      },
+      {
+        field: 'active',
+        header: 'Active',
+        sortable: false,
+        cellTemplate: this.activeTemplate, // toggle switch template
+      },
+      {
+        field: 'actions',
+        header: 'Actions',
+        cellTemplate: this.actionsTemplate, // edit button template
+      },
+    ];
+
     this.loadUsers();
   }
 

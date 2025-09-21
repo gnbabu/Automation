@@ -1,10 +1,5 @@
 <div class="test-suite-container">
-  <h4
-    class="text-white p-2 rounded"
-    style="background: linear-gradient(135deg, #1a1c2e 0%, #502e91 100%)"
-  >
-    Test Suites
-  </h4>
+  <h4 class="text-white header-h4">Test Suites</h4>
 
   <div class="container-fluid mt-3">
     <div class="row">
@@ -118,10 +113,7 @@
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h5 class="mb-0">Methods</h5>
           <div class="d-flex gap-2">
-            <button
-              class="btn btn-primary btn-sm"
-              (click)="navigateToTestData()"
-            >
+            <button class="btn-purple" (click)="navigateToTestData()">
               <i class="bi bi-gear-fill me-1"></i> Configure Test Data
             </button>
             <!-- <button
@@ -134,24 +126,19 @@
           </div>
         </div>
 
-        <table class="table table-bordered table-striped">
-          <thead class="table-light">
-            <tr>
-              <th>#</th>
-              <th>Method Name</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let method of selectedMethods; let i = index">
-              <td>{{ i + 1 }}</td>
-              <td>{{ method.methodName }}</td>
-            </tr>
-            <tr *ngIf="selectedMethods.length === 0">
-              <td colspan="2" class="text-center">No methods selected</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <app-data-grid
+            [columns]="columns"
+            [data]="selectedMethods"
+            [pagingEnabled]="true"
+            [sortingMode]="'client'"
+          >
+          </app-data-grid>
+        </div>
       </div>
     </div>
   </div>
 </div>
+<ng-template #indexTemplate let-row let-rowIndex="rowIndex">
+  {{ rowIndex + 1 }}
+</ng-template>

@@ -1,5 +1,8 @@
 <div class="dashboard-container">
-  <h4 class="mb-4">Automation Dashboard {{ queueService.AppTitle() }}</h4>
+  <h4 class="header-h4 mb-4">
+    Dashboard
+    <!-- {{ queueService.AppTitle() }} -->
+  </h4>
 
   <!-- Summary Cards -->
   <div class="row g-3 mb-4">
@@ -30,7 +33,7 @@
   <!-- Recent Queues Table -->
   <div class="card shadow-sm border-0">
     <div
-      class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+      class="card-header bg-primary text-white d-flex justify-content-between align-items-center recent-queues"
     >
       <span>Recent Queues</span>
       <button class="btn btn-outline-light btn-sm" (click)="loadQueues()">
@@ -38,34 +41,31 @@
       </button>
     </div>
     <div class="card-body p-0">
-      <table class="table table-hover mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Queue Name</th>
-            <th>Status</th>
-            <th>Created</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let q of recentQueues">
-            <td>{{ q.queueName }}</td>
-            <td>
-              <span class="badge" [ngClass]="getBadgeClass(q.queueStatus)">
-                {{ q.queueStatus }}
-              </span>
-            </td>
-            <td>{{ q.createdDate | date : "yyyy-MM-dd HH:mm:ss" }}</td>
-            <td>
-              <a
-                (click)="viewQueueDetails(q)"
-                class="btn btn-sm btn-outline-primary"
-                >Details</a
-              >
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <app-data-grid
+          [columns]="columns"
+          [data]="recentQueues"
+          [pagingMode]="'client'"
+          [sortingMode]="'client'"
+          [pageSize]="pageSize"
+          [pagingEnabled]="false"
+        ></app-data-grid>
+      </div>
     </div>
   </div>
 </div>
+
+<ng-template #statusTemplate let-row let-value="value">
+  <span
+    class="text-uppercase px-2 py-1 rounded-pill fw-semibold"
+    [ngClass]="getBadgeClass(value)"
+  >
+    {{ value }}
+  </span>
+</ng-template>
+
+<ng-template #detailsTemplate let-row let-value="value">
+  <button (click)="viewQueueDetails(row)" class="btn-purple">
+    View Details
+  </button>
+</ng-template>

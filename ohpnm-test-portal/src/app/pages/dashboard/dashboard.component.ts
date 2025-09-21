@@ -1,17 +1,31 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  TemplateRef,
+  ViewChild,
+} from '@angular/core';
 import { Router } from '@angular/router';
-import { IQueueInfo, IQueueSearchPayload } from '@interfaces';
+import { GridColumn, IQueueInfo, IQueueSearchPayload } from '@interfaces';
 import { AuthService, QueueService } from '@services';
+import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DataGridComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  columns: GridColumn[] = [];
+  pageSize = 10;
+  @ViewChild('statusTemplate', { static: true })
+  statusTemplate!: TemplateRef<any>;
+  @ViewChild('detailsTemplate', { static: true })
+  detailsTemplate!: TemplateRef<any>;
+
   // You can add any logic for the dashboard component here if needed
   constructor(
     public queueService: QueueService,
@@ -31,6 +45,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
   refreshMessage: string | null = null;
 
   ngOnInit(): void {
+    this.columns = [
+      {
+        field: 'queueName',
+        header: 'Queue Name',
+        sortable: true,
+      },
+      {
+        field: 'queueStatus',
+        header: 'Status',
+        sortable: true,
+        cellTemplate: this.statusTemplate,
+      },
+      {
+        field: 'createdDate',
+        header: 'Created',
+        sortable: true,
+        type: 'datetime',
+      },
+      {
+        field: 'actions',
+        header: 'Actions',
+        cellTemplate: this.detailsTemplate, // edit button template
+      },
+    ];
+
     this.loadQueues();
     this.refreshInterval = setInterval(() => this.loadQueues(), 20000); // Refresh every 20s
   }

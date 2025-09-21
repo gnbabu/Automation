@@ -1,6 +1,12 @@
 .dashboard-container {
-    padding: 20px;
-  }
+  padding: 20px;
+  background: #f4f6f9; /* subtle dashboard bg */
+  min-height: 100vh;
+   box-shadow: 
+  0 4px 12px rgba(0, 0, 0, 0.1),      /* soft depth */
+  0 6px 20px rgba(52, 73, 94, 0.25);  /* subtle #34495e glow with opacity */
+  transition: all 0.3s ease-in-out;
+}
   
   .card {
     border-radius: 8px;
@@ -13,6 +19,13 @@
   .card-text {
     font-size: 14px;
   }
-  
+  .recent-queues{
+    background: linear-gradient(135deg, #1a1c2e 0%, #5c3c9e 100%);
+    font-weight: 700;
+  }
+  .btn-outline-light{
+    font-weight: 700;
+    
+  }
   /* Add any other custom styles here for the dashboard */
   

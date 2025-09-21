@@ -1,9 +1,5 @@
 <div class="queue-manager-container">
-  <h4
-    *ngIf="queue"
-    class="text-white p-2 rounded"
-    style="background: linear-gradient(135deg, #1a1c2e 0%, #502e91 100%)"
-  >
+  <h4 *ngIf="queue" class="text-white header-h4">
     Queue Details - {{ queue.queueName }}
   </h4>
 
@@ -101,7 +97,7 @@
 </ng-template>
 
 <ng-template #screenshotTemplate let-row>
-  <a href="javascript:void(0)" (click)="viewSceenshots(row.id)">
+  <a href="javascript:void(0)" (click)="viewSceenshots(row)">
     View Screenshots
   </a>
 </ng-template>

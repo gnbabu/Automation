@@ -17,10 +17,12 @@ export class ScreenshotService {
   constructor(private httpService: HttpService) {}
 
   getScreenshotsByTestResultIdAsync(
-    testId: any
+    queueId: any,
+    methodName: any
   ): Observable<ITestScreenshot[]> {
     return this.httpService.get<ITestScreenshot[]>(
-      `TestScreenshots/screenshots/${testId}`
+      `TestScreenshots/screenshots?queueId=${queueId}&methodName=${methodName}`
     );
   }
 }
+//https://localhost:7147/api/TestScreenshots/screenshots?queueId=7cc3873d-f7cf-474c-bb7a-f02c9db40601&methodName=RegisterEmployee_ValidDocuments_ReturnsTrue

@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ClassInfo,
+  GridColumn,
   IQueueInfo,
   IUser,
   LibraryInfo,
@@ -15,15 +16,21 @@ import {
 } from '@services';
 import { Router } from '@angular/router';
 import { QueueInfoMapper } from '@mappers';
+import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 
 @Component({
   selector: 'app-test-suite',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DataGridComponent],
   templateUrl: './test-suite.component.html',
   styleUrls: ['./test-suite.component.css'],
 })
 export class TestSuiteComponent implements OnInit {
+  columns: GridColumn[] = [];
+  pageSize = 10;
+  @ViewChild('indexTemplate', { static: true })
+  indexTemplate!: TemplateRef<any>;
+
   loggedInUser: IUser | null = null;
   libraries: LibraryInfo[] = [];
   selectedMethods: LibraryMethodInfo[] = [];
@@ -44,6 +51,20 @@ export class TestSuiteComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.columns = [
+      {
+        field: 'index',
+        header: '#',
+        sortable: false,
+        cellTemplate: this.indexTemplate, // show i+1
+      },
+      {
+        field: 'methodName',
+        header: 'Method Name',
+        sortable: true,
+      },
+    ];
+
     this.loggedInUser = this.authService.getLoggedInUser();
     this.loadLibraries();
   }

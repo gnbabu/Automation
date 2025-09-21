@@ -1,7 +1,13 @@
 .queue-manager-container {
     max-width: 100%;
     padding: 20px;
+   box-shadow: 
+  0 4px 12px rgba(0, 0, 0, 0.1),      /* soft depth */
+  0 6px 20px rgba(52, 73, 94, 0.25);  /* subtle #34495e glow with opacity */
+  transition: all 0.3s ease-in-out;
   }
+  
+
   td.text-truncate {
   max-width: 200px; /* adjust as needed */
   overflow: hidden;

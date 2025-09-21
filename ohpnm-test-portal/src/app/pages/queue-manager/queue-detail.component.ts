@@ -118,10 +118,10 @@ export class QueueDetailsComponent implements OnInit {
     this.router.navigate(['/queue-manager']);
   }
 
-  viewSceenshots(testResultId: any) {
+  viewSceenshots(data: any) {
     debugger;
     this.screenshotService
-      .getScreenshotsByTestResultIdAsync(testResultId)
+      .getScreenshotsByTestResultIdAsync(data.queueId, data.name)
       .subscribe({
         next: (res) => {
           debugger;

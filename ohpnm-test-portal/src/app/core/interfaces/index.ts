@@ -162,9 +162,10 @@ export interface IQueueReportFilterRequest extends IPage {
 }
 export interface ITestScreenshot {
   id: number;
-  testResultId: number;
-  queueId: number;
+  queueId: string;
+  className?: string;
+  methodName?: string;
   caption: string;
-  screenshot: string; // Base64 string for frontend display
-  takenAt: Date;
+  screenshot: string; // Base64 string (data:image/png;base64,...)
+  takenAt: string; // ISO date string
 }

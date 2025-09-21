@@ -1,3 +1,116 @@
+.app-grid {
+  max-height: 70vh;
+  overflow: auto;
+  border-radius: 6px;
+}
+
+.app-grid table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.app-grid table thead th {
+  background: #5c3c9e;
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  vertical-align: middle;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-grid table thead tr.filter-row th {
+  background: #f4f2fa;
+  font-weight: 500;
+  position: sticky;
+  top: 42px; /* equal to header height */
+  z-index: 9;
+}
+
+.app-grid table .filter-input {
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 0.85rem;
+}
+
+.app-grid table tbody tr:nth-child(odd) {
+  background: #f9fbfd;
+}
+
+.app-grid table tbody tr:nth-child(even) {
+  background: #eef3f9;
+}
+
+.app-grid table tbody tr:hover {
+  background: #e0e7f1 !important;
+}
+
+.app-grid table tbody td {
+  padding: 0.55rem;
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+.app-grid .reg-link {
+  color: #0d6efd;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.app-grid .pagination .page-item .page-link {
+  color: #5c3c9e;
+  border: 1px solid #5c3c9e;
+  background-color: #fff;
+}
+
+.app-grid .pagination .page-item .page-link:hover {
+  background-color: #f0f0f0;
+  color: #5c3c9e;
+}
+
+.app-grid .pagination .page-item.active .page-link {
+  background-color: #5c3c9e;
+  border-color: #5c3c9e;
+  color: #fff;
+}
+
+.app-grid .pagination-header {
+  background-color: #f9f9fb;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+}
+
+.app-grid .pagination-header .page-size-selector {
+  font-weight: 500;
+  color: #444;
+}
+
+.app-grid .pagination-header .page-size-selector .custom-page-size {
+  margin-left: 6px;
+  border: 1px solid #5c3c9e;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 14px;
+  color: #5c3c9e;
+}
+
+.app-grid .pagination-header .page-size-selector .custom-page-size:focus {
+  outline: none;
+  border-color: #43297d;
+  box-shadow: 0 0 4px rgba(92, 60, 158, 0.5);
+}
+
+.app-grid .pagination-header .page-info {
+  font-style: italic;
+  color: #5c3c9e;
+}
+
+
 table td {
   max-width: 200px;
   overflow: hidden;
