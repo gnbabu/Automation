@@ -70,31 +70,6 @@ export class TestSuiteComponent implements OnInit {
   }
 
   loadLibraries() {
-    // this.libraries = [
-    //   {
-    //     libraryName: 'MyLibrary',
-    //     classes: [
-    //       {
-    //         className: 'UserService',
-    //         methods: [{ methodName: 'GetUser' }, { methodName: 'CreateUser' }],
-    //       },
-    //       {
-    //         className: 'AuthService',
-    //         methods: [{ methodName: 'Login' }, { methodName: 'Logout' }],
-    //       },
-    //     ],
-    //   },
-    //   {
-    //     libraryName: 'AnotherLibrary',
-    //     classes: [
-    //       {
-    //         className: 'ProductService',
-    //         methods: [{ methodName: 'GetProduct' }],
-    //       },
-    //     ],
-    //   },
-    // ];
-
     this.testSuitesService.getLibraries().subscribe({
       next: (res) => {
         this.libraries = res;

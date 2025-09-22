@@ -67,4 +67,10 @@ export class LoginComponent {
   openForgotPassword(): void {
     this.modalService.open('forgotPasswordModal');
   }
+  togglePasswordVisibility(event: Event) {
+    const input = document.getElementById('password') as HTMLInputElement;
+    input.type = (event.target as HTMLInputElement).checked
+      ? 'text'
+      : 'password';
+  }
 }

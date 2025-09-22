@@ -159,3 +159,9 @@ html, body {
     background-color: #43297d;
     color: #fff;
   }
+  .btn-purple:disabled {
+  background-color: #5c3c9e; /* same color or lighter if you prefer */
+  opacity: 0.5; /* makes it look disabled */
+  cursor: not-allowed;
+  color: #fff;
+}

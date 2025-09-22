@@ -3,9 +3,25 @@
     <i class="fas fa-chevron-left"></i>
   </button>
 
-  <div class="p-4">
-    <h4 class="logo-text fw-bold mb-0">Automation</h4>
-    <p class="text-muted small hide-on-collapse">Dashboard</p>
+  <div class="p-4 text-center">
+    <!-- Project Logo -->
+    <h4 class="logo-text fw-bold mb-3">Automation</h4>
+
+    <!-- User Profile -->
+    <div class="d-flex flex-column align-items-center hide-on-collapse">
+      <div class="profile-img-wrapper mb-2">
+        <img
+          [src]="getProfilePhotoUrl()"
+          alt="User"
+          class="rounded-circle profile-img"
+          width="90"
+          height="90"
+        />
+      </div>
+      <span class="profile-name fw-semibold hide-on-collapse fs-5">
+        {{ user?.firstName }} {{ user?.lastName }}
+      </span>
+    </div>
   </div>
 
   <div class="nav flex-column">

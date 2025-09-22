@@ -1,0 +1,17 @@
+.profile-name{
+    color: #fff;
+}
+
+.profile-img-wrapper {
+  display: inline-block;
+  padding: 4px; /* border thickness */
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5c3c9e, #ffffff);
+}
+
+.profile-img {
+  border-radius: 50%;
+  display: block;
+  width: 90px;
+  height: 90px;
+}

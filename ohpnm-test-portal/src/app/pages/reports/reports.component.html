@@ -37,11 +37,7 @@
         />
       </div>
       <div class="col-md-3 d-flex gap-2">
-        <button
-          class="btn btn-primary"
-          type="button"
-          (click)="applyQueueFilters()"
-        >
+        <button class="btn-purple" type="button" (click)="applyQueueFilters()">
           Apply
         </button>
         <button
@@ -56,7 +52,7 @@
           type="button"
           (click)="exportQueueCSV()"
         >
-          Export CSV
+          <i class="fas fa-file-excel me-2"></i> Export to CSV
         </button>
       </div>
     </form>

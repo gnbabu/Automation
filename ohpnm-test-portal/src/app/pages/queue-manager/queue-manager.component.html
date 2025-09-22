@@ -16,10 +16,7 @@
 
 <!-- Custom Cell Templates -->
 <ng-template #queueNameTemplate let-row let-value="value">
-  <a
-    (click)="viewQueueDetails(row)"
-    class="text-info text-decoration-underline"
-  >
+  <a (click)="viewQueueDetails(row)" class="text-decoration-underline">
     {{ value }}
   </a>
 </ng-template>
