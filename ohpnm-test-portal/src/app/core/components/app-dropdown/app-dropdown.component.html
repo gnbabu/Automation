@@ -1,0 +1,17 @@
+<select
+  class="form-select"
+  [disabled]="isDropdownDisabled"
+  [ngModel]="selectedValue"
+  (ngModelChange)="onSelectChange($event)"
+  (blur)="onTouched()"
+>
+  <!-- Placeholder -->
+  <option [ngValue]="null" [selected]="!selectedValue">
+    {{ placeholder }}
+  </option>
+
+  <!-- Options -->
+  <option *ngFor="let opt of options" [ngValue]="getOptionValue(opt)">
+    {{ getOptionText(opt) }}
+  </option>
+</select>

@@ -1,0 +1,82 @@
+<div class="test-case-manager-container">
+  <h4 class="text-white header-h4">Test Case Manager</h4>
+  <div style="min-height: 82vh">
+    <div class="d-flex justify-content-center align-items-center">
+      <div class="card shadow-sm" style="width: 600px">
+        <div class="card-header text-white text-center">Select User</div>
+        <div class="card-body">
+          <div class="row g-3 align-items-center justify-content-center">
+            <div class="col-8">
+              <app-dropdown
+                id="userSelect"
+                [options]="users"
+                valueAccessor="userId"
+                textAccessor="userName"
+                placeholder="Choose User..."
+                [(selected)]="selectedUser"
+                (selectionChange)="onUserChange($event)"
+              ></app-dropdown>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid mt-3">
+      <div class="row g-3">
+        <!-- Library Dropdown -->
+        <div class="col-md-4">
+          <app-dropdown
+            [options]="libraries"
+            valueAccessor="libraryName"
+            textAccessor="libraryName"
+            placeholder="Choose Library..."
+            [(selected)]="selectedLibrary"
+            (selectionChange)="onLibraryChange($event)"
+          >
+          </app-dropdown>
+        </div>
+
+        <!-- Class Dropdown -->
+        <div class="col-md-4">
+          <app-dropdown
+            [options]="classes"
+            valueAccessor="className"
+            textAccessor="className"
+            placeholder="Choose Class..."
+            [(selected)]="selectedClass"
+            (selectionChange)="onClassChange($event)"
+          >
+          </app-dropdown>
+        </div>
+
+        <!-- Method Dropdown -->
+        <div class="col-md-4">
+          <app-dropdown
+            [options]="methods"
+            valueAccessor="methodName"
+            textAccessor="methodName"
+            placeholder="Choose Method..."
+            [(selected)]="selectedMethod"
+            (selectionChange)="onMethodChange($event)"
+          >
+          </app-dropdown>
+        </div>
+      </div>
+
+      <!-- Preview of selection -->
+      <div class="mt-4">
+        <div class="table-responsive">
+          <app-data-grid
+            [columns]="columns"
+            [data]="filteredMethods"
+            [pagingEnabled]="true"
+            [pageSize]="10"
+            [sortingMode]="'client'"
+          >
+          </app-data-grid>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

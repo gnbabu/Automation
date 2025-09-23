@@ -1,0 +1,11 @@
+.test-case-manager-container {
+  max-width: 100%;
+  padding: 20px;
+   box-shadow: 
+  0 4px 12px rgba(0, 0, 0, 0.1),      /* soft depth */
+  0 6px 20px rgba(52, 73, 94, 0.25);  /* subtle #34495e glow with opacity */
+  transition: all 0.3s ease-in-out;
+}
+.card-header{
+    background-color: #5c3c9e;
+}

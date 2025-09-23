@@ -90,6 +90,18 @@
       <i class="fas fa-file-code me-3"></i>
       <span class="hide-on-collapse">Test Results</span>
     </a>
+
+    <a
+      *ngIf="isAdmin"
+      [routerLink]="['/test-case-manager']"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="sidebar-link text-decoration-none p-3"
+    >
+      <i class="fas fa-user-check me-3"></i>
+      <span class="hide-on-collapse">Test Case Manager</span>
+    </a>
+
     <a
       *ngIf="isAdmin"
       [routerLink]="['/users']"
@@ -117,5 +129,13 @@
       <i class="fas fa-sign-out-alt me-3"></i>
       <span class="hide-on-collapse">Logout</span>
     </a>
+  </div>
+  <div class="p-3 mt-auto hide-on-collapse">
+    <span
+      class="badge px-3 py-2 hide-on-collapse"
+      [ngClass]="environmentBadgeClass"
+    >
+      {{ environmentDisplayName }}
+    </span>
   </div>
 </nav>

@@ -81,12 +81,19 @@ export const routes: Routes = [
           ),
         canActivate: [authGuard],
       },
-
       {
         path: 'test-cases',
         loadComponent: () =>
           import('./pages/test-cases/test-cases.component').then(
             (m) => m.TestCasesComponent
+          ),
+        canActivate: [authGuard],
+      },
+      {
+        path: 'test-case-manager',
+        loadComponent: () =>
+          import('./pages/test-case-manager/test-case-manager.component').then(
+            (m) => m.TestCaseManagerComponent
           ),
         canActivate: [authGuard],
       },
