@@ -11,7 +11,7 @@
                 id="userSelect"
                 [options]="users"
                 valueAccessor="userId"
-                textAccessor="userName"
+                [textAccessor]="getUserFullName"
                 placeholder="Choose User..."
                 [(selected)]="selectedUser"
                 (selectionChange)="onUserChange($event)"

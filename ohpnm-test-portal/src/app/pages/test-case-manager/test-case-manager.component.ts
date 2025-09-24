@@ -72,6 +72,9 @@ export class TestCaseManagerComponent implements OnInit {
       error: (err) => console.error('Failed to load users:', err),
     });
   }
+  getUserFullName(user: any): string {
+    return `${user.firstName} ${user.lastName}`;
+  }
 
   onUserChange(user: IUser | null) {
     this.selectedUser = user;

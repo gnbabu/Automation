@@ -31,7 +31,7 @@ import {
 export class AppDropdownComponent implements ControlValueAccessor, OnChanges {
   @Input() options: any[] = [];
   @Input() placeholder: string = 'Select...';
-  @Input() textAccessor: string = 'name';
+  @Input() textAccessor: string | ((option: any) => string) = 'name';
   @Input() disabled: boolean = false;
   @Input() selected: any = null; // parent can bind with [(selected)]
   @Output() selectedChange = new EventEmitter<any>();
@@ -75,7 +75,11 @@ export class AppDropdownComponent implements ControlValueAccessor, OnChanges {
   }
 
   getOptionText(option: any) {
-    return option ? option[this.textAccessor] : '';
+    if (!option) return '';
+    if (typeof this.textAccessor === 'function') {
+      return this.textAccessor(option); // call the function
+    }
+    return option[this.textAccessor]; // use property name
   }
 
   get isDropdownDisabled(): boolean {
