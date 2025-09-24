@@ -1,4 +1,5 @@
 <div class="app-grid">
+  <!-- Pagination Header -->
   <div
     class="d-flex justify-content-between align-items-center mb-2 pagination-header"
     *ngIf="pagingEnabled"
@@ -21,12 +22,24 @@
     </div>
   </div>
 
+  <!-- Data Table -->
   <table class="table table-bordered table-striped grid-table">
     <thead class="table-light">
       <tr>
+        <!-- Select All Checkbox -->
+        <th *ngIf="selectionEnabled" style="width: 40px; text-align: center">
+          <input
+            type="checkbox"
+            [checked]="allSelected()"
+            (change)="toggleSelectAll($event)"
+          />
+        </th>
+
+        <!-- Column Headers -->
         <th
           *ngFor="let col of columns"
           (click)="col.sortable ? changeSort(col.field) : null"
+          [style.cursor]="col.sortable ? 'pointer' : 'default'"
         >
           {{ col.header }}
           <span *ngIf="col.sortable">
@@ -37,14 +50,30 @@
         </th>
       </tr>
     </thead>
+
     <tbody>
+      <!-- No Records -->
       <tr *ngIf="pagedData.length === 0">
-        <td [attr.colspan]="columns.length" class="text-center text-muted">
+        <td
+          [attr.colspan]="columns.length + (selectionEnabled ? 1 : 0)"
+          class="text-center text-muted"
+        >
           {{ noDataMessage || "No records found" }}
         </td>
       </tr>
 
+      <!-- Table Rows -->
       <tr *ngFor="let row of pagedData">
+        <!-- Row Selection Checkbox -->
+        <td *ngIf="selectionEnabled" class="text-center">
+          <input
+            type="checkbox"
+            [(ngModel)]="row.selected"
+            (change)="onRowSelect(row)"
+          />
+        </td>
+
+        <!-- Row Cells -->
         <td *ngFor="let col of columns">
           <ng-container *ngIf="col.cellTemplate; else defaultCell">
             <ng-container
@@ -57,7 +86,7 @@
 
           <ng-template #defaultCell>
             <ng-container [ngSwitch]="col.type">
-              <!-- Format for date type -->
+              <!-- Date -->
               <span
                 *ngSwitchCase="'date'"
                 [title]="row[col.field] | date : 'MM-dd-yyyy'"
@@ -65,7 +94,7 @@
                 {{ row[col.field] | date : "MM-dd-yyyy" }}
               </span>
 
-              <!-- Format for datetime type -->
+              <!-- DateTime -->
               <span
                 *ngSwitchCase="'datetime'"
                 [title]="row[col.field] | date : 'MM-dd-yyyy HH:mm:ss'"
@@ -73,7 +102,7 @@
                 {{ row[col.field] | date : "MM-dd-yyyy HH:mm:ss" }}
               </span>
 
-              <!-- Default case -->
+              <!-- Default -->
               <span *ngSwitchDefault [title]="row[col.field]">
                 {{ row[col.field] }}
               </span>
@@ -84,6 +113,7 @@
     </tbody>
   </table>
 
+  <!-- Pagination -->
   <div class="d-flex justify-content-end mt-3">
     <nav *ngIf="pagingEnabled && totalPages() > 1">
       <ul class="pagination">

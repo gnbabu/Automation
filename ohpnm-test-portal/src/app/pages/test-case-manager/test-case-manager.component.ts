@@ -47,6 +47,7 @@ export class TestCaseManagerComponent implements OnInit {
 
   columns: GridColumn[] = [];
   pageSize = 10;
+  selectedMethods: any[] = [];
 
   constructor(
     private router: Router,
@@ -217,4 +218,9 @@ export class TestCaseManagerComponent implements OnInit {
       this.selectedMethod = null;
     }
   }
+  onSave() {
+    debugger;
+    const ros = this.selectedMethods;
+  }
+  onClear() {}
 }

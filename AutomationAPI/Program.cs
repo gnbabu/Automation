@@ -47,6 +47,7 @@ builder.Services.AddScoped<IAutomationRepository, AutomationRepository>();
 builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
 builder.Services.AddScoped<ITestSuitesRepository, TestSuitesRepository>();
 builder.Services.AddScoped<ITestScreenshotRepository, TestScreenshotRepository>();
+builder.Services.AddScoped<ITestCaseAssignmentRepository, TestCaseAssignmentRepository>();
 
 builder.Services.AddScoped<ITestRunner, ReflectionTestRunner>();
 

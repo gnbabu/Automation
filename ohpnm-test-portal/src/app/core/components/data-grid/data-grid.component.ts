@@ -8,6 +8,8 @@ import {
   OnInit,
   OnChanges,
   SimpleChanges,
+  Output,
+  EventEmitter,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,9 +29,13 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
   @Input() pagingMode: 'client' | 'server' = 'client';
   @Input() sortingMode: 'client' | 'server' = 'client';
   @Input() noDataMessage: string = 'No records found';
-
   @Input() pageSize = 5;
   @Input() totalRecords = 0;
+  @Input() selectionEnabled: boolean = false;
+
+  // Two-way binding property
+  @Input() selectedRows: any[] = [];
+  @Output() selectedRowsChange = new EventEmitter<any[]>();
 
   @Input() fetchServerData?: (
     page: number,
@@ -43,17 +49,13 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
   sortDirection: 'asc' | 'desc' = 'asc';
 
   templates: { [key: string]: TemplateRef<any> } = {};
-
   @ViewChildren(TemplateRef) templateRefs!: QueryList<TemplateRef<any>>;
 
   ngAfterViewInit() {
-    // Map template reference names to TemplateRef instances (optional)
     this.templateRefs.forEach((templateRef: TemplateRef<any>) => {
       const element = (templateRef as any)?._declarationTContainer
         ?.localNames?.[0];
-      if (element) {
-        this.templates[element] = templateRef;
-      }
+      if (element) this.templates[element] = templateRef;
     });
   }
 
@@ -62,33 +64,35 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
     if (this.pagingMode === 'server' || this.sortingMode === 'server') {
       this.loadServerData();
     }
+
+    if (this.selectionEnabled) {
+      this.data.forEach((row) => (row.selected = row.selected || false));
+      this.updateSelectedRows(); // initialize selectedRows
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['pageSize'] && !changes['pageSize'].firstChange) {
       this.pageSize = Number(this.pageSize) || 1;
       this.currentPage = 1;
-
-      if (this.pagingMode === 'server') {
-        this.loadServerData();
-      } else {
-        this.clampCurrentPage();
-      }
+      if (this.pagingMode === 'server') this.loadServerData();
+      else this.clampCurrentPage();
     }
 
     if (changes['data'] && !changes['data'].firstChange) {
       this.clampCurrentPage();
+      if (this.selectionEnabled) {
+        this.data.forEach((row) => (row.selected = row.selected || false));
+        this.updateSelectedRows();
+      }
     }
   }
 
   get pagedData(): any[] {
-    if (!this.pagingEnabled) {
-      return this.sortingMode === 'client' ? this.sortedData : this.data;
-    }
-
-    if (this.pagingMode === 'server') return this.data;
-
     const sorted = this.sortedData;
+    if (!this.pagingEnabled) return sorted;
+    if (this.pagingMode === 'server') return sorted;
+
     const start = (this.currentPage - 1) * this.pageSize;
     return sorted.slice(start, start + this.pageSize);
   }
@@ -110,9 +114,7 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
     const total = this.totalPages();
     if (page < 1 || page > total) return;
     this.currentPage = page;
-    if (this.pagingMode === 'server') {
-      this.loadServerData();
-    }
+    if (this.pagingMode === 'server') this.loadServerData();
   }
 
   changePageSize(size: number) {
@@ -121,9 +123,7 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
     if (newSize === this.pageSize) return;
     this.pageSize = newSize;
     this.currentPage = 1;
-    if (this.pagingMode === 'server') {
-      this.loadServerData();
-    }
+    if (this.pagingMode === 'server') this.loadServerData();
   }
 
   changeSort(field: string) {
@@ -133,11 +133,8 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
       this.sortField = field;
       this.sortDirection = 'asc';
     }
-    if (this.sortingMode === 'server') {
-      this.loadServerData();
-    } else {
-      this.currentPage = 1;
-    }
+    if (this.sortingMode === 'server') this.loadServerData();
+    else this.currentPage = 1;
   }
 
   loadServerData() {
@@ -162,5 +159,39 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
     const total = this.totalPages();
     if (this.currentPage < 1) this.currentPage = 1;
     else if (this.currentPage > total) this.currentPage = total;
+  }
+
+  /*** ROW SELECTION METHODS ***/
+  onRowSelect(row: any) {
+    const originalRow = this.data.find((r) => r === row);
+    if (originalRow) originalRow.selected = row.selected;
+    this.updateSelectedRows();
+  }
+
+  toggleSelectAll(event: Event) {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.pagedData.forEach((row) => {
+      row.selected = checked;
+      const originalRow = this.data.find((r) => r === row);
+      if (originalRow) originalRow.selected = checked;
+    });
+    this.updateSelectedRows();
+  }
+
+  allSelected(): boolean {
+    return (
+      this.pagedData.length > 0 && this.pagedData.every((row) => row.selected)
+    );
+  }
+
+  /** Update selectedRows property and emit two-way binding event */
+  private updateSelectedRows() {
+    this.selectedRows = this.data.filter((r) => r.selected);
+    this.selectedRowsChange.emit(this.selectedRows);
+  }
+
+  /** Public method to get selected rows on-demand */
+  getSelectedRows(): any[] {
+    return this.data.filter((r) => r.selected);
   }
 }

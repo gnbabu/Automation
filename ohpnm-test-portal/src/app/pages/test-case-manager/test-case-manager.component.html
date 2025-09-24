@@ -74,14 +74,33 @@
       <div class="mt-4">
         <div class="table-responsive">
           <app-data-grid
+            [selectionEnabled]="true"
             [columns]="columns"
             [data]="filteredMethods"
+            [(selectedRows)]="selectedMethods"
             [pagingEnabled]="true"
             [pageSize]="10"
             [sortingMode]="'client'"
-          >
-          </app-data-grid>
+          ></app-data-grid>
         </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-flex justify-content-end mt-3 gap-2">
+        <button
+          class="btn btn-primary"
+          [disabled]="selectedMethods.length === 0"
+          (click)="onSave()"
+        >
+          Save
+        </button>
+        <button
+          class="btn btn-secondary"
+          [disabled]="selectedMethods.length === 0"
+          (click)="onClear()"
+        >
+          Clear
+        </button>
       </div>
     </div>
   </div>

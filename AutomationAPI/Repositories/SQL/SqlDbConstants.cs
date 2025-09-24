@@ -50,8 +50,13 @@
         public const string BulkInsertTestScreenshots = "[aut].[usp_BulkInsertTestScreenshots]";
         public const string usp_GetScreenshotsByQueueId = "[aut].[usp_GetScreenshotsByQueueId]";
         public const string GetScreenshotById = "[aut].[usp_GetScreenshotById]";
+
         
-
-
+        public const string GetTestCaseAssignmentsByUser = "[aut].[usp_GetTestCaseAssignmentsByUser]";
+        public const string InsertTestCaseAssignment = "[aut].[usp_InsertTestCaseAssignment]";
+        public const string TestCaseAssignmentType = "[aut].[TestCaseAssignmentType]";
+        public const string BulkSyncTestCaseAssignments = "[aut].[usp_SyncTestCaseAssignments]";
+        public const string DeleteTestCaseAssignmentsByUser = "[aut].[usp_DeleteTestCaseAssignmentsByUser]";
+        
     }
 }
