@@ -5,6 +5,8 @@ import {
   forwardRef,
   Input,
   Output,
+  OnChanges,
+  SimpleChanges,
 } from '@angular/core';
 import {
   ControlValueAccessor,
@@ -26,24 +28,23 @@ import {
     },
   ],
 })
-export class AppDropdownComponent implements ControlValueAccessor {
+export class AppDropdownComponent implements ControlValueAccessor, OnChanges {
   @Input() options: any[] = [];
   @Input() placeholder: string = 'Select...';
-  @Input() textAccessor: string = 'name'; // property name for display text
-  @Input() disabled: boolean = false; // allow disabling from parent
-  @Input() selected: any; // input to bind initial value
-  @Output() selectedChange = new EventEmitter<any>(); // emit selected object
-  @Output() selectionChange = new EventEmitter<any>(); // optional extra event
+  @Input() textAccessor: string = 'name';
+  @Input() disabled: boolean = false;
+  @Input() selected: any = null; // parent can bind with [(selected)]
+  @Output() selectedChange = new EventEmitter<any>();
+  @Output() selectionChange = new EventEmitter<any>();
 
-  selectedValue: any = null; // internal model
+  selectedValue: any = null;
   isDisabled = false;
 
-  // ControlValueAccessor callbacks
   onChange: any = () => {};
   onTouched: any = () => {};
 
-  ngOnChanges() {
-    if (this.selected) {
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['selected']) {
       this.selectedValue = this.selected;
     }
   }
@@ -64,22 +65,17 @@ export class AppDropdownComponent implements ControlValueAccessor {
     this.isDisabled = isDisabled;
   }
 
-  // Called when dropdown value changes
   onSelectChange(val: any) {
     this.selectedValue = val;
     this.selected = val;
     this.onChange(val);
     this.onTouched();
-    this.selectedChange.emit(val); // bind to parent [(selected)]
-    this.selectionChange.emit(val); // optional event
-  }
-
-  getOptionValue(option: any) {
-    return option; // return full object
+    this.selectedChange.emit(val);
+    this.selectionChange.emit(val);
   }
 
   getOptionText(option: any) {
-    return option[this.textAccessor];
+    return option ? option[this.textAccessor] : '';
   }
 
   get isDropdownDisabled(): boolean {

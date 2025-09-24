@@ -26,7 +26,9 @@
       <div class="row g-3">
         <!-- Library Dropdown -->
         <div class="col-md-4">
+          <label for="librarySelect" class="form-label">Library</label>
           <app-dropdown
+            id="librarySelect"
             [options]="libraries"
             valueAccessor="libraryName"
             textAccessor="libraryName"
@@ -39,7 +41,9 @@
 
         <!-- Class Dropdown -->
         <div class="col-md-4">
+          <label for="classSelect" class="form-label">Class</label>
           <app-dropdown
+            id="classSelect"
             [options]="classes"
             valueAccessor="className"
             textAccessor="className"
@@ -52,7 +56,9 @@
 
         <!-- Method Dropdown -->
         <div class="col-md-4">
+          <label for="methodSelect" class="form-label">Method</label>
           <app-dropdown
+            id="methodSelect"
             [options]="methods"
             valueAccessor="methodName"
             textAccessor="methodName"

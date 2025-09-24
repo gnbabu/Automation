@@ -19,6 +19,12 @@ import {
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 
+type LibraryMethodRow = LibraryMethodInfo & {
+  libraryName?: string;
+  className?: string;
+  assigned?: boolean;
+};
+
 @Component({
   selector: 'app-test-case-manager',
   standalone: true,
@@ -29,8 +35,9 @@ import { DataGridComponent } from 'app/core/components/data-grid/data-grid.compo
 export class TestCaseManagerComponent implements OnInit {
   libraries: LibraryInfo[] = [];
   classes: ClassInfo[] = [];
-  methods: LibraryMethodInfo[] = [];
-  filteredMethods: LibraryMethodInfo[] = [];
+  // use enriched row type for methods & filteredMethods
+  methods: LibraryMethodRow[] = [];
+  filteredMethods: LibraryMethodRow[] = [];
 
   users: IUser[] = [];
   selectedUser: IUser | null = null;
@@ -53,6 +60,8 @@ export class TestCaseManagerComponent implements OnInit {
   ngOnInit(): void {
     this.columns = [
       { field: 'methodName', header: 'Method Name', sortable: true },
+      { field: 'libraryName', header: 'Library', sortable: true },
+      { field: 'className', header: 'Class', sortable: true },
     ];
     this.loadUsers();
   }
@@ -65,7 +74,9 @@ export class TestCaseManagerComponent implements OnInit {
   }
 
   onUserChange(user: IUser | null) {
+    this.selectedUser = user;
     this.resetSelections(['library', 'class', 'method']);
+
     if (user) {
       this.loadLibraries();
     } else {
@@ -76,16 +87,29 @@ export class TestCaseManagerComponent implements OnInit {
 
   loadLibraries() {
     this.testSuitesService.getLibraries().subscribe({
-      next: (res) => (this.libraries = res),
-      error: (err) => console.error('Failed to load libraries:', err),
+      next: (res) => {
+        this.libraries = res || [];
+        // When a user is selected, show ALL methods across ALL libraries (enriched)
+        this.filteredMethods = this.mapMethodsWithContext(this.libraries);
+      },
+      error: (err) => {
+        console.error('Failed to load libraries:', err);
+        this.libraries = [];
+        this.filteredMethods = [];
+      },
     });
   }
 
   onLibraryChange(lib: LibraryInfo | null) {
+    this.selectedLibrary = lib;
     this.resetSelections(['class', 'method']);
+
     if (lib) {
-      this.classes = lib.classes;
-      this.filteredMethods = lib.classes.flatMap((c) => c.methods);
+      this.classes = lib.classes || [];
+      this.filteredMethods = this.mapLibraryMethods(lib);
+    } else if (this.selectedUser) {
+      this.filteredMethods = this.mapMethodsWithContext(this.libraries);
+      this.classes = [];
     } else {
       this.classes = [];
       this.filteredMethods = [];
@@ -94,15 +118,22 @@ export class TestCaseManagerComponent implements OnInit {
 
   onClassChange(cls: ClassInfo | null) {
     this.resetSelections(['method']);
-    if (cls) {
-      this.methods = cls.methods;
-      this.filteredMethods = [...cls.methods];
-    } else if (this.selectedLibrary) {
-      // If library is selected but class is deselected, show all library methods
-      this.methods = [];
-      this.filteredMethods = this.selectedLibrary.classes.flatMap(
-        (c) => c.methods
+    this.selectedClass = cls;
+
+    if (cls && this.selectedLibrary) {
+      this.methods = (cls.methods || []).map(
+        (m) =>
+          ({
+            ...(m as any),
+            libraryName: this.selectedLibrary!.libraryName,
+            className: cls.className,
+          } as LibraryMethodRow)
       );
+      this.filteredMethods = [...this.methods];
+    } else if (this.selectedLibrary) {
+      this.filteredMethods = this.mapLibraryMethods(this.selectedLibrary);
+    } else if (this.selectedUser) {
+      this.filteredMethods = this.mapMethodsWithContext(this.libraries);
     } else {
       this.methods = [];
       this.filteredMethods = [];
@@ -110,22 +141,66 @@ export class TestCaseManagerComponent implements OnInit {
   }
 
   onMethodChange(method: LibraryMethodInfo | null) {
-    if (method) {
-      this.filteredMethods = [method];
-    } else if (this.selectedClass) {
-      this.filteredMethods = [...this.selectedClass.methods];
-    } else if (this.selectedLibrary) {
-      this.filteredMethods = this.selectedLibrary.classes.flatMap(
-        (c) => c.methods
+    this.selectedMethod = method;
+
+    if (method && this.selectedClass && this.selectedLibrary) {
+      // single enriched row
+      this.filteredMethods = [
+        {
+          ...(method as any),
+          libraryName: this.selectedLibrary.libraryName,
+          className: this.selectedClass.className,
+        } as LibraryMethodRow,
+      ];
+    } else if (this.selectedClass && this.selectedLibrary) {
+      // all methods of class enriched
+      this.filteredMethods = (this.selectedClass.methods || []).map(
+        (m) =>
+          ({
+            ...(m as any),
+            libraryName: this.selectedLibrary!.libraryName,
+            className: this.selectedClass!.className,
+          } as LibraryMethodRow)
       );
+    } else if (this.selectedLibrary) {
+      this.filteredMethods = this.mapLibraryMethods(this.selectedLibrary);
+    } else if (this.selectedUser) {
+      this.filteredMethods = this.mapMethodsWithContext(this.libraries);
     } else {
       this.filteredMethods = [];
     }
   }
 
-  /**
-   * Reset dependent selections based on type
-   */
+  // 🔹 Utility: enrich methods across ALL libraries
+  private mapMethodsWithContext(libs: LibraryInfo[]): LibraryMethodRow[] {
+    return (libs || []).flatMap((lib) =>
+      (lib.classes || []).flatMap((cls) =>
+        (cls.methods || []).map(
+          (m) =>
+            ({
+              ...(m as any),
+              libraryName: lib.libraryName,
+              className: cls.className,
+            } as LibraryMethodRow)
+        )
+      )
+    );
+  }
+
+  // 🔹 Utility: enrich methods from a SINGLE library
+  private mapLibraryMethods(lib: LibraryInfo): LibraryMethodRow[] {
+    return (lib?.classes || []).flatMap((cls) =>
+      (cls.methods || []).map(
+        (m) =>
+          ({
+            ...(m as any),
+            libraryName: lib.libraryName,
+            className: cls.className,
+          } as LibraryMethodRow)
+      )
+    );
+  }
+
   private resetSelections(levels: ('library' | 'class' | 'method')[]) {
     if (levels.includes('library')) {
       this.selectedLibrary = null;
