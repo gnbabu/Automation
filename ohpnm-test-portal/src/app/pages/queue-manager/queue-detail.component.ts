@@ -119,12 +119,10 @@ export class QueueDetailsComponent implements OnInit {
   }
 
   viewSceenshots(data: any) {
-    debugger;
     this.screenshotService
       .getScreenshotsByTestResultIdAsync(data.queueId, data.name)
       .subscribe({
         next: (res) => {
-          debugger;
           this.screenshots = res ?? [];
         },
         error: (err) => {

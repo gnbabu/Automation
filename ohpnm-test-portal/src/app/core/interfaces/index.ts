@@ -169,3 +169,13 @@ export interface ITestScreenshot {
   screenshot: string; // Base64 string (data:image/png;base64,...)
   takenAt: string; // ISO date string
 }
+
+export interface ITestCaseAssignment {
+  assignmentId?: number;
+  userId?: number;
+  libraryName: string;
+  className: string;
+  methodName: string;
+  assignedOn?: string; // ISO date string
+  assignedBy?: number;
+}

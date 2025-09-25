@@ -35,8 +35,8 @@ namespace AutomationAPI.Controllers
         }
 
         // POST api/TestCaseAssignments/Sync
-        [HttpPost("sync")]
-        public async Task<IActionResult> Sync([FromBody] List<TestCaseAssignment> assignments)
+        [HttpPost("bulk-insert")]
+        public async Task<IActionResult> BulkInsertAssignmentsAsync([FromBody] List<TestCaseAssignment> assignments)
         {
             try
             {

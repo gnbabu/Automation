@@ -88,18 +88,18 @@
       <!-- Action Buttons -->
       <div class="d-flex justify-content-end mt-3 gap-2">
         <button
-          class="btn btn-primary"
+          class="btn-purple"
           [disabled]="selectedMethods.length === 0"
-          (click)="onSave()"
+          (click)="onSaveAssignments()"
         >
-          Save
+          Save Assignments
         </button>
         <button
-          class="btn btn-secondary"
+          class="btn btn-danger"
           [disabled]="selectedMethods.length === 0"
-          (click)="onClear()"
+          (click)="onResetAssignments()"
         >
-          Clear
+          Reset Assignments
         </button>
       </div>
     </div>

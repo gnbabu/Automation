@@ -72,19 +72,27 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    if (changes['data']) {
+      this.clampCurrentPage();
+
+      if (this.selectionEnabled && this.data) {
+        // Make sure row.selected exists
+        this.data.forEach((row) => {
+          if (row.selected === undefined) {
+            row.selected = false;
+          }
+        });
+
+        // Update selectedRows for two-way binding
+        this.updateSelectedRows();
+      }
+    }
+
     if (changes['pageSize'] && !changes['pageSize'].firstChange) {
       this.pageSize = Number(this.pageSize) || 1;
       this.currentPage = 1;
       if (this.pagingMode === 'server') this.loadServerData();
       else this.clampCurrentPage();
-    }
-
-    if (changes['data'] && !changes['data'].firstChange) {
-      this.clampCurrentPage();
-      if (this.selectionEnabled) {
-        this.data.forEach((row) => (row.selected = row.selected || false));
-        this.updateSelectedRows();
-      }
     }
   }
 
