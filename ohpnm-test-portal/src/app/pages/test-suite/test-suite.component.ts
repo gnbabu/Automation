@@ -11,12 +11,14 @@ import {
 import {
   AuthService,
   CommonToasterService,
+  TestCaseManagerService,
   TestRunnerService,
   TestSuitesService,
 } from '@services';
 import { Router } from '@angular/router';
 import { QueueInfoMapper } from '@mappers';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-test-suite',
@@ -47,17 +49,18 @@ export class TestSuiteComponent implements OnInit {
     private testSuitesService: TestSuitesService,
     private authService: AuthService,
     private testRunnerService: TestRunnerService,
-    private toaster: CommonToasterService
+    private toaster: CommonToasterService,
+    private testCaseManagerService: TestCaseManagerService
   ) {}
 
   ngOnInit(): void {
     this.columns = [
-      {
-        field: 'index',
-        header: '#',
-        sortable: false,
-        cellTemplate: this.indexTemplate, // show i+1
-      },
+      // {
+      //   field: 'index',
+      //   header: '#',
+      //   sortable: false,
+      //   cellTemplate: this.indexTemplate, // show i+1
+      // },
       {
         field: 'methodName',
         header: 'Method Name',
@@ -66,7 +69,65 @@ export class TestSuiteComponent implements OnInit {
     ];
 
     this.loggedInUser = this.authService.getLoggedInUser();
-    this.loadLibraries();
+
+    if (this.authService.isAdmin()) {
+      this.loadLibraries();
+    } else {
+      this.loadLibrariesAndAssignments(this.loggedInUser?.userId);
+    }
+  }
+
+  loadLibrariesAndAssignments(userId: any) {
+    forkJoin({
+      libraries: this.testSuitesService.getLibraries(),
+      assignments: this.testCaseManagerService.getAssignmentsByUserId(userId),
+    }).subscribe({
+      next: ({ libraries, assignments }) => {
+        // Build a map for quick lookup: { libraryName -> { className -> [methodName] } }
+        const assignmentMap = new Map<string, Map<string, Set<string>>>();
+
+        assignments.forEach((a) => {
+          if (!assignmentMap.has(a.libraryName)) {
+            assignmentMap.set(a.libraryName, new Map());
+          }
+          const classMap = assignmentMap.get(a.libraryName)!;
+          if (!classMap.has(a.className)) {
+            classMap.set(a.className, new Set());
+          }
+          classMap.get(a.className)!.add(a.methodName);
+        });
+
+        // Filter libraries, classes, and methods based on assignments
+        this.libraries = (libraries || [])
+          .map((lib: any) => {
+            if (!assignmentMap.has(lib.libraryName)) return null;
+
+            const classMap = assignmentMap.get(lib.libraryName)!;
+            const filteredClasses = (lib.classes || [])
+              .map((cls: any) => {
+                if (!classMap.has(cls.className)) return null;
+
+                const assignedMethods = classMap.get(cls.className)!;
+                const filteredMethods = (cls.methods || []).filter((m: any) =>
+                  assignedMethods.has(m.methodName)
+                );
+
+                if (filteredMethods.length === 0) return null;
+
+                return { ...cls, methods: filteredMethods };
+              })
+              .filter((c: any) => c !== null);
+
+            if (filteredClasses.length === 0) return null;
+            return { ...lib, classes: filteredClasses };
+          })
+          .filter((l: any) => l !== null);
+      },
+      error: (err) => {
+        console.error(err);
+        this.libraries = [];
+      },
+    });
   }
 
   loadLibraries() {

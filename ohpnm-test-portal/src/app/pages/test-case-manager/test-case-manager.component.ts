@@ -54,10 +54,8 @@ export class TestCaseManagerComponent implements OnInit {
   selectedMethods: any[] = [];
 
   constructor(
-    private router: Router,
     private testSuitesService: TestSuitesService,
     private authService: AuthService,
-    private testRunnerService: TestRunnerService,
     private toaster: CommonToasterService,
     private userService: UsersService,
     private testCaseManagerService: TestCaseManagerService
