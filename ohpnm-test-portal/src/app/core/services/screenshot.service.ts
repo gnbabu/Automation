@@ -25,4 +25,3 @@ export class ScreenshotService {
     );
   }
 }
-//https://localhost:7147/api/TestScreenshots/screenshots?queueId=7cc3873d-f7cf-474c-bb7a-f02c9db40601&methodName=RegisterEmployee_ValidDocuments_ReturnsTrue
