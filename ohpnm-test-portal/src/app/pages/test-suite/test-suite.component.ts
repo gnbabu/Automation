@@ -19,11 +19,13 @@ import { Router } from '@angular/router';
 import { QueueInfoMapper } from '@mappers';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 import { forkJoin } from 'rxjs';
+import { FormsModule } from '@angular/forms';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 @Component({
   selector: 'app-test-suite',
   standalone: true,
-  imports: [CommonModule, DataGridComponent],
+  imports: [CommonModule, FormsModule, DataGridComponent, AppDropdownComponent],
   templateUrl: './test-suite.component.html',
   styleUrls: ['./test-suite.component.css'],
 })
@@ -43,6 +45,19 @@ export class TestSuiteComponent implements OnInit {
   selectedLibraryName: string | null = null;
   selectedClassName: string | null = null;
   selectedMethodName: string | null = null;
+
+  // Environments list (binds to app-dropdown)
+  environments = [
+    { id: 'qa', name: 'QA' },
+    { id: 'staging', name: 'Staging' },
+    { id: 'prod', name: 'Production' },
+  ];
+
+  // Selected environment
+  selectedEnvironment: any = null;
+
+  // Selected browser (radio binding)
+  selectedBrowser: string = 'Chrome'; // default
 
   constructor(
     private router: Router,
@@ -202,6 +217,7 @@ export class TestSuiteComponent implements OnInit {
       queueStatus: 'New', // Change to New New -> Running ->Completed -> Failed
       libraryName: lib.libraryName,
       userId: this.loggedInUser?.userId,
+      browser: this.selectedBrowser,
     };
 
     this.testRunnerService.runTest(queue).subscribe({
@@ -225,6 +241,7 @@ export class TestSuiteComponent implements OnInit {
       libraryName: lib.libraryName,
       className: cls.className,
       userId: this.loggedInUser?.userId,
+      browser: this.selectedBrowser,
     };
 
     this.testRunnerService.runTest(queue).subscribe({
@@ -249,6 +266,7 @@ export class TestSuiteComponent implements OnInit {
       className: cls.className,
       methodName: method.methodName,
       userId: this.loggedInUser?.userId,
+      browser: this.selectedBrowser,
     };
 
     this.testRunnerService.runTest(queue).subscribe({

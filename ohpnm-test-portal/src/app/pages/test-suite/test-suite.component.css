@@ -107,3 +107,10 @@
 .nested.show {
   display: block;
 }
+
+.environment-section {  
+  padding: 3px 8px;
+  font-weight: 500;
+  color: var(--bs-heading-color);
+  border: var(--bs-border-width) solid var(--bs-border-color);
+}

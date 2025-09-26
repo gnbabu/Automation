@@ -77,6 +77,15 @@ export class SettingsComponent implements OnInit {
 
   toggleChangePassword() {
     this.showPasswordForm = !this.showPasswordForm;
+    this.changePassword = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    };
+
+    this.passwordStrengthMessage = '';
+    this.passwordStrengthClass = '';
+    this.passwordStrengthPercent = 0;
   }
 
   getPhotoUrl(photo?: string): string {

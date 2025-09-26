@@ -100,6 +100,7 @@ export interface IQueueInfo {
   methodName?: string;
   userId?: number;
   userName?: string;
+  browser?: string;
 }
 
 export interface ITestResult {

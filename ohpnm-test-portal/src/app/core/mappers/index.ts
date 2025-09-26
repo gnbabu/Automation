@@ -156,6 +156,7 @@ export const QueueInfoMapper = {
       className: queue.className,
       methodName: queue.methodName,
       userId: queue.userId,
+      browser: queue.browser,
     };
   },
   empty(): IQueueInfo {
@@ -174,6 +175,7 @@ export const QueueInfoMapper = {
       methodName: '',
       userId: 0,
       userName: '',
+      browser: '',
     };
   },
   mapPagedResult(apiResult: any): PagedResult<IQueueInfo> {

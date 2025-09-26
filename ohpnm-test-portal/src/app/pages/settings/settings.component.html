@@ -24,7 +24,7 @@
 
     <button
       *ngIf="!showPasswordForm"
-      class="btn btn-outline-primary mt-3"
+      class="btn-purple"
       (click)="toggleChangePassword()"
     >
       Change Password
@@ -123,7 +123,7 @@
           <!-- Action Buttons -->
           <div class="d-flex gap-2 mt-3">
             <button
-              class="btn btn-success"
+              class="btn-purple"
               type="submit"
               [disabled]="
                 changePwdForm.invalid ||
@@ -135,7 +135,7 @@
             </button>
             <button
               type="button"
-              class="btn btn-outline-primary"
+              class="btn btn-danger"
               (click)="toggleChangePassword()"
             >
               Cancel

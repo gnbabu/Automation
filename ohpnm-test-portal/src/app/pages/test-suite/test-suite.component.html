@@ -106,9 +106,66 @@
       <div class="col-md-9">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h5 class="mb-0">Methods</h5>
-          <div class="d-flex gap-2">
-            <button class="btn-purple" (click)="navigateToTestData()">
-              <i class="bi bi-gear-fill me-1"></i> Configure Test Data
+
+          <div class="d-flex gap-2 align-items-center">
+            <!-- Environment Dropdown -->
+            <app-dropdown
+              id="envSelect"
+              [options]="environments"
+              valueAccessor="id"
+              textAccessor="name"
+              placeholder="Choose Environment..."
+              [(selected)]="selectedEnvironment"
+            >
+            </app-dropdown>
+
+            <!-- Browser Selection -->
+            <div class="d-flex align-items-center gap-2 environment-section">
+              <label class="mb-0">Browser:</label>
+
+              <div class="form-check form-check-inline">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="browser"
+                  id="chrome"
+                  value="Chrome"
+                  [(ngModel)]="selectedBrowser"
+                />
+                <label class="form-check-label" for="chrome" title="Chrome">
+                  <img
+                    src="assets/images/chrome.png"
+                    alt="Chrome"
+                    width="24"
+                    height="24"
+                  />
+                </label>
+              </div>
+
+              <div class="form-check form-check-inline">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="browser"
+                  id="ie"
+                  value="IE"
+                  [(ngModel)]="selectedBrowser"
+                />
+                <label class="form-check-label" for="ie" title="IE">
+                  <img
+                    src="assets/images/edge.png"
+                    alt="IE"
+                    width="24"
+                    height="24"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <!-- Configure Test Data Button -->
+            <button class="btn-purple btn-sm" (click)="navigateToTestData()">
+              <i class="bi bi-gear-fill me-1"></i>
+              <span class="d-none d-md-inline">Configure Test Data</span>
             </button>
           </div>
         </div>
