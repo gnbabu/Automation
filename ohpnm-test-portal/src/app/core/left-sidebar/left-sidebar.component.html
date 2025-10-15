@@ -104,6 +104,17 @@
 
     <a
       *ngIf="isAdmin"
+      [routerLink]="['/test-case-assignment']"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="sidebar-link text-decoration-none p-3"
+    >
+      <i class="fas fa-user-check me-3"></i>
+      <span class="hide-on-collapse">Test Case Assignment</span>
+    </a>
+
+    <a
+      *ngIf="isAdmin"
       [routerLink]="['/users']"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"

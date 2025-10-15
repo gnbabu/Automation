@@ -98,6 +98,14 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
+        path: 'test-case-assignment',
+        loadComponent: () =>
+          import(
+            './pages/test-case-assignment/test-case-assignment.component'
+          ).then((m) => m.TestCaseAssignmentComponent),
+        canActivate: [authGuard],
+      },
+      {
         path: 'users',
         loadComponent: () =>
           import('./pages/users/users.component').then((m) => m.UsersComponent),
