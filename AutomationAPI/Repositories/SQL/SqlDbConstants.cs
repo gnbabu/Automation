@@ -51,7 +51,8 @@
         public const string usp_GetScreenshotsByQueueId = "[aut].[usp_GetScreenshotsByQueueId]";
         public const string GetScreenshotById = "[aut].[usp_GetScreenshotById]";
 
-        
+
+        public const string GetAllTestCaseAssignments= "[aut].[usp_GetAllTestCaseAssignments]";
         public const string GetTestCaseAssignmentsByUser = "[aut].[usp_GetTestCaseAssignmentsByUser]";
         public const string InsertTestCaseAssignment = "[aut].[usp_InsertTestCaseAssignment]";
         public const string TestCaseAssignmentType = "[aut].[TestCaseAssignmentType]";

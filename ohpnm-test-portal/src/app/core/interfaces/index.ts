@@ -183,3 +183,13 @@ export interface ITestCaseAssignment {
   assignedOn?: string; // ISO date string
   assignedBy?: number;
 }
+
+export interface ITestCaseModel {
+  libraryName: string;
+  className: string;
+  methodName: string;
+  description: string;
+  priority: string;
+  testCaseId: string;
+  assignedUsers: string[];
+}

@@ -18,21 +18,32 @@
     >
       <div class="d-flex flex-wrap gap-3 align-items-center">
         <div>
-          <label class="form-label">Test Suite</label>
-          <select class="form-select">
-            <option>All Suites</option>
-            <option>Authentication</option>
-            <option>Shopping Cart</option>
-            <option>Payment</option>
-          </select>
+          <label for="librarySelect" class="form-label">Test Suite</label>
+          <app-dropdown
+            id="librarySelect"
+            [options]="libraries"
+            valueAccessor="libraryName"
+            textAccessor="libraryName"
+            placeholder="All Suites"
+            [(selected)]="selectedLibrary"
+            (selectionChange)="onLibraryChange($event)"
+          >
+          </app-dropdown>
         </div>
         <div>
-          <label class="form-label">Assignment Status</label>
-          <select class="form-select">
-            <option>All Statuses</option>
-            <option>Unassigned</option>
-            <option>Assigned</option>
-          </select>
+          <label for="assignmentStatusSelect" class="form-label"
+            >Assignment Status</label
+          >
+          <app-dropdown
+            id="assignmentStatusSelect"
+            [options]="assignmentStatuses"
+            valueAccessor="assignmentStatus"
+            textAccessor="assignmentStatus"
+            placeholder="All Statuses"
+            [(selected)]="selectedAssignmentStatus"
+            (selectionChange)="onAssignmentStatusChange($event)"
+          >
+          </app-dropdown>
         </div>
         <div style="display: none">
           <label class="form-label">Assign Tester</label>
