@@ -22,4 +22,12 @@ export class TestCaseAssignmentComponent {
     console.log('Users selected:', selected);
     // Call your API here if needed
   }
+
+  onSelectAll(selected: any[]) {
+    console.log('Select All clicked:', selected);
+  }
+
+  onClearAll() {
+    console.log('Clear clicked');
+  }
 }

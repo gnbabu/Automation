@@ -34,13 +34,15 @@
             <option>Assigned</option>
           </select>
         </div>
-        <div>
+        <div style="display: none">
           <label class="form-label">Assign Tester</label>
           <app-multiselect-dropdown
             [options]="users"
             [(ngModel)]="selectedUsers"
             placeholder="Select Tester"
             (selectionChange)="onUsersChange($event)"
+            (selectAllClicked)="onSelectAll($event)"
+            (clearAllClicked)="onClearAll()"
           ></app-multiselect-dropdown>
         </div>
       </div>
@@ -79,11 +81,14 @@
                 <span class="status-pill status-unassigned">Unassigned</span>
               </td>
               <td>
-                <select class="form-select">
-                  <option>-- Select Tester --</option>
-                  <option>Alice Johnson</option>
-                  <option>Bob Davis</option>
-                </select>
+                <app-multiselect-dropdown
+                  [options]="users"
+                  [(ngModel)]="selectedUsers"
+                  placeholder="Select Tester"
+                  (selectionChange)="onUsersChange($event)"
+                  (selectAllClicked)="onSelectAll($event)"
+                  (clearAllClicked)="onClearAll()"
+                ></app-multiselect-dropdown>
               </td>
             </tr>
 
@@ -93,10 +98,14 @@
               <td><span class="priority-medium">Medium</span></td>
               <td><span class="status-pill">Assigned to Alice</span></td>
               <td>
-                <select class="form-select">
-                  <option>Alice Johnson</option>
-                  <option>Bob Davis</option>
-                </select>
+                <app-multiselect-dropdown
+                  [options]="users"
+                  [(ngModel)]="selectedUsers"
+                  placeholder="Select Tester"
+                  (selectionChange)="onUsersChange($event)"
+                  (selectAllClicked)="onSelectAll($event)"
+                  (clearAllClicked)="onClearAll()"
+                ></app-multiselect-dropdown>
               </td>
             </tr>
 
@@ -108,11 +117,14 @@
                 <span class="status-pill status-unassigned">Unassigned</span>
               </td>
               <td>
-                <select class="form-select">
-                  <option>-- Select Tester --</option>
-                  <option>Alice Johnson</option>
-                  <option>Bob Davis</option>
-                </select>
+                <app-multiselect-dropdown
+                  [options]="users"
+                  [(ngModel)]="selectedUsers"
+                  placeholder="Select Tester"
+                  (selectionChange)="onUsersChange($event)"
+                  (selectAllClicked)="onSelectAll($event)"
+                  (clearAllClicked)="onClearAll()"
+                ></app-multiselect-dropdown>
               </td>
             </tr>
 
@@ -122,10 +134,14 @@
               <td><span class="priority-low">Low</span></td>
               <td><span class="status-pill">Assigned to Bob</span></td>
               <td>
-                <select class="form-select">
-                  <option>Bob Davis</option>
-                  <option>Alice Johnson</option>
-                </select>
+                <app-multiselect-dropdown
+                  [options]="users"
+                  [(ngModel)]="selectedUsers"
+                  placeholder="Select Tester"
+                  (selectionChange)="onUsersChange($event)"
+                  (selectAllClicked)="onSelectAll($event)"
+                  (clearAllClicked)="onClearAll()"
+                ></app-multiselect-dropdown>
               </td>
             </tr>
 
@@ -137,9 +153,14 @@
                 <span class="status-pill status-unassigned">Unassigned</span>
               </td>
               <td>
-                <select class="form-select">
-                  <option>-- Select Tester --</option>
-                </select>
+                <app-multiselect-dropdown
+                  [options]="users"
+                  [(ngModel)]="selectedUsers"
+                  placeholder="Select Tester"
+                  (selectionChange)="onUsersChange($event)"
+                  (selectAllClicked)="onSelectAll($event)"
+                  (clearAllClicked)="onClearAll()"
+                ></app-multiselect-dropdown>
               </td>
             </tr>
 
@@ -151,9 +172,14 @@
                 <span class="status-pill status-unassigned">Unassigned</span>
               </td>
               <td>
-                <select class="form-select">
-                  <option>-- Select Tester --</option>
-                </select>
+                <app-multiselect-dropdown
+                  [options]="users"
+                  [(ngModel)]="selectedUsers"
+                  placeholder="Select Tester"
+                  (selectionChange)="onUsersChange($event)"
+                  (selectAllClicked)="onSelectAll($event)"
+                  (clearAllClicked)="onClearAll()"
+                ></app-multiselect-dropdown>
               </td>
             </tr>
           </tbody>

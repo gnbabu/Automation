@@ -33,7 +33,10 @@ export class AppMultiselectDropdownComponent implements ControlValueAccessor {
   @Input() placeholder: string = 'Select...';
   @Input() textAccessor: string | ((option: any) => string) = 'name';
   @Input() disabled: boolean = false;
-  @Output() selectionChange = new EventEmitter<any[]>();
+
+  @Output() selectionChange = new EventEmitter<any[]>(); // fires on every change
+  @Output() selectAllClicked = new EventEmitter<any[]>(); // fires only when "Select All" clicked
+  @Output() clearAllClicked = new EventEmitter<void>(); // fires only when "Clear" clicked
 
   selectedValues: any[] = [];
   isOpen = false;
@@ -43,7 +46,6 @@ export class AppMultiselectDropdownComponent implements ControlValueAccessor {
 
   constructor(private elRef: ElementRef) {}
 
-  // ControlValueAccessor
   writeValue(value: any): void {
     this.selectedValues = value || [];
   }
@@ -81,11 +83,13 @@ export class AppMultiselectDropdownComponent implements ControlValueAccessor {
   selectAll() {
     this.selectedValues = [...this.options];
     this.emitChanges();
+    this.selectAllClicked.emit(this.selectedValues);
   }
 
   clearAll() {
     this.selectedValues = [];
     this.emitChanges();
+    this.clearAllClicked.emit();
   }
 
   emitChanges() {
@@ -94,7 +98,6 @@ export class AppMultiselectDropdownComponent implements ControlValueAccessor {
   }
 
   getSelectedText(): string {
-    // Always show placeholder
     return this.placeholder;
   }
 
@@ -105,7 +108,6 @@ export class AppMultiselectDropdownComponent implements ControlValueAccessor {
     return option[this.textAccessor];
   }
 
-  // Close dropdown when clicking outside
   @HostListener('document:click', ['$event.target'])
   onClickOutside(targetElement: any) {
     const clickedInside = this.elRef.nativeElement.contains(targetElement);
