@@ -1,0 +1,31 @@
+<div class="dropdown-container" [class.disabled]="disabled" #dropdown>
+  <div class="dropdown-toggle form-select" (click)="toggleDropdown()">
+    {{ getSelectedText() }}
+  </div>
+
+  <div class="dropdown-menu show" *ngIf="isOpen">
+    <div class="dropdown-actions">
+      <button class="btn btn-sm btn-outline-primary" (click)="selectAll()">
+        Select All
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" (click)="clearAll()">
+        Clear
+      </button>
+    </div>
+
+    <div class="dropdown-options">
+      <div *ngFor="let opt of options" class="form-check">
+        <input
+          type="checkbox"
+          class="form-check-input"
+          [checked]="isSelected(opt)"
+          (change)="toggleSelection(opt)"
+          [id]="getOptionText(opt)"
+        />
+        <label class="form-check-label" [for]="getOptionText(opt)">
+          {{ getOptionText(opt) }}
+        </label>
+      </div>
+    </div>
+  </div>
+</div>

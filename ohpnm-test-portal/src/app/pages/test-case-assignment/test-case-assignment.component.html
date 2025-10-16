@@ -34,6 +34,15 @@
             <option>Assigned</option>
           </select>
         </div>
+        <div>
+          <label class="form-label">Assign Tester</label>
+          <app-multiselect-dropdown
+            [options]="users"
+            [(ngModel)]="selectedUsers"
+            placeholder="Select Tester"
+            (selectionChange)="onUsersChange($event)"
+          ></app-multiselect-dropdown>
+        </div>
       </div>
       <div class="d-flex gap-3">
         <div class="stats-box">
@@ -54,7 +63,6 @@
         <table class="table align-middle">
           <thead>
             <tr>
-              <th><input class="form-check-input" type="checkbox" /></th>
               <th>Test Case ID</th>
               <th>Description</th>
               <th>Priority</th>
@@ -64,7 +72,6 @@
           </thead>
           <tbody>
             <tr>
-              <td><input class="form-check-input" type="checkbox" /></td>
               <td><strong>TC-101</strong></td>
               <td>Verify successful user login via OAuth with edge cases.</td>
               <td><span class="priority-high">High</span></td>
@@ -81,7 +88,6 @@
             </tr>
 
             <tr>
-              <td><input class="form-check-input" type="checkbox" /></td>
               <td><strong>TC-205</strong></td>
               <td>Test complex shopping cart price calculation logic.</td>
               <td><span class="priority-medium">Medium</span></td>
@@ -95,7 +101,6 @@
             </tr>
 
             <tr>
-              <td><input class="form-check-input" type="checkbox" /></td>
               <td><strong>TC-312</strong></td>
               <td>Validate GDPR compliance data encryption field check.</td>
               <td><span class="priority-high">High</span></td>
@@ -112,7 +117,6 @@
             </tr>
 
             <tr>
-              <td><input class="form-check-input" type="checkbox" /></td>
               <td><strong>TC-404</strong></td>
               <td>Check static content loading speed on mobile view.</td>
               <td><span class="priority-low">Low</span></td>
@@ -126,7 +130,6 @@
             </tr>
 
             <tr>
-              <td><input class="form-check-input" type="checkbox" /></td>
               <td><strong>TC-501</strong></td>
               <td>Edge case handling for payment gateway token expiry.</td>
               <td><span class="priority-high">High</span></td>
@@ -141,7 +144,6 @@
             </tr>
 
             <tr>
-              <td><input class="form-check-input" type="checkbox" /></td>
               <td><strong>TC-607</strong></td>
               <td>Load test performance with 10k concurrent users.</td>
               <td><span class="priority-medium">Medium</span></td>

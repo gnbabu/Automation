@@ -45,6 +45,9 @@ export interface LibraryInfo {
 
 export interface LibraryMethodInfo {
   methodName: string;
+  testCaseId?: string;
+  description?: string;
+  priority?: string;
 }
 
 export interface ClassInfo {
