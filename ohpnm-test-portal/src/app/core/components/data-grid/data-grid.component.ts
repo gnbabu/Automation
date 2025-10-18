@@ -47,6 +47,7 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
   currentPage = 1;
   sortField = '';
   sortDirection: 'asc' | 'desc' = 'asc';
+  defaultColumnWidth = '150px';
 
   templates: { [key: string]: TemplateRef<any> } = {};
   @ViewChildren(TemplateRef) templateRefs!: QueryList<TemplateRef<any>>;

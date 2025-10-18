@@ -7,6 +7,7 @@ export interface GridColumn {
   sortable?: boolean;
   cellTemplate?: TemplateRef<any> | null; // template reference name for custom cell templates
   type?: 'text' | 'number' | 'date' | 'datetime'; // optional for future extensibility
+  width?: string;
 }
 
 export interface LoginRequest {
@@ -191,5 +192,5 @@ export interface ITestCaseModel {
   description: string;
   priority: string;
   testCaseId: string;
-  assignedUsers: string[];
+  assignedUsers: any[];
 }

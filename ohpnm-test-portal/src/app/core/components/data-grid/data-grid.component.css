@@ -113,7 +113,10 @@
 
 table td {
   max-width: 200px;
-  overflow: hidden;
+  overflow: visible;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: nowrap;  
 }
+
+
+
