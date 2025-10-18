@@ -71,5 +71,29 @@ namespace AutomationAPI.Controllers
                 return StatusCode(500, new { Message = "An error occurred while deleting assignments.", Details = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Deletes test case assignments based on userIds and/or library/class/method filters
+        /// </summary>
+        [HttpPost("delete-assignments")]
+        public async Task<IActionResult> DeleteAssignments([FromBody] TestCaseAssignmentDeleteRequest request)
+        {
+            try
+            {
+
+                if (request == null)
+                    return BadRequest("Request cannot be null.");
+
+                await _repository.DeleteAssignmentsAsync(request);
+
+                return Ok(new { message = "Assignments deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while Delete Assignments");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
     }
 }
+

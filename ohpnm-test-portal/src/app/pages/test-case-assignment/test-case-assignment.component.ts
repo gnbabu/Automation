@@ -1,11 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { GridColumn, ITestCaseModel, IUser, LibraryInfo } from '@interfaces';
+import {
+  GridColumn,
+  ITestCaseAssignmentDeleteRequest,
+  ITestCaseModel,
+  IUser,
+  LibraryInfo,
+} from '@interfaces';
 import { AppMultiselectDropdownComponent } from 'app/core/components/app-multiselect-dropdown/app-multiselect-dropdown.component';
 import {
   AuthService,
   CommonToasterService,
+  TestCaseManagerService,
   TestSuitesService,
   UsersService,
 } from '@services';
@@ -49,11 +56,14 @@ export class TestCaseAssignmentComponent implements OnInit {
   assignedCount = 0;
   unassignedCount = 0;
 
+  previousAssignments = new Map<string, IUser[]>(); // key = testCaseId
+
   constructor(
     private testSuitesService: TestSuitesService,
     private authService: AuthService,
     private toaster: CommonToasterService,
-    private userService: UsersService
+    private userService: UsersService,
+    private testCaseManagerService: TestCaseManagerService
   ) {}
 
   ngOnInit(): void {
@@ -125,6 +135,10 @@ export class TestCaseAssignmentComponent implements OnInit {
             .filter(Boolean),
         }));
 
+        this.testCases.forEach((tc) => {
+          this.previousAssignments.set(tc.testCaseId, [...tc.assignedUsers]);
+        });
+
         this.filteredTestCases = [...this.testCases];
         this.updateStats();
       },
@@ -189,26 +203,152 @@ export class TestCaseAssignmentComponent implements OnInit {
 
   // Handle selection change in multiselect dropdown
   onUsersChange(selectedUsers: IUser[], row: ITestCaseModel) {
-    row.assignedUsers = selectedUsers;
-    console.log(
-      'Updated assigned users for row:',
-      row.testCaseId,
-      row.assignedUsers
+    debugger;
+    const prevUsers = this.previousAssignments.get(row.testCaseId) || [];
+
+    // Users that were removed
+    const removedUsers = prevUsers.filter(
+      (u) => !selectedUsers.some((s) => s.userId === u.userId)
     );
+
+    // Users that were newly added
+    const addedUsers = selectedUsers.filter(
+      (u) => !prevUsers.some((s) => s.userId === u.userId)
+    );
+
+    row.assignedUsers = [...selectedUsers]; // update locally
+
+    // Update previousAssignments for next change
+    this.previousAssignments.set(row.testCaseId, [...selectedUsers]);
+
+    if (removedUsers.length > 0) {
+      const payload: ITestCaseAssignmentDeleteRequest = {
+        userIds: removedUsers.map((u) => u.userId!).filter((id) => id != null),
+        libraryName: row.libraryName,
+        className: row.className,
+        methodName: row.methodName,
+      };
+
+      // 3️⃣ Call API to delete assignment
+      this.testCaseManagerService
+        .deleteAssignmentsByCriteria(payload)
+        .subscribe({
+          next: () => {
+            this.toaster.success(
+              `User ${removedUsers[0].userName} unassigned from test case successfully.`
+            );
+          },
+          error: (err) => {
+            console.error('Error unassigning user:', err);
+          },
+        });
+    } else {
+      // Prepare assignment payload
+      const assignments = row.assignedUsers.map((user) => ({
+        userId: user.userId,
+        libraryName: row.libraryName!,
+        className: row.className!,
+        methodName: row.methodName!,
+        assignedBy: this.authService.getLoggedInUser()?.userId ?? 0,
+      }));
+
+      // Save to backend
+      this.testCaseManagerService.saveAssignments(assignments).subscribe({
+        next: () =>
+          this.toaster.success(`Assignments updated for ${row.testCaseId}`),
+        error: () => this.toaster.error(`Failed to update ${row.testCaseId}`),
+      });
+    }
+    this.updateStats();
   }
 
   // Unassign user from a test case
   unassignUser(testCase: ITestCaseModel, user: IUser) {
+    debugger;
     testCase.assignedUsers = testCase.assignedUsers.filter(
       (u: IUser) => u.userId !== user.userId
     );
+    // 2️⃣ Prepare payload for API
+    const payload: ITestCaseAssignmentDeleteRequest = {
+      userIds: user.userId != null ? [user.userId] : [], // avoid undefined
+      libraryName: testCase.libraryName,
+      className: testCase.className,
+      methodName: testCase.methodName,
+    };
+
+    // 3️⃣ Call API to delete assignment
+    this.testCaseManagerService.deleteAssignmentsByCriteria(payload).subscribe({
+      next: () => {
+        this.toaster.success(
+          `User ${user.userName} unassigned from test case successfully.`
+        );
+      },
+      error: (err) => {
+        console.error('Error unassigning user:', err);
+      },
+    });
+
+    this.updateStats();
   }
 
-  onSelectAll(selected: IUser[]) {
-    console.log('Select All clicked:', selected);
+  onSelectAll(selectedUsers: IUser[], row: ITestCaseModel) {
+    // Update row locally
+    row.assignedUsers = [...selectedUsers];
+    // Update previousAssignments
+    this.previousAssignments.set(row.testCaseId, [...selectedUsers]);
+
+    // Prepare payload to save all selected users
+    const newAssignments = selectedUsers.map((user) => ({
+      userId: user.userId!,
+      libraryName: row.libraryName!,
+      className: row.className!,
+      methodName: row.methodName!,
+      assignedBy: this.authService.getLoggedInUser()?.userId ?? 0,
+    }));
+
+    this.testCaseManagerService.saveAssignments(newAssignments).subscribe({
+      next: () =>
+        this.toaster.success(
+          `All users assigned to test case ${row.testCaseId}`
+        ),
+      error: () =>
+        this.toaster.error(
+          `Failed to assign users to test case ${row.testCaseId}`
+        ),
+    });
   }
 
-  onClearAll() {
-    console.log('Clear clicked');
+  onClearAll(row: ITestCaseModel) {
+    // Get previous assigned users
+    const prevUsers = this.previousAssignments.get(row.testCaseId) || [];
+
+    if (prevUsers.length === 0) return; // nothing to clear
+
+    // Prepare payload to delete all users
+    const deletePayload: ITestCaseAssignmentDeleteRequest = {
+      userIds: prevUsers.map((u) => u.userId!).filter((id) => id != null),
+      libraryName: row.libraryName,
+      className: row.className,
+      methodName: row.methodName,
+    };
+
+    // Call API
+    this.testCaseManagerService
+      .deleteAssignmentsByCriteria(deletePayload)
+      .subscribe({
+        next: () => {
+          // Clear local assignedUsers
+          row.assignedUsers = [];
+          // Update previousAssignments
+          this.previousAssignments.set(row.testCaseId, []);
+          this.toaster.info(
+            `All users removed from test case ${row.testCaseId}`
+          );
+        },
+        error: () =>
+          this.toaster.error(
+            `Failed to remove users from test case ${row.testCaseId}`
+          ),
+      });
   }
 }

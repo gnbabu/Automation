@@ -194,3 +194,10 @@ export interface ITestCaseModel {
   testCaseId: string;
   assignedUsers: any[];
 }
+
+export interface ITestCaseAssignmentDeleteRequest {
+  userIds?: number[]; // optional array of user IDs
+  libraryName?: string; // optional
+  className?: string; // optional
+  methodName?: string; // optional
+}

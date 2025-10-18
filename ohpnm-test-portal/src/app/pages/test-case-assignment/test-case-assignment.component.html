@@ -117,5 +117,7 @@
     valueAccessor="userId"
     placeholder="Select Tester"
     (selectionChange)="onUsersChange($event, row)"
+    (selectAllClicked)="onSelectAll($event, row)"
+    (clearAllClicked)="onClearAll(row)"
   ></app-multiselect-dropdown>
 </ng-template>

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import {
   IQueueInfo,
   ITestCaseAssignment,
+  ITestCaseAssignmentDeleteRequest,
   ITestResult,
   ITestScreenshot,
   PagedResult,
@@ -32,5 +33,14 @@ export class TestCaseManagerService {
 
   deleteAssignments(userId: any): Observable<any> {
     return this.httpService.delete<any>(`TestCaseAssignments/${userId}`);
+  }
+
+  deleteAssignmentsByCriteria(
+    request: ITestCaseAssignmentDeleteRequest
+  ): Observable<any> {
+    return this.httpService.post(
+      `TestCaseAssignments/delete-assignments`,
+      request
+    );
   }
 }

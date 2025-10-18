@@ -54,10 +54,13 @@
 
         public const string GetAllTestCaseAssignments= "[aut].[usp_GetAllTestCaseAssignments]";
         public const string GetTestCaseAssignmentsByUser = "[aut].[usp_GetTestCaseAssignmentsByUser]";
-        public const string InsertTestCaseAssignment = "[aut].[usp_InsertTestCaseAssignment]";
+        public const string InsertTestCaseAssignment = "[aut].[usp_InsertTestCaseAssignment]";        
         public const string TestCaseAssignmentType = "[aut].[TestCaseAssignmentType]";
         public const string BulkSyncTestCaseAssignments = "[aut].[usp_SyncTestCaseAssignments]";
+        public const string BulkSyncTestCaseAssignments_New = "[aut].[usp_SyncTestCaseAssignments_New]";
         public const string DeleteTestCaseAssignmentsByUser = "[aut].[usp_DeleteTestCaseAssignmentsByUser]";
+        public const string DeleteTestCaseAssignments = "[aut].[usp_DeleteTestCaseAssignments]";
         
+
     }
 }

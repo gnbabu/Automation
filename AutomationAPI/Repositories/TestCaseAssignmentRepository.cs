@@ -96,7 +96,7 @@ namespace AutomationAPI.Repositories
                 Value = table
             };
 
-            await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.BulkSyncTestCaseAssignments, new[] { param });
+            await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.BulkSyncTestCaseAssignments_New, new[] { param });
         }
 
         public async Task DeleteAssignmentsByUserIdAsync(int userId)
@@ -111,6 +111,34 @@ namespace AutomationAPI.Repositories
 
             await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.DeleteTestCaseAssignmentsByUser, parameters);
         }
+
+        public async Task DeleteAssignmentsAsync(TestCaseAssignmentDeleteRequest request)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+
+            var parameters = new List<SqlParameter>();
+
+            if (request.UserIds != null && request.UserIds.Any())
+            {
+                // Convert list of UserIds to CSV string
+                string userIdsCsv = string.Join(",", request.UserIds);
+                parameters.Add(new SqlParameter("@UserIds", SqlDbType.NVarChar, -1) { Value = userIdsCsv });
+            }
+            else
+            {
+                parameters.Add(new SqlParameter("@UserIds", SqlDbType.NVarChar, -1) { Value = DBNull.Value });
+            }
+
+            parameters.Add(new SqlParameter("@LibraryName", SqlDbType.NVarChar)
+            { Value = (object?)request.LibraryName ?? DBNull.Value });
+            parameters.Add(new SqlParameter("@ClassName", SqlDbType.NVarChar)
+            { Value = (object?)request.ClassName ?? DBNull.Value });
+            parameters.Add(new SqlParameter("@MethodName", SqlDbType.NVarChar)
+            { Value = (object?)request.MethodName ?? DBNull.Value });
+
+            await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.DeleteTestCaseAssignments, parameters.ToArray());
+        }
+
 
     }
 }
