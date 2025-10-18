@@ -88,6 +88,7 @@
             <ng-container [ngSwitch]="col.type">
               <!-- Date -->
               <span
+                class="cell-text"
                 *ngSwitchCase="'date'"
                 [title]="row[col.field] | date : 'MM-dd-yyyy'"
               >
@@ -96,6 +97,7 @@
 
               <!-- DateTime -->
               <span
+                class="cell-text"
                 *ngSwitchCase="'datetime'"
                 [title]="row[col.field] | date : 'MM-dd-yyyy HH:mm:ss'"
               >
@@ -103,7 +105,7 @@
               </span>
 
               <!-- Default -->
-              <span *ngSwitchDefault [title]="row[col.field]">
+              <span *ngSwitchDefault [title]="row[col.field]" class="cell-text">
                 {{ row[col.field] }}
               </span>
             </ng-container>
