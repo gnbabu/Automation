@@ -121,21 +121,20 @@ export class TestCaseAssignmentComponent implements OnInit {
   }
 
   // Load users and test cases together to ensure proper binding
-  loadUsersAndTestCases() {
+  loadUsersAndTestCases(libraryName?: string, assigned?: boolean) {
     forkJoin({
       users: this.userService.getAll(),
-      testCases: this.testSuitesService.getAllTestCases(),
+      testCases: this.testSuitesService.getAllTestCases(libraryName, assigned),
     }).subscribe({
       next: ({ users, testCases }) => {
-        debugger;
         this.users = users || [];
 
         this.testCases = (testCases || []).map((tc) => ({
           ...tc,
           assignedUsers: (tc.assignedUsers || [])
             .map((u: any) => {
-              if (typeof u === 'object') return u; // already IUser
-              const id = Number(u); // normalize string → number
+              if (typeof u === 'object') return u;
+              const id = Number(u);
               return (
                 this.users.find((user) => Number(user.userId) === id) || null
               );
@@ -150,8 +149,7 @@ export class TestCaseAssignmentComponent implements OnInit {
         this.filteredTestCases = [...this.testCases];
         this.updateStats();
       },
-      error: (err) => {
-        console.error(err);
+      error: () => {
         this.users = [];
         this.testCases = [];
         this.filteredTestCases = [];
@@ -170,14 +168,28 @@ export class TestCaseAssignmentComponent implements OnInit {
   }
 
   // Filters
-  onLibraryChange(lib: LibraryInfo | null) {
-    this.selectedLibrary = lib;
-    this.filterTestCases();
+  onLibraryChange(library: LibraryInfo | null) {
+    this.selectedLibrary = library;
+    const libName = library?.libraryName || undefined;
+    this.loadUsersAndTestCases(libName, this.getAssignedFilter());
   }
 
   onAssignmentStatusChange(status: any) {
     this.selectedAssignmentStatus = status;
-    this.filterTestCases();
+    const assigned = this.getAssignedFilter();
+
+    this.loadUsersAndTestCases(this.selectedLibrary?.libraryName, assigned);
+  }
+
+  getAssignedFilter(): boolean | undefined {
+    if (!this.selectedAssignmentStatus) return undefined;
+
+    if (this.selectedAssignmentStatus.assignmentStatus === 'Assigned')
+      return true;
+    if (this.selectedAssignmentStatus.assignmentStatus === 'Unassigned')
+      return false;
+
+    return undefined; // All
   }
 
   filterTestCases() {
