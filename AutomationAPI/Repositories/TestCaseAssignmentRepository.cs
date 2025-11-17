@@ -99,6 +99,35 @@ namespace AutomationAPI.Repositories
             await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.BulkSyncTestCaseAssignments_New, new[] { param });
         }
 
+        public async Task BulkInsertAssignmentsOldAsync(IEnumerable<TestCaseAssignment> assignments)
+        {
+            var table = new DataTable();
+            table.Columns.Add("UserId", typeof(int));
+            table.Columns.Add("LibraryName", typeof(string));
+            table.Columns.Add("ClassName", typeof(string));
+            table.Columns.Add("MethodName", typeof(string));
+            table.Columns.Add("AssignedBy", typeof(int));
+
+            foreach (var a in assignments)
+            {
+                table.Rows.Add(
+                    a.UserId,
+                    a.LibraryName,
+                    a.ClassName,
+                    a.MethodName,
+                    a.AssignedBy ?? (object)DBNull.Value
+                );
+            }
+
+            var param = new SqlParameter("@Assignments", SqlDbType.Structured)
+            {
+                TypeName = SqlDbConstants.TestCaseAssignmentType,
+                Value = table
+            };
+
+            await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.BulkSyncTestCaseAssignments, new[] { param });
+        }
+
         public async Task DeleteAssignmentsByUserIdAsync(int userId)
         {
             if (userId <= 0)

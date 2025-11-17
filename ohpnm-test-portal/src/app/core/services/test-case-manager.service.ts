@@ -31,6 +31,13 @@ export class TestCaseManagerService {
     );
   }
 
+  saveAssignmentsOld(assignments: ITestCaseAssignment[]): Observable<any> {
+    return this.httpService.post(
+      `TestCaseAssignments/bulk-insert-old`,
+      assignments
+    );
+  }
+
   deleteAssignments(userId: any): Observable<any> {
     return this.httpService.delete<any>(`TestCaseAssignments/${userId}`);
   }

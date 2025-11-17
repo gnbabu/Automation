@@ -54,6 +54,25 @@ namespace AutomationAPI.Controllers
             }
         }
 
+        [HttpPost("bulk-insert-old")]
+        public async Task<IActionResult> BulkInsertAssignmentsOldAsync([FromBody] List<TestCaseAssignment> assignments)
+        {
+            try
+            {
+                if (!assignments.Any())
+                    return BadRequest("No assignments provided.");
+
+                await _repository.BulkInsertAssignmentsOldAsync(assignments);
+                return Ok(new { Message = $"{assignments.Count} Assignments inserted successfully." });
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while Bulk Insert Assignments");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
         [HttpDelete("{userId}")]
         public async Task<IActionResult> DeleteAssignmentsByUserId(int userId)
         {

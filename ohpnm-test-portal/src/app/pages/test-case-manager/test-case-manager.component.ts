@@ -305,16 +305,18 @@ export class TestCaseManagerComponent implements OnInit {
         assignedBy: this.authService.getLoggedInUser()?.userId ?? 0,
       }));
 
-    this.testCaseManagerService.saveAssignments(selectedAssignments).subscribe({
-      next: () => {
-        this.toaster.success('Assignments saved');
-        this.loadLibrariesAndAssignments(this.selectedUser?.userId);
-      },
-      error: (err) => {
-        console.error(err);
-        this.toaster.error('Failed to save assignments');
-      },
-    });
+    this.testCaseManagerService
+      .saveAssignmentsOld(selectedAssignments)
+      .subscribe({
+        next: () => {
+          this.toaster.success('Assignments saved');
+          this.loadLibrariesAndAssignments(this.selectedUser?.userId);
+        },
+        error: (err) => {
+          console.error(err);
+          this.toaster.error('Failed to save assignments');
+        },
+      });
   }
   onResetAssignments() {
     if (!this.selectedUser) {
