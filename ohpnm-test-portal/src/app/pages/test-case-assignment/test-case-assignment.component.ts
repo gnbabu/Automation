@@ -33,6 +33,9 @@ import { forkJoin } from 'rxjs';
   styleUrl: './test-case-assignment.component.css',
 })
 export class TestCaseAssignmentComponent implements OnInit {
+  @ViewChild('testCaseIdTemplate', { static: true })
+  testCaseIdTemplate!: TemplateRef<any>;
+
   @ViewChild('priorityTemplate', { static: true })
   priorityTemplate!: TemplateRef<any>;
 
@@ -69,7 +72,12 @@ export class TestCaseAssignmentComponent implements OnInit {
   ngOnInit(): void {
     // Define columns for DataGrid
     this.columns = [
-      { field: 'testCaseId', header: 'Test Case ID', sortable: true },
+      {
+        field: 'testCaseId',
+        header: 'Test Case ID',
+        sortable: true,
+        cellTemplate: this.testCaseIdTemplate,
+      },
       { field: 'description', header: 'Description', sortable: true },
       {
         field: 'priority',

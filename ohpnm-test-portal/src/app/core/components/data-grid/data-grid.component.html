@@ -1,4 +1,4 @@
-<div class="app-grid">
+<div [ngClass]="theme === 'purple' ? 'app-grid' : 'table-card'">
   <!-- Pagination Header -->
   <div
     class="d-flex justify-content-between align-items-center mb-2 pagination-header"
@@ -23,7 +23,13 @@
   </div>
 
   <!-- Data Table -->
-  <table class="table table-bordered table-striped grid-table">
+  <table
+    [ngClass]="
+      theme === 'purple'
+        ? 'table table-bordered table-striped grid-table'
+        : 'table align-middle'
+    "
+  >
     <thead class="table-light">
       <tr>
         <!-- Select All Checkbox -->

@@ -110,22 +110,45 @@
   color: #5c3c9e;
 }
 
+/* light theme */
+.table-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+}
+
+.table-card .table thead th {
+  background-color: #f0f3f7 !important;
+  color: #374151;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 16px 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table-card .table tbody tr:hover {
+  background-color: #f9fafb;
+}
 
 table td {
   max-width: 200px;
   overflow: visible;
   text-overflow: ellipsis;
-  white-space: nowrap;  
+  white-space: nowrap;
 }
-/* Only truncate text inside the wrapper */
 .cell-text {
-  display: block;         /* block fills the td */
-  width: 100%;            /* use full column width */
-  white-space: nowrap;    /* prevent wrapping */
-  overflow: hidden;       /* hide overflow */
-  text-overflow: ellipsis;/* show ... if text is too long */
-  vertical-align: middle;
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-
-
+:host ::ng-deep .table-card table td a,
+:host ::ng-deep .grid-table td a {
+  display: inline-block;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
