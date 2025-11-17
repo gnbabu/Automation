@@ -66,6 +66,10 @@
               "target": "Package",
               "version": "[3.14.0, )"
             },
+            "NUnit.Engine": {
+              "target": "Package",
+              "version": "[3.20.1, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.6.2, )"

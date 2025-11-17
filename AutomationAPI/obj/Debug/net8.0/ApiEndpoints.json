@@ -49,22 +49,6 @@
   },
   {
     "ContainingType": "AutomationAPI.Controllers.AutomationController",
-    "Method": "GetAutomationDataAsync",
-    "RelativePath": "api/Automation/data/{sectionId}",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "sectionId",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.AutomationController",
     "Method": "DeleteAutomationDataAsync",
     "RelativePath": "api/Automation/data/{sectionId}",
     "HttpMethod": "DELETE",
@@ -170,6 +154,27 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "AutomationAPI.Controllers.AutomationController",
+    "Method": "GetAutomationDataAsync",
+    "RelativePath": "api/Automation/sections/data",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "sectionId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "userId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "AutomationAPI.Controllers.QueueController",
     "Method": "GetQueues",
     "RelativePath": "api/Queue",
@@ -261,16 +266,6 @@
   },
   {
     "ContainingType": "AutomationAPI.Controllers.QueueController",
-    "Method": "GetAllQueues",
-    "RelativePath": "api/Queue/all",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.QueueController",
     "Method": "GetQueueReports",
     "RelativePath": "api/Queue/queue-reports",
     "HttpMethod": "POST",
@@ -280,6 +275,102 @@
       {
         "Name": "payload",
         "Type": "AutomationAPI.Repositories.Models.QueueReportFilterRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.QueueController",
+    "Method": "SearchQueuesAsync",
+    "RelativePath": "api/Queue/search",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "payload",
+        "Type": "AutomationAPI.Repositories.Models.QueueSearchPayload",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
+    "Method": "GetAssignmentsByUserIdAsync",
+    "RelativePath": "api/TestCaseAssignments/{userId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
+    "Method": "DeleteAssignmentsByUserId",
+    "RelativePath": "api/TestCaseAssignments/{userId}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
+    "Method": "BulkInsertAssignmentsAsync",
+    "RelativePath": "api/TestCaseAssignments/bulk-insert",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "assignments",
+        "Type": "System.Collections.Generic.List\u00601[[AutomationAPI.Repositories.Models.TestCaseAssignment, AutomationAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
+    "Method": "BulkInsertAssignmentsOldAsync",
+    "RelativePath": "api/TestCaseAssignments/bulk-insert-old",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "assignments",
+        "Type": "System.Collections.Generic.List\u00601[[AutomationAPI.Repositories.Models.TestCaseAssignment, AutomationAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
+    "Method": "DeleteAssignments",
+    "RelativePath": "api/TestCaseAssignments/delete-assignments",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.TestCaseAssignmentDeleteRequest",
         "IsRequired": true
       }
     ],
@@ -395,6 +486,96 @@
         "Name": "queue",
         "Type": "AutomationAPI.Repositories.Models.QueueInfo",
         "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestScreenshotsController",
+    "Method": "InsertScreenshot",
+    "RelativePath": "api/TestScreenshots",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "screenshot",
+        "Type": "AutomationAPI.Repositories.Models.TestScreenshot",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestScreenshotsController",
+    "Method": "GetScreenshotById",
+    "RelativePath": "api/TestScreenshots/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestScreenshotsController",
+    "Method": "BulkInsertScreenshots",
+    "RelativePath": "api/TestScreenshots/bulk",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "screenshots",
+        "Type": "System.Collections.Generic.List\u00601[[AutomationAPI.Repositories.Models.TestScreenshot, AutomationAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestScreenshotsController",
+    "Method": "GetByQueueId",
+    "RelativePath": "api/TestScreenshots/screenshots",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "queueId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "methodName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestSuitesController",
+    "Method": "GetAllTestCases",
+    "RelativePath": "api/TestSuites/GetAllTestCases",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "libraryName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "assigned",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []

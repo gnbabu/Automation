@@ -169,3 +169,8 @@ D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\refint\AutomationAPI.dll
 D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\AutomationAPI.pdb
 D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\AutomationAPI.genruntimeconfig.cache
 D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\ref\AutomationAPI.dll
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\Microsoft.Extensions.DependencyModel.dll
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\nunit.engine.api.dll
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\nunit.engine.core.dll
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\nunit.engine.dll
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\testcentric.engine.metadata.dll
