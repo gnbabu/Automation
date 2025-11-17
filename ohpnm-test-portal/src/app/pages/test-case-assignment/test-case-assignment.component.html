@@ -101,7 +101,7 @@
 <!-- ✅ Current Status Template -->
 <ng-template #assignedUsersTemplate let-row let-value="value">
   <div class="d-flex flex-wrap gap-1">
-    <span *ngFor="let user of value ?? []" class="badge bg-primary">
+    <span *ngFor="let user of value ?? []" class="badge bg-primary user-badge">
       {{ user.userName }}
       <i
         class="bi bi-x-circle ms-1 text-light cursor-pointer"

@@ -299,7 +299,6 @@ export class TestCaseAssignmentComponent implements OnInit {
 
   // Unassign user from a test case
   unassignUser(testCase: ITestCaseModel, user: IUser) {
-    debugger;
     testCase.assignedUsers = testCase.assignedUsers.filter(
       (u: IUser) => u.userId !== user.userId
     );
