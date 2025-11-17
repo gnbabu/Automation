@@ -67,6 +67,7 @@
           [pagingEnabled]="false"
           [data]="testCases"
           [selectionEnabled]="false"
+          [theme]="'light'"
         ></app-data-grid>
       </div>
 
@@ -77,6 +78,12 @@
     </div>
   </div>
 </div>
+<!-- Test Case ID Bold Template -->
+<ng-template #testCaseIdTemplate let-row let-value="value">
+  <span class="testcase-bold">
+    {{ value }}
+  </span>
+</ng-template>
 
 <!-- Priority Template -->
 <ng-template #priorityTemplate let-row let-value="value">
