@@ -1,15 +1,12 @@
-<div class="table-card">
-  <h5>Users List</h5>
-  <div class="table-responsive">
-    <app-data-grid
-      [columns]="columns"
-      [data]="users"
-      [pagingMode]="'client'"
-      [sortingMode]="'client'"
-      [pageSize]="pageSize"
-      [pagingEnabled]="true"
-    ></app-data-grid>
-  </div>
+<div class="table-responsive">
+  <app-data-grid
+    [columns]="columns"
+    [data]="users"
+    [pagingMode]="'client'"
+    [sortingMode]="'client'"
+    [pageSize]="pageSize"
+    [pagingEnabled]="true"
+  ></app-data-grid>
 </div>
 
 <ng-template #nameTemplate let-row let-value="value">

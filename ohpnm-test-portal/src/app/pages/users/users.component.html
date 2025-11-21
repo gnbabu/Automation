@@ -73,13 +73,15 @@
       </label>
     </div>
   </div>
-
-  <app-user-list
-    *ngIf="!showForm"
-    [users]="filteredUsers"
-    (editUser)="onEditUser($event)"
-  >
-  </app-user-list>
+  <div *ngIf="!showForm" class="table-card">
+    <h5>Users List</h5>
+    <app-user-list
+      *ngIf="!showForm"
+      [users]="filteredUsers"
+      (editUser)="onEditUser($event)"
+    >
+    </app-user-list>
+  </div>
   <app-add-edit-user
     *ngIf="showForm && selectedUser"
     [user]="selectedUser"
