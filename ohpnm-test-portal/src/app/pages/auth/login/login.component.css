@@ -1,3 +1,154 @@
-.login-form{
-max-width: 550px
+/* Entire Left Panel */
+.left-panel {
+  padding: 60px 70px !important;
+  background: #ffffff;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+}
+
+.login-wrapper {
+  max-width: 600px;
+  width: 100%;
+  /* background: #fff;
+  padding: 40px;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); */
+}
+
+.login-button-wrapper {
+  padding: 0px 15px;
+}
+
+/* Brand */
+.brand-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #6c3483;
+}
+
+.brand-underline {
+  /* width: 60px; */
+  height: 3px;
+  background: #6c3483;
+  margin-bottom: 25px;
+}
+
+/* Headers */
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #6c3483;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 25px;
+}
+
+/* Inputs */
+.form-control {
+  border: 2px solid #6c3483;
+  height: 44px;
+  border-radius: 6px;
+}
+.invalid-feedback {
+  font-size: 1rem;
+}
+
+/* Eye icon */
+.toggle-eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+}
+
+/* SSO Button */
+.btn-maximus-sso {
+  background-color: #f3e9fa;
+  color: #800f85;
+  border-radius: 24px;
+  padding: 12px;
+  font-weight: 600;
+  border: none;
+}
+
+/* Divider */
+.solid-divider {
+  display: flex;
+  align-items: center;
+}
+
+.solid-divider::before,
+.solid-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #bbb;
+}
+
+.solid-divider span {
+  padding: 0 15px;
+  color: #555;
+  font-weight: 600;
+}
+
+/* Purple Button */
+.btn-purple {
+  background-color: #6c3483;
+  color: white;
+  padding: 11px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Forgot Links */
+.forgot-links a {
+  color: #6c3483;
+  font-weight: 500;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.vertical-divider {
+  border-right: 1px solid #bbb;
+  margin: 0 5px;
+  height: 14px;
+  display: inline-block;
+}
+
+/* Register Section */
+.register-text {
+  font-size: 14px;
+  color: #333;
+}
+
+.register-btn {
+  width: 140px;
+}
+
+/* Alert */
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Right Side Purple */
+.bg-purple {
+  background-color: #6c3483;
 }

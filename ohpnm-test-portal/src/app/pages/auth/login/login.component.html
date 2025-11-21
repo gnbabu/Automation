@@ -1,70 +1,98 @@
 <main class="container-fluid p-0">
   <div class="row g-0 min-vh-100">
-    <!-- Left Side: 60% Width Image -->
-    <div class="col-lg-9 d-none d-lg-block">
-      <img
-        src="./assets/images/automation.png"
-        alt="Login Illustration"
-        class="w-100 h-100"
-        style="object-fit: cover"
-      />
-    </div>
-
-    <!-- Right Side: 40% Width Login Form -->
+    <!-- LEFT SIDE: LOGIN FORM -->
     <div
-      class="col-lg-3 d-flex align-items-center justify-content-center bg-light position-relative"
+      class="col-lg-6 col-md-12 d-flex align-items-center justify-content-center bg-white left-panel"
     >
-      <app-loading-overlay></app-loading-overlay>
+      <div class="login-wrapper">
+        <!-- TEXT LOGO -->
+        <h2 class="brand-title mb-2">maximus</h2>
+        <div class="brand-underline"></div>
 
-      <div class="login-form card shadow-lg border-0 p-4 w-100 mx-3">
         <!-- Heading -->
-        <h4 class="fw-bold mb-3">Sign In</h4>
-        <p class="text-muted small mb-4">
-          Access your account securely using your email and password.
+        <h1 class="login-title">Login</h1>
+        <p class="subtitle">
+          Access your automation portal to manage, monitor and streamline test
+          workflows securely.
         </p>
 
-        <!-- Reactive Form -->
+        <!-- SSO Button -->
+        <div class="d-grid mb-4">
+          <button type="button" class="btn btn-maximus-sso">
+            Sign In with Maximus SSO
+          </button>
+        </div>
+
+        <div class="solid-divider my-4">
+          <span>or sign in with username</span>
+        </div>
+
+        <!-- FORM -->
         <form (ngSubmit)="onSubmit()" [formGroup]="loginForm" novalidate>
-          <!-- Email -->
-          <div class="mb-3">
-            <label for="email" class="form-label">Email Address</label>
+          <!-- Username -->
+          <div class="mb-4">
+            <label for="username" class="form-label">Username</label>
             <input
-              type="email"
-              id="email"
-              formControlName="email"
+              type="text"
+              id="username"
+              formControlName="username"
               class="form-control"
-              placeholder="you@example.com"
+              placeholder="Enter your Username"
               [ngClass]="{
-                'is-invalid':
-                  loginForm.get('email')?.touched &&
-                  loginForm.get('email')?.invalid
+                'is-invalid': username?.touched && username?.invalid
               }"
             />
-            <div class="invalid-feedback">Enter a valid email address.</div>
+            <div
+              *ngIf="username?.touched && username?.invalid"
+              class="invalid-feedback d-block"
+            >
+              <div *ngIf="username?.errors?.['required']">
+                Username is required.
+              </div>
+            </div>
           </div>
 
           <!-- Password -->
-          <div class="mb-3">
+          <div class="mb-4">
             <label for="password" class="form-label">Password</label>
-            <input
-              type="password"
-              id="password"
-              formControlName="password"
-              class="form-control"
-              placeholder="Enter your password"
-              [ngClass]="{
-                'is-invalid':
-                  loginForm.get('password')?.touched &&
-                  loginForm.get('password')?.invalid
-              }"
-            />
-            <div class="invalid-feedback">
-              Password is required (min 8 characters).
+            <div class="position-relative">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                id="password"
+                formControlName="password"
+                class="form-control pe-5"
+                placeholder="Enter your password"
+                [ngClass]="{
+                  'is-invalid': password?.touched && password?.invalid
+                }"
+              />
+              <button
+                type="button"
+                class="toggle-eye"
+                (click)="togglePasswordVisibility()"
+                tabindex="-1"
+              >
+                <i
+                  class="fa"
+                  [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"
+                ></i>
+              </button>
+            </div>
+            <div
+              *ngIf="password?.touched && password?.invalid"
+              class="invalid-feedback d-block"
+            >
+              <div *ngIf="password?.errors?.['required']">
+                Password is required.
+              </div>
+              <div *ngIf="password?.errors?.['minlength']">
+                Password must be at least 5 characters.
+              </div>
             </div>
           </div>
 
           <!-- Remember Me -->
-          <div class="mb-3 form-check">
+          <div class="mb-4 form-check">
             <input
               type="checkbox"
               id="rememberMe"
@@ -72,48 +100,79 @@
               class="form-check-input"
             />
             <label class="form-check-label" for="rememberMe">
-              Keep me logged in
+              Uncheck this box if you're using a shared or public device.
             </label>
           </div>
 
-          <!-- Show Password -->
-          <div class="mb-3 form-check">
-            <input
-              type="checkbox"
-              class="form-check-input"
-              id="showPassword"
-              (change)="togglePasswordVisibility($event)"
-            />
-            <label class="form-check-label" for="showPassword">
-              Show password
-            </label>
-          </div>
-
-          <!-- Submit -->
-          <div class="d-grid mb-3">
+          <!-- Login Button -->
+          <div class="d-grid mb-4 login-button-wrapper">
             <button
               type="submit"
               class="btn-purple"
               [disabled]="!loginForm.valid"
             >
-              Sign In
+              Secure Log In
             </button>
           </div>
 
-          <!-- Forgot Password -->
-          <div class="text-center">
-            <a
-              class="text-decoration-none text-primary"
-              (click)="openForgotPassword()"
+          <!-- Forgot Links -->
+          <div class="forgot-links text-center mb-4">
+            <a (click)="openForgotUsername()">Forgot user name?</a>
+            <span class="vertical-divider"></span>
+            <a (click)="openForgotPassword()">Forgot your password?</a>
+            <span class="vertical-divider"></span>
+            <a (click)="openLoginTips()">Log in tips</a>
+          </div>
+
+          <!-- Error / Success Message -->
+          <div
+            *ngIf="message"
+            [ngClass]="{
+              alert: true,
+              'alert-success': messageType === 'success',
+              'alert-danger': messageType === 'error'
+            }"
+            class="mt-2"
+          >
+            {{ message }}
+          </div>
+
+          <hr />
+
+          <!-- Register -->
+          <div
+            class="register-section d-flex justify-content-between align-items-center"
+          >
+            <div class="register-text">
+              <div>First-time users</div>
+              <div>Please register for an account.</div>
+              <div>You will create a username and a password.</div>
+            </div>
+            <button
+              type="button"
+              class="btn-purple register-btn"
+              (click)="onRegisterClick()"
             >
-              <i class="fas fa-question-circle me-1"></i>Forgot your password?
-            </a>
+              Register
+            </button>
           </div>
         </form>
       </div>
+    </div>
+
+    <!-- RIGHT SIDE: CAROUSEL -->
+    <div
+      class="col-lg-6 d-none d-lg-flex bg-purple justify-content-center align-items-center text-white"
+    >
+      <app-login-carousel-view></app-login-carousel-view>
     </div>
   </div>
 </main>
 
 <!-- Forgot Password Modal -->
 <app-forgot-password-modal></app-forgot-password-modal>
+<!-- Forgot Username Modal -->
+<app-forgot-username-modal></app-forgot-username-modal>
+<!-- Forgot Login Tips Modal -->
+<app-login-tips-modal></app-login-tips-modal>
+<app-loading-overlay></app-loading-overlay>

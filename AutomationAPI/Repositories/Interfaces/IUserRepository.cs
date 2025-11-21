@@ -7,12 +7,13 @@ namespace AutomationAPI.Repositories.Interfaces
     {
         Task<IEnumerable<User>> GetAllUsersAsync();
         Task<User> GetUserByIdAsync(int userId);
-        Task<User> ValidateUserByEmailAndPasswordAsync(string email, string password);
+        Task<User> ValidateUserByUsernameAndPasswordAsync(string username, string password);
         Task<int> CreateUserAsync(User user);
         Task UpdateUserAsync(User user);
         Task DeleteUserAsync(int userId);
         Task ChangePasswordAsync(ChangePasswordRequest request);
         Task SetUserActiveStatusAsync(int userId, bool active);
         Task<IEnumerable<UserRole>> GetUserRoles();
+        Task<IEnumerable<User>> GetFilteredUsersAsync(UserFilter filters);
     }
 }

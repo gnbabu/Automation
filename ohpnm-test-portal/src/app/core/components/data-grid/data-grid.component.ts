@@ -32,7 +32,7 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
   @Input() pageSize = 5;
   @Input() totalRecords = 0;
   @Input() selectionEnabled: boolean = false;
-  @Input() theme: 'purple' | 'light' = 'purple';
+  @Input() theme: 'purple' | 'light' = 'light';
 
   // Two-way binding property
   @Input() selectedRows: any[] = [];

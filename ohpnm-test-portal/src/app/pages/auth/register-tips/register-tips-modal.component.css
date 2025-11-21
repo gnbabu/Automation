@@ -1,4 +1,4 @@
-.forgot-password-modal-container {
+.register-tips-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -6,14 +6,12 @@
   background: transparent;
 }
 
-.forgot-password-modal-content {
+.register-tips-content {
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(44, 44, 44, 0.15);
   padding: 32px 24px;
-  width: 600px;
   text-align: center;
-  border: 1px solid #ccc;
 }
 
 .icon-circle {
@@ -100,4 +98,8 @@
   .return-link i {
     margin-right: 8px;
     font-size: 1.2rem;
+  }
+
+  .modal-content {
+    flex-direction: inherit;
   }

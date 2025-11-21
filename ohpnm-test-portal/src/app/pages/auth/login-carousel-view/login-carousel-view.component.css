@@ -1,0 +1,82 @@
+.carousel-wrapper {
+  width: 75%;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ===========================
+   FIXED ARROWS — NEVER MOVE
+   =========================== */
+.login-carousel .carousel-control-prev,
+.login-carousel .carousel-control-next {
+  width: 60px !important;
+  height: 60px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  position: absolute !important; /* critical */
+  opacity: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: 5;
+}
+
+/* GAP BETWEEN ARROWS AND IMAGE */
+.login-carousel .carousel-control-prev {
+  left: -25px !important; /* adjust this for gap */
+}
+
+.login-carousel .carousel-control-next {
+  right: -25px !important; /* adjust this for gap */
+}
+
+/* Prevent jump on click (fix focus shift) */
+.login-carousel .carousel-control-prev:focus,
+.login-carousel .carousel-control-next:focus,
+.login-carousel .carousel-control-prev:active,
+.login-carousel .carousel-control-next:active {
+  outline: none !important;
+  box-shadow: none !important;
+  transform: translateY(-50%) !important;
+}
+
+/* ===========================
+   WHITE CUSTOM ARROWS
+   =========================== */
+.login-carousel .carousel-control-prev-icon,
+.login-carousel .carousel-control-next-icon {
+  background-image: none !important;
+  width: 50px !important;
+  height: 50px !important;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  position: relative;
+}
+
+/* arrow shape */
+.login-carousel .carousel-control-prev-icon::after,
+.login-carousel .carousel-control-next-icon::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: solid #fff;
+  border-width: 0 4px 4px 0;
+  top: 50%;
+  left: 50%;
+  transform-origin: center;
+}
+
+/* left arrow */
+.login-carousel .carousel-control-prev-icon::after {
+  transform: translate(-50%, -50%) rotate(135deg);
+}
+
+/* right arrow */
+.login-carousel .carousel-control-next-icon::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* indicators */
+.login-carousel .carousel-indicators {
+  bottom: 15px !important;
+}

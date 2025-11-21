@@ -1,12 +1,15 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using AutomationAPI.Controllers;
+﻿using AutomationAPI.Controllers;
 using AutomationAPI.Repositories.Helpers;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AutomationAPI.Repositories
 {
@@ -15,6 +18,8 @@ namespace AutomationAPI.Repositories
         private readonly IConfiguration _configuration;
         private readonly IUserRepository _userRepository;
         private readonly ILogger<AuthService> _logger;
+        private readonly PasswordHasher<User> _passwordHasher = new PasswordHasher<User>();
+
         public AuthService(IConfiguration configuration,
                            IUserRepository userRepository)
         {
@@ -27,7 +32,7 @@ namespace AutomationAPI.Repositories
             try
             {
                 // Validate user credentials
-                var user = await _userRepository.ValidateUserByEmailAndPasswordAsync(model.Email, model.Password);
+                var user = await _userRepository.ValidateUserByUsernameAndPasswordAsync(model.Username, model.Password);
 
                 // Check if user exists
                 if (user == null)
@@ -58,7 +63,7 @@ namespace AutomationAPI.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Login failed for user {Username}", model.Email);
+                _logger.LogError(ex, "Login failed for user {Username}", model.Username);
                 return new AuthResponse { StatusCode = 0, Message = "An error occurred during login" };
             }
         }
@@ -85,6 +90,80 @@ namespace AutomationAPI.Repositories
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+
+
+        public async Task<bool> ForgotPassword(string email)
+        {
+            return true;
+        }
+
+
+
+        public async Task<bool> Register(RegistrationModel model)
+        {
+            // Validation
+            if (string.IsNullOrWhiteSpace(model.Username) ||
+                string.IsNullOrWhiteSpace(model.Email) ||
+                string.IsNullOrWhiteSpace(model.Password) ||
+                string.IsNullOrWhiteSpace(model.ConfirmPassword))
+                throw new ArgumentException("All fields are required.");
+
+            if (model.Password != model.ConfirmPassword)
+                throw new ArgumentException("Passwords do not match.");
+
+            if (!IsValidPassword(model.Password))
+                throw new ArgumentException("Password does not meet complexity requirements.");
+
+            // Check for existing user by username or email
+            var existingUsers = await _userRepository.GetAllUsersAsync();
+            if (existingUsers.Any(u => u.UserName == model.Username))
+                throw new ArgumentException("Username already exists.");
+            if (existingUsers.Any(u => u.Email == model.Email))
+                throw new ArgumentException("Email already registered.");
+
+            // Hash password
+            // var passwordHash = HashPassword(model.Password);
+
+            // Create User object
+            var user = new User
+            {
+                UserName = model.Username,
+                // Password = passwordHash,
+                Password = model.Password,
+                FirstName = string.Empty, // Optional: collect from UI if needed
+                LastName = string.Empty,  // Optional: collect from UI if needed
+                Email = model.Email,
+                RoleId = 2,     // Default role, adjust as needed
+                Active = true,
+                Status = 1, // Default User Status - Active
+                Priority = 3, // Default Priority Status - Low
+                PhoneNumber = string.Empty, // Optional: collect from UI if needed
+                                            // PasswordHash = _passwordHasher.HashPassword(user, model.Password),
+
+            };
+
+            var userId = await _userRepository.CreateUserAsync(user);
+            if (userId > 0) return true;
+            else return false;
+        }
+
+        private bool IsValidPassword(string password)
+        {
+            if (password.Length < 12) return false;
+            var hasUpper = Regex.IsMatch(password, "[A-Z]");
+            var hasLower = Regex.IsMatch(password, "[a-z]");
+            var hasDigit = Regex.IsMatch(password, "[0-9]");
+            var hasSpecial = Regex.IsMatch(password, "[^a-zA-Z0-9]");
+            return hasUpper && hasLower && hasDigit && hasSpecial;
+        }
+
+        private string HashPassword(string password)
+        {
+            using var sha256 = SHA256.Create();
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(bytes);
+        }
+
 
     }
 }

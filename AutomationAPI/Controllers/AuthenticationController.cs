@@ -41,7 +41,7 @@ namespace AutomationAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Login failed for user {Email}", model.Email);
+                _logger.LogError(ex, "Login failed for user {Username}", model.Username);
                 return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
             }
         }

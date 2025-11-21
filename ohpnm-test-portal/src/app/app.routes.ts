@@ -17,6 +17,13 @@ export const routes: Routes = [
     canActivate: [loginGuard],
   },
   {
+    path: 'register',
+    loadComponent: () =>
+      import('./pages/auth/register/register.component').then(
+        (m) => m.RegisterComponent
+      ),
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./pages/layout/layout.component').then((m) => m.LayoutComponent),

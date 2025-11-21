@@ -1,4 +1,4 @@
-.forgot-password-modal-container {
+.forgot-username-modal-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -6,7 +6,7 @@
   background: transparent;
 }
 
-.forgot-password-modal-content {
+.forgot-username-modal-content {
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(44, 44, 44, 0.15);

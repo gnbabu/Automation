@@ -40,6 +40,9 @@ namespace AutomationAPI.Controllers
             try
             {
                 var user = await _userRepository.GetUserByIdAsync(id);
+                if (user == null)
+                    return NotFound();
+
                 return Ok(user);
             }
             catch (Exception ex)
@@ -54,7 +57,7 @@ namespace AutomationAPI.Controllers
         {
             try
             {
-                var user = await _userRepository.ValidateUserByEmailAndPasswordAsync(loginModel.Email, loginModel.Password);
+                var user = await _userRepository.ValidateUserByUsernameAndPasswordAsync(loginModel.Username, loginModel.Password);
                 if (user == null)
                     return Unauthorized();
 
@@ -112,6 +115,14 @@ namespace AutomationAPI.Controllers
             }
         }
 
+        [HttpPost("Filters")]
+        public async Task<IActionResult> GetUsers([FromBody] UserFilter filters)
+        {
+            var users = await _userRepository.GetFilteredUsersAsync(filters);
+            return Ok(users);
+        }
+
+
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
@@ -128,7 +139,7 @@ namespace AutomationAPI.Controllers
             }
             catch (Exception ex)
             {
-                
+
                 _logger.LogError(ex, $"Error changing password for user");
                 return StatusCode(500, "An error occurred while resetting the password.");
             }

@@ -5,14 +5,14 @@ import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-forgot-password-modal',
+  selector: 'app-forgot-username-modal',
   standalone: true,
-  templateUrl: './forgot-password-modal.component.html',
+  templateUrl: './forgot-username-modal.component.html',
+  styleUrls: ['./forgot-username-modal.component.css'],
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
-  styleUrl: './forgot-password-modal.component.css',
 })
-export class ForgotPasswordModalComponent implements AfterViewInit {
-  forgotpasswordForm: FormGroup;
+export class ForgotUsernameModalComponent implements AfterViewInit {
+  forgotusernameForm: FormGroup;
 
   constructor(
     private elRef: ElementRef,
@@ -22,36 +22,36 @@ export class ForgotPasswordModalComponent implements AfterViewInit {
     private authService: AuthService,
     private toaster: CommonToasterService
   ) {
-    this.forgotpasswordForm = this.fb.group({
+    this.forgotusernameForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
     });
   }
 
   ngAfterViewInit(): void {
     const modalElement = this.elRef.nativeElement.querySelector(
-      '#forgotPasswordModal'
+      '#forgotUsernameModal'
     );
     if (modalElement) {
-      this.modalService.register('forgotPasswordModal', modalElement);
+      this.modalService.register('forgotUsernameModal', modalElement);
     }
   }
 
   get email() {
-    return this.forgotpasswordForm.get('email');
+    return this.forgotusernameForm.get('email');
   }
 
   submitEmail(): void {
-    if (!this.forgotpasswordForm.value.email || !this.validateEmail(this.forgotpasswordForm.value.email)) {
-      this.toaster.info('Please enter valid username and password');
-      this.forgotpasswordForm.markAllAsTouched();
+    if (!this.forgotusernameForm.value.email || !this.validateEmail(this.forgotusernameForm.value.email)) {
+      this.toaster.info('Please enter valid username and username');
+      this.forgotusernameForm.markAllAsTouched();
       return;
     }
 
-    this.authService.forgotpassword(this.forgotpasswordForm.value.email).subscribe({
+    this.authService.forgotusername(this.forgotusernameForm.value.email).subscribe({
       next: (response) => {
         if (response === true) {
-          this.toaster.success('Password reset link sent successfully');
-          this.modalService.close('forgotPasswordModal');
+          this.toaster.success('Username reset link sent successfully');
+          this.modalService.close('forgotUsernameModal');
         }
       },
       error: (err: any) => {
@@ -67,7 +67,7 @@ export class ForgotPasswordModalComponent implements AfterViewInit {
   }
 
   returnToLogin() {
-    this.modalService.close('forgotPasswordModal');
+    this.modalService.close('forgotUsernameModal');
     this.router.navigate(['/login']);
   }
 }

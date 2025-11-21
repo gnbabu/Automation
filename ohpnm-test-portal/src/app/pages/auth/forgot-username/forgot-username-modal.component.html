@@ -1,31 +1,22 @@
-<div class="modal fade"
-     id="forgotPasswordModal"
-     tabindex="-1"
-     aria-labelledby="forgotPasswordLabel"
-     aria-hidden="true">
-
+<div class="modal fade" id="forgotUsernameModal" tabindex="-1" aria-labelledby="forgotUsernameLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="forgot-password-modal-container">
-        <div class="forgot-password-modal-content">
+      <div class="forgot-username-modal-container">
+        <div class="forgot-username-modal-content">
           <div class="icon-circle">
             <i class="bi bi-lock"></i>
           </div>
-          <h2 class="modal-title">Forgot your password?</h2>
+          <h2 class="modal-title">Forgot your username?</h2>
           <p class="modal-subtitle">Enter your email to reset it!</p>
-          <form (ngSubmit)="submitEmail()" [formGroup]="forgotpasswordForm" novalidate>
+          <form (ngSubmit)="submitEmail()" [formGroup]="forgotusernameForm" novalidate>
             <div class="form-group">
               <label for="email">Email</label>
-              <input type="email"
-                     id="forgot-password-email"
-                     formControlName="email"
-                     class="form-control"
-                     placeholder="Enter your email"
-                     [ngClass]="{
-                        'is-invalid':
-                          forgotpasswordForm.get('email')?.touched &&
-                          forgotpasswordForm.get('email')?.invalid
-                      }" />
+              <input type="email" id="forgot-username-email" formControlName="email" class="form-control" placeholder="Enter your Email"
+                [ngClass]="{
+                  'is-invalid':
+                    forgotusernameForm.get('email')?.touched &&
+                    forgotusernameForm.get('email')?.invalid
+                }" />
               <!-- Error message -->
               <div *ngIf="email?.touched && email?.invalid" class="invalid-feedback d-block">
                 <div *ngIf="email?.errors?.['required']">Email is required.</div>
@@ -43,21 +34,3 @@
     </div>
   </div>
 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 import { HttpService } from './http.service';
-import { IUser, LoginRequest } from '@interfaces';
+import { IUser, LoginRequest, RegisterRequest } from '@interfaces';
 import { jwtDecode } from 'jwt-decode';
 
 @Injectable({ providedIn: 'root' })
@@ -21,6 +21,46 @@ export class AuthService {
           localStorage.setItem('token', response.token);
           localStorage.setItem('currentUser', JSON.stringify(response.user));
           this.startAutoLogout(response.token);
+        })
+      );
+  }
+
+  forgotpassword(email: string): Observable<any> {
+    return this.httpService
+      .post<{ token: string; user: any }>(
+        'Authentication/forgotpassword?email=' + email,
+        {}
+      )
+      .pipe(
+        tap((response) => {
+          console.log(response);
+        })
+      );
+  }
+
+  forgotusername(email: string): Observable<any> {
+    return this.httpService
+      .post<{ token: string; user: any }>(
+        'Authentication/forgotusername?email=' + email,
+        {}
+      )
+      .pipe(
+        tap((response) => {
+          console.log(response);
+        })
+      );
+  }
+
+  register(registerRequest: RegisterRequest): Observable<any> {
+    return this.httpService
+      .post<{ result: boolean; message: string }>(
+        'Authentication/register',
+        registerRequest
+      )
+      .pipe(
+        tap((response) => {
+          if (response.result == true)
+            this.router.navigate(['/login'], { replaceUrl: true });
         })
       );
   }

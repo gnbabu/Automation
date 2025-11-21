@@ -5,13 +5,14 @@
         //User and Usr Role Stored Procedures
         public const string GetAllUsers = "[aut].[usp_GetAllUsers]";
         public const string GetUserById = "[aut].[usp_GetUserById]";
-        public const string ValidateUserByEmailAndPassword = "[aut].[usp_ValidateUserByEmailAndPassword]";
+        public const string ValidateUserByUsernameAndPassword = "[aut].[usp_ValidateUserByUsernameAndPassword]";
         public const string CreateUser = "[aut].[usp_CreateUser]";
         public const string UpdateUser = "[aut].[usp_UpdateUser]";
         public const string DeleteUser = "[aut].[usp_DeleteUser]";
         public const string ChangePassword = "[aut].[usp_ChangePassword]";
         public const string SetUserActiveStatus = "[aut].[usp_SetUserActiveStatus]";
         public const string GetUserRoles = "[aut].[usp_GetUserRoles]";
+        public const string FilterAllUsers = "[aut].[usp_GetFilteredUsers]";
 
         //Queue Info
         public const string GetAllQueues = "[aut].[usp_GetAllQueues]";

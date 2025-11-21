@@ -11,8 +11,15 @@ export interface GridColumn {
 }
 
 export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
   email: string;
   password: string;
+  confirmPassword: string;
 }
 
 export interface IUser {
@@ -26,6 +33,23 @@ export interface IUser {
   active: boolean;
   roleName: string;
   roleId: number | null | undefined;
+  priorityId?: number;
+  priorityName?: string;
+  lastLogin?: Date;
+  timeZone?: number;
+  timeZoneName?: string;
+  status?: number;
+  statusName?: string;
+  phoneNumber?: string;
+  twoFactor?: boolean;
+  teams?: string;
+}
+
+export interface IUserFilter {
+  search?: string;
+  status?: number;
+  role?: number;
+  priority?: number;
 }
 
 export interface IUserRole {
