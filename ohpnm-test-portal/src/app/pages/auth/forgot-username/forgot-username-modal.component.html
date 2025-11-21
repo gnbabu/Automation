@@ -1,4 +1,10 @@
-<div class="modal fade" id="forgotUsernameModal" tabindex="-1" aria-labelledby="forgotUsernameLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="forgotUsernameModal"
+  tabindex="-1"
+  aria-labelledby="forgotUsernameLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="forgot-username-modal-container">
@@ -8,22 +14,41 @@
           </div>
           <h2 class="modal-title">Forgot your username?</h2>
           <p class="modal-subtitle">Enter your email to reset it!</p>
-          <form (ngSubmit)="submitEmail()" [formGroup]="forgotusernameForm" novalidate>
+          <form
+            (ngSubmit)="submitEmail()"
+            [formGroup]="forgotusernameForm"
+            novalidate
+          >
             <div class="form-group">
               <label for="email">Email</label>
-              <input type="email" id="forgot-username-email" formControlName="email" class="form-control" placeholder="Enter your Email"
+              <input
+                type="email"
+                id="forgot-username-email"
+                formControlName="email"
+                class="form-control"
+                placeholder="Enter your Email"
                 [ngClass]="{
                   'is-invalid':
                     forgotusernameForm.get('email')?.touched &&
                     forgotusernameForm.get('email')?.invalid
-                }" />
+                }"
+              />
               <!-- Error message -->
-              <div *ngIf="email?.touched && email?.invalid" class="invalid-feedback d-block">
-                <div *ngIf="email?.errors?.['required']">Email is required.</div>
-                <div *ngIf="email?.errors?.['email']">Please enter a valid email address.</div>
+              <div
+                *ngIf="email?.touched && email?.invalid"
+                class="invalid-feedback d-block"
+              >
+                <div *ngIf="email?.errors?.['required']">
+                  Email is required.
+                </div>
+                <div *ngIf="email?.errors?.['email']">
+                  Please enter a valid email address.
+                </div>
               </div>
             </div>
-            <button type="submit" class="btn-purple half-width w-100" style="background-color:purple">Confirm</button>
+            <button type="submit" class="btn-purple half-width w-100">
+              Confirm
+            </button>
           </form>
           <div class="return-link" (click)="returnToLogin()">
             <i class="bi bi-arrow-left"></i>
