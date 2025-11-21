@@ -1,17 +1,38 @@
 .users-container {
   max-width: 100%;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1),
-    /* soft depth */ 0 6px 20px rgba(52, 73, 94, 0.25); /* subtle #34495e glow with opacity */
-  transition: all 0.3s ease-in-out;
 }
 
+/* Header */
+.header-section {
+  background-color: transparent;
+  padding-bottom: 0.5rem;
+}
+
+.header-section h1 {
+  font-weight: 700;
+  font-size: 1.9rem;
+  color: #111827;
+  margin-bottom: 0.3rem;
+}
+
+.header-section small {
+  color: #2563eb;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* Filter Card */
+.filter-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  padding: 35px 24px !important;
+  margin-bottom: 1.5rem;
+}
+
+.filter-select,
 .search {
-  width: 350px;
-  height: 45px;
-}
-
-.form-select {
-  width: 150px;
-  height: 45px;
+  width: 350px !important;
+  height: 44px;
 }
