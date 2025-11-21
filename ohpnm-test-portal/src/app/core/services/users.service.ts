@@ -1,18 +1,26 @@
 import { Injectable } from '@angular/core';
 import { HttpService } from './http.service';
 import { Observable } from 'rxjs';
-import { IChangePasswordRequest, IUser, IUserRole } from '@interfaces';
+import { IChangePasswordRequest, IUser, IUserFilter, IUserRole } from '@interfaces';
 import { Mappers } from '@mappers';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UsersService {
-  constructor(private httpService: HttpService) {}
+  constructor(private httpService: HttpService) { }
 
   getAll(): Observable<IUser[]> {
     return this.httpService.get<IUser[]>(`Users`, {}, (res: any[]) =>
       res.map(Mappers.UserMapper.fromApi)
+    );
+  }
+
+  getFilteredUsers(filters: IUserFilter): Observable<IUser[]> {
+  
+    return this.httpService.post<IUser[]>(
+      'Users/Filters',
+      filters
     );
   }
 
@@ -45,4 +53,9 @@ export class UsersService {
   changePassword(request: IChangePasswordRequest): Observable<any> {
     return this.httpService.post(`Users/change-password`, request);
   }
+
+  delete(userId: number): Observable<any> {
+    return this.httpService.delete(`Users/${userId}`);
+  }
+
 }

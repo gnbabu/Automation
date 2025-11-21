@@ -1,0 +1,80 @@
+/* Main wrapper same as login box */
+.user-form-wrapper {
+  background: #ffffff;
+  padding: 30px !important;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(140, 82, 255, 0.3);
+}
+
+/* Header */
+.headerTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #6a0dad; /* purple */
+}
+
+.brand-underline {
+  /* width: 60px; */
+  height: 3px;
+  background: #6c3483;
+  margin-bottom: 25px;
+}
+
+/* Labels */
+.user-form-wrapper .form-label {
+  font-weight: 600;
+  color: #6a0dad; /* purple */
+}
+
+/* Inputs */
+.user-form-wrapper .form-control,
+.user-form-wrapper .form-select {
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: none;
+  transition: all 0.2s ease-in-out;
+  border: 2px solid #6c3483;
+  height: 44px;
+  border-radius: 6px;
+}
+
+.user-form-wrapper .form-control:focus,
+.user-form-wrapper .form-select:focus {
+  border-color: #6a0dad;
+  box-shadow: 0 0 0 0.2rem rgba(150, 70, 255, 0.2);
+}
+
+/* Upload button */
+.user-form-wrapper .input-group-text {
+  border-radius: 10px;
+  background: #6a0dad;
+  color: #fff;
+  cursor: pointer;
+  border: none;
+}
+
+/* Purple button same as login */
+.btn-purple {
+  background-color: #6c3483;
+  color: white;
+  padding: 11px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn-purple:hover {
+  background: linear-gradient(to right, #8f3aff, #b46aff);
+}
+
+/* Cancel button */
+.btn-outline-secondary {
+  border-radius: 10px;
+  padding: 10px 22px;
+}
+
+/* Responsive columns spacing */
+@media (max-width: 768px) {
+  .user-form-wrapper {
+    padding: 20px;
+  }
+}

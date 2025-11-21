@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-add-edit-user',
+  standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './add-edit-user.component.html',
   styleUrl: './add-edit-user.component.css',
@@ -21,6 +22,14 @@ export class AddEditUserComponent implements OnInit {
   profilePreviewUrl?: string;
   roles: IUserRole[] = [];
 
+  timeZones = [
+    { id: 1, name: 'UTC' },
+    { id: 2, name: 'Eastern Standard Time' },
+    { id: 3, name: 'Central Standard Time' },
+    { id: 4, name: 'India Standard Time' },
+    { id: 5, name: 'Pacific Standard Time' },
+  ];
+
   constructor(
     private router: Router,
     private usersService: UsersService,
@@ -30,12 +39,14 @@ export class AddEditUserComponent implements OnInit {
   ngOnInit(): void {
     this.loadUserRoles();
   }
+
   loadUserRoles(): void {
     this.usersService.getUserRoles().subscribe({
       next: (data) => (this.roles = data),
       error: (err) => console.error('Error loading roles:', err),
     });
   }
+
   onFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
@@ -56,9 +67,8 @@ export class AddEditUserComponent implements OnInit {
 
   onSubmit(form: NgForm) {
     if (!form.valid) return;
-
+    this.user.twoFactor = this.user.twoFactor ? true : false;
     const isNewUser = !this.user.userId || this.user.userId === 0;
-
     const save$ = isNewUser
       ? this.usersService.create(this.user)
       : this.usersService.update(this.user);

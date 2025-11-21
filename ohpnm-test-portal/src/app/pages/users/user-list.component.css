@@ -1,4 +1,23 @@
 .form-check-input:checked {
-    background-color: #5c3c9e;
-    border-color: #5c3c9e;
+  background-color: #5c3c9e;
+  border-color: #5c3c9e;
+}
+
+.txt-dblue {
+  background-color: transparent;
+  border: none;
+}
+
+.txt-teal {
+  background-color: transparent;
+  border: none;
+}
+
+.txt-ogreen {
+  background-color: transparent;
+  border: none;
+}
+
+.btn-normal {
+  background-color: transparent;
 }

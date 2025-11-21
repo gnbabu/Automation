@@ -1,6 +1,7 @@
 import {
   Component,
   EventEmitter,
+  Input,
   OnInit,
   Output,
   TemplateRef,
@@ -8,7 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GridColumn, IUser } from '@interfaces';
-import { UsersService } from '@services';
+import { UsersService, CommonToasterService } from '@services';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 
 @Component({
@@ -19,33 +20,43 @@ import { DataGridComponent } from 'app/core/components/data-grid/data-grid.compo
   styleUrls: ['./user-list.component.css'],
 })
 export class UserListComponent implements OnInit {
+  @Input() users: IUser[] = [];
   @Output() editUser = new EventEmitter<IUser>();
-  users: IUser[] = [];
   columns: GridColumn[] = [];
   pageSize = 10;
 
   @ViewChild('nameTemplate', { static: true })
   nameTemplate!: TemplateRef<any>;
 
-  @ViewChild('activeTemplate', { static: true })
-  activeTemplate!: TemplateRef<any>;
+  @ViewChild('statusTemplate', { static: true })
+  statusTemplate!: TemplateRef<any>;
 
   @ViewChild('actionsTemplate', { static: true })
   actionsTemplate!: TemplateRef<any>;
 
-  constructor(private usersService: UsersService) {}
+  @ViewChild('priorityTemplate', { static: true })
+  priorityTemplate!: TemplateRef<any>;
+
+  @ViewChild('lastLoginTemplate', { static: true })
+  lastLoginTemplate!: TemplateRef<any>;
+
+  constructor(
+    private usersService: UsersService,
+    private toaster: CommonToasterService
+  ) {}
 
   ngOnInit(): void {
     this.columns = [
       {
-        field: 'userName',
-        header: 'Username',
+        field: 'userId',
+        header: 'ID',
         sortable: true,
       },
       {
-        field: 'email',
-        header: 'Email',
+        field: 'fullName',
+        header: 'Name & Email',
         sortable: true,
+        cellTemplate: this.nameTemplate,
       },
       {
         field: 'roleName',
@@ -53,21 +64,27 @@ export class UserListComponent implements OnInit {
         sortable: true,
       },
       {
-        field: 'fullName',
-        header: 'Name',
+        field: 'priorityName',
+        header: 'Priority',
         sortable: true,
-        cellTemplate: this.nameTemplate, // custom template (firstName + lastName)
+        cellTemplate: this.priorityTemplate,
       },
       {
-        field: 'active',
-        header: 'Active',
+        field: 'statusName',
+        header: 'Status',
         sortable: false,
-        cellTemplate: this.activeTemplate, // toggle switch template
+        cellTemplate: this.statusTemplate,
+      },
+      {
+        field: 'lastLogin',
+        header: 'Last Login',
+        sortable: true,
+        cellTemplate: this.lastLoginTemplate,
       },
       {
         field: 'actions',
         header: 'Actions',
-        cellTemplate: this.actionsTemplate, // edit button template
+        cellTemplate: this.actionsTemplate,
       },
     ];
 
@@ -92,5 +109,12 @@ export class UserListComponent implements OnInit {
 
   editUserClicked(user: IUser) {
     this.editUser.emit(user);
+  }
+
+  deleteUserClicked(userId: number) {
+    this.usersService.delete(userId).subscribe(() => {
+      this.toaster.success('User deleted successfully');
+      this.loadUsers();
+    });
   }
 }

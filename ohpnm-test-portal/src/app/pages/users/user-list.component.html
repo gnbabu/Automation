@@ -6,25 +6,35 @@
     [sortingMode]="'client'"
     [pageSize]="pageSize"
     [pagingEnabled]="true"
-    [theme]="'light'"
   ></app-data-grid>
 </div>
 
 <ng-template #nameTemplate let-row let-value="value">
-  {{ row.firstName }} {{ row.lastName }}
+  {{ row.firstName }} {{ row.lastName }} <br />
+  {{ row.email }}
 </ng-template>
 
-<ng-template #activeTemplate let-row let-value="value">
-  <div class="form-check form-switch">
-    <input
-      type="checkbox"
-      class="form-check-input"
-      [checked]="value"
-      (change)="toggleActive(row)"
-    />
-  </div>
+<ng-template #priorityTemplate let-row let-value="value">
+  <label *ngIf="row.priorityId === 1" class="txt-dblue">Tier 1</label>
+  <label *ngIf="row.priorityId === 2" class="txt-teal">Tier 2</label>
+  <label *ngIf="row.priorityId === 3" class="txt-ogreen">Tier 3</label>
+</ng-template>
+
+<ng-template #statusTemplate let-row let-value="value">
+  <button *ngIf="row.status === 1" class="btn btn-success">Active</button>
+  <button *ngIf="row.status === 2" class="btn btn-warning">Suspended</button>
+  <button *ngIf="row.status === 3" class="btn btn-danger">Pending</button>
 </ng-template>
 
 <ng-template #actionsTemplate let-row let-value="value">
-  <button class="btn-purple" (click)="editUserClicked(row)">Edit</button>
+  <button class="btn-normal" (click)="editUserClicked(row)">Edit</button>
+  <button class="btn-normal" (click)="deleteUserClicked(row.userId)">
+    Delete
+  </button>
+  <button class="btn-normal" (click)="editUserClicked(row)">Reset PW</button>
+</ng-template>
+
+<ng-template #lastLoginTemplate let-row let-value="value">
+  {{ row.lastLogin | date : "yyyy-MM-dd HH:mm" }} <br />
+  {{ row.phoneNumber }}
 </ng-template>

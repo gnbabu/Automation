@@ -1,14 +1,69 @@
 <div class="users-container">
-  <h4 class="text-white header-h4">User Management</h4>
+  <h4 class="text-white header-h4" *ngIf="!showForm">User & Role Management</h4>
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h4 class="fw-bold mb-1"></h4>
     </div>
-    <button class="btn-purple" (click)="onAddUser()" *ngIf="!showForm">
+    <button class="btn btn-danger" (click)="onAddUser()" *ngIf="!showForm">
       <i class="fas fa-plus me-2"></i> Add New User
     </button>
   </div>
-  <app-user-list *ngIf="!showForm" (editUser)="onEditUser($event)">
+  <div
+    *ngIf="!showForm"
+    class="d-flex justify-content-between align-items-center mb-4"
+  >
+    <div class="d-flex gap-3">
+      <input
+        type="text"
+        class="form-control search"
+        placeholder="Search by name or email"
+        [(ngModel)]="filters.search"
+        (ngModelChange)="onFilterChange()"
+      />
+      <select
+        class="form-select"
+        [(ngModel)]="filters.status"
+        (change)="onFilterChange()"
+      >
+        <option [ngValue]="0">All Status</option>
+        <option [ngValue]="1">Active</option>
+        <option [ngValue]="2">Suspended</option>
+        <option [ngValue]="3">Pending</option>
+      </select>
+      <select
+        class="form-select"
+        [(ngModel)]="filters.role"
+        (change)="onFilterChange()"
+      >
+        <option [ngValue]="0">All Roles</option>
+        <option [ngValue]="1">Admin</option>
+        <option [ngValue]="2">Tester</option>
+        <option [ngValue]="3">Manager</option>
+        <option [ngValue]="4">Viewer</option>
+      </select>
+      <select
+        class="form-select"
+        [(ngModel)]="filters.priority"
+        (change)="onFilterChange()"
+      >
+        <option [ngValue]="0">All Tiers</option>
+        <option [ngValue]="1">Tier 1</option>
+        <option [ngValue]="2">Tier 2</option>
+        <option [ngValue]="3">Tier 3</option>
+      </select>
+      <div class="form-check" style="padding-top: 10px">
+        <input class="form-check-input" type="checkbox" id="inProgressCheck" />
+        <label class="form-check-label text-black" for="inProgressCheck"
+          >In Progress</label
+        >
+      </div>
+    </div>
+  </div>
+  <app-user-list
+    *ngIf="!showForm"
+    [users]="filteredUsers"
+    (editUser)="onEditUser($event)"
+  >
   </app-user-list>
   <app-add-edit-user
     *ngIf="showForm && selectedUser"
