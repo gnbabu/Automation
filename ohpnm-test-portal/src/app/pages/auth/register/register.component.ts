@@ -73,52 +73,33 @@ export class RegisterComponent {
   }
 
   onSubmit() {
-    if (this.registerForm.valid) {
-      const registerRequest: RegisterRequest = {
-        username: this.registerForm.value.username,
-        email: this.registerForm.value.email,
-        password: this.registerForm.value.password,
-        confirmPassword: this.registerForm.value.confirmPassword,
-      };
-
-      this.authService.register(registerRequest).subscribe({
-        next: (response) => {
-          if (response.result == true) {
-            this.message = response.message;
-            this.messageType = 'success';
-
-            setTimeout(() => {
-              this.message = '';
-              this.messageType = '';
-            }, 6000);
-
-            this.router.navigate(['/login'], { replaceUrl: true });
-          } else {
-            this.message = response.message;
-            this.messageType = 'error';
-
-            setTimeout(() => {
-              this.message = '';
-              this.messageType = '';
-            }, 6000);
-          }
-        },
-        error: (err: any) => {
-          console.log('Registration failed', err);
-          this.message = err.error;
-          this.messageType = 'error';
-
-          setTimeout(() => {
-            this.message = '';
-            this.messageType = '';
-          }, 6000);
-        },
-        complete: () => {},
-      });
-    } else {
+    if (!this.registerForm.valid) {
       this.toaster.info('Please enter valid details');
       this.registerForm.markAllAsTouched();
+      return;
     }
+
+    const registerRequest: RegisterRequest = this.registerForm.value;
+
+    this.authService.register(registerRequest).subscribe({
+      next: (response) => {
+        if (response?.result) {
+          this.toaster.success('Registration successful');
+          this.router.navigate(['/login'], { replaceUrl: true });
+        } else {
+          this.toaster.error(
+            response?.message || 'Registration failed',
+            'error'
+          );
+        }
+      },
+      error: (err) => {
+        const errorMessage =
+          err?.error?.message || err?.error || 'An unexpected error occurred';
+
+        this.toaster.error(`Error: ${errorMessage}`);
+      },
+    });
   }
 
   onSignInClick() {

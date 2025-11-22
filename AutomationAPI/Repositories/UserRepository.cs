@@ -197,6 +197,22 @@ namespace AutomationAPI.Repositories
             return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.CreateUser, parameters.ToArray());
         }
 
+        public async Task<int> RegisterUserAsync(RegistrationModel model)
+        {
+            var parameters = new List<SqlParameter>
+            {
+                    new SqlParameter("@Username", model.Username),
+                    new SqlParameter("@Email", model.Email),
+                    new SqlParameter("@Password", model.Password)
+            };
+
+            return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(
+                SqlDbConstants.RegisterUser,
+                parameters.ToArray()
+            );
+        }
+
+
         public async Task UpdateUserAsync(User user)
         {
             var parameters = new List<SqlParameter>

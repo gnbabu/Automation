@@ -101,7 +101,7 @@ namespace AutomationAPI.Repositories
 
         public async Task<bool> Register(RegistrationModel model)
         {
-            // Validation
+
             if (string.IsNullOrWhiteSpace(model.Username) ||
                 string.IsNullOrWhiteSpace(model.Email) ||
                 string.IsNullOrWhiteSpace(model.Password) ||
@@ -114,38 +114,19 @@ namespace AutomationAPI.Repositories
             if (!IsValidPassword(model.Password))
                 throw new ArgumentException("Password does not meet complexity requirements.");
 
-            // Check for existing user by username or email
-            var existingUsers = await _userRepository.GetAllUsersAsync();
-            if (existingUsers.Any(u => u.UserName == model.Username))
+            var users = await _userRepository.GetAllUsersAsync();
+            if (users.Any(u => u.UserName.Equals(model.Username, StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Username already exists.");
-            if (existingUsers.Any(u => u.Email == model.Email))
+
+            if (users.Any(u => u.Email.Equals(model.Email, StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Email already registered.");
 
-            // Hash password
-            // var passwordHash = HashPassword(model.Password);
 
-            // Create User object
-            var user = new User
-            {
-                UserName = model.Username,
-                // Password = passwordHash,
-                Password = model.Password,
-                FirstName = string.Empty, // Optional: collect from UI if needed
-                LastName = string.Empty,  // Optional: collect from UI if needed
-                Email = model.Email,
-                RoleId = 2,     // Default role, adjust as needed
-                Active = true,
-                Status = 1, // Default User Status - Active
-                Priority = 3, // Default Priority Status - Low
-                PhoneNumber = string.Empty, // Optional: collect from UI if needed
-                                            // PasswordHash = _passwordHasher.HashPassword(user, model.Password),
+            var userId = await _userRepository.RegisterUserAsync(model);
 
-            };
-
-            var userId = await _userRepository.CreateUserAsync(user);
-            if (userId > 0) return true;
-            else return false;
+            return userId > 0;
         }
+
 
         private bool IsValidPassword(string password)
         {

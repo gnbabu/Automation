@@ -27,14 +27,22 @@
 </ng-template>
 
 <ng-template #actionsTemplate let-row let-value="value">
-  <button class="btn-normal" (click)="editUserClicked(row)">Edit</button>
-  <button class="btn-normal" (click)="deleteUserClicked(row.userId)">
-    Delete
-  </button>
-  <button class="btn-normal" (click)="editUserClicked(row)">Reset PW</button>
+  <div class="actions-wrapper">
+    <button class="btn-normal" (click)="editUserClicked(row)">Edit</button>
+
+    <div class="form-check form-switch switch-wrapper">
+      <input
+        type="checkbox"
+        class="form-check-input"
+        [checked]="row.active"
+        (change)="toggleActive(row)"
+      />
+    </div>
+
+    <button class="btn-normal" (click)="editUserClicked(row)">Reset PW</button>
+  </div>
 </ng-template>
 
 <ng-template #lastLoginTemplate let-row let-value="value">
-  {{ row.lastLogin | date : "yyyy-MM-dd HH:mm" }} <br />
-  {{ row.phoneNumber }}
+  {{ row.lastLogin | date : "yyyy-MM-dd HH:mm" }}
 </ng-template>

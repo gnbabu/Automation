@@ -15,5 +15,6 @@ namespace AutomationAPI.Repositories.Interfaces
         Task SetUserActiveStatusAsync(int userId, bool active);
         Task<IEnumerable<UserRole>> GetUserRoles();
         Task<IEnumerable<User>> GetFilteredUsersAsync(UserFilter filters);
+        Task<int> RegisterUserAsync(RegistrationModel model);
     }
 }
