@@ -71,7 +71,7 @@ export const UserMapper = {
       lastName: '',
       email: '',
       photo: undefined,
-      active: false,
+      active: true,
       roleId: null,
       roleName: '',
       priorityId: undefined,

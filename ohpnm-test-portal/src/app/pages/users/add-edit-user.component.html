@@ -11,13 +11,24 @@
 
         <div class="mb-3">
           <label class="form-label">First Name *</label>
+
           <input
             name="firstName"
             class="form-control"
             [(ngModel)]="user.firstName"
             required
+            #firstName="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
           />
+
+          <div
+            class="text-danger small"
+            *ngIf="firstName.invalid && firstName.touched"
+          >
+            First Name is required.
+          </div>
         </div>
+
         <div class="mb-3">
           <label class="form-label">Last Name *</label>
           <input
@@ -25,7 +36,15 @@
             class="form-control"
             [(ngModel)]="user.lastName"
             required
+            #lastName="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
           />
+          <div
+            class="text-danger small"
+            *ngIf="lastName.touched && lastName.invalid"
+          >
+            Last Name is required.
+          </div>
         </div>
 
         <div class="mb-3">
@@ -35,7 +54,18 @@
             class="form-control"
             [(ngModel)]="user.phoneNumber"
             required
+            minlength="10"
+            #phone="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
           />
+          <div class="text-danger small" *ngIf="phone.touched && phone.invalid">
+            <span *ngIf="phone.errors?.['required']"
+              >Phone Number is required.</span
+            >
+            <span *ngIf="phone.errors?.['minlength']"
+              >Minimum 10 digits required.</span
+            >
+          </div>
         </div>
 
         <div class="mb-3">
@@ -45,9 +75,18 @@
             class="form-control"
             [(ngModel)]="user.userName"
             required
+            #username="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
           />
+          <div
+            class="text-danger small"
+            *ngIf="username.touched && username.invalid"
+          >
+            Username is required.
+          </div>
         </div>
 
+        <!-- Two-factor -->
         <div class="mb-3">
           <label class="form-label">Two-Factor Authentication *</label>
           <select
@@ -55,11 +94,19 @@
             class="form-control"
             [(ngModel)]="user.twoFactor"
             required
+            #twoFactor="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
           >
             <option value="" disabled selected>Select two factor</option>
             <option value="true">Yes</option>
             <option value="false">No</option>
           </select>
+          <div
+            class="text-danger small"
+            *ngIf="twoFactor.touched && twoFactor.invalid"
+          >
+            Two-factor selection is required.
+          </div>
         </div>
 
         <div class="mb-3">
@@ -69,14 +116,20 @@
             class="form-select"
             [(ngModel)]="user.roleId"
             required
+            #role="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
           >
             <option [ngValue]="null">Select</option>
-            <option *ngFor="let role of roles" [ngValue]="role.roleId">
-              {{ role.roleName }}
+            <option *ngFor="let r of roles" [ngValue]="r.roleId">
+              {{ r.roleName }}
             </option>
           </select>
+          <div class="text-danger small" *ngIf="role.touched && role.invalid">
+            Role is required.
+          </div>
         </div>
 
+        <!-- Time Zone -->
         <div class="mb-3">
           <label class="form-label">Time Zone *</label>
           <select
@@ -84,12 +137,20 @@
             class="form-control"
             [(ngModel)]="user.timeZone"
             required
+            #timezone="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
           >
             <option value="" disabled selected>Select a time zone</option>
             <option *ngFor="let tz of timeZones" [value]="tz.id">
               {{ tz.name }}
             </option>
           </select>
+          <div
+            class="text-danger small"
+            *ngIf="timezone.touched && timezone.invalid"
+          >
+            Time Zone is required.
+          </div>
         </div>
       </div>
 
@@ -104,8 +165,15 @@
             class="form-control"
             [(ngModel)]="user.email"
             required
+            email
+            #email="ngModel"
             placeholder="email@domain.com"
+            [ngModelOptions]="{ updateOn: 'blur' }"
           />
+          <div class="text-danger small" *ngIf="email.touched && email.invalid">
+            <span *ngIf="email.errors?.['required']">Email is required.</span>
+            <span *ngIf="email.errors?.['email']">Invalid email format.</span>
+          </div>
         </div>
 
         <div class="mb-3">
@@ -128,22 +196,32 @@
             <button class="input-group-text" (click)="fileInput.click()">
               <i class="bi bi-upload"></i>
             </button>
-
-            <!--<span class="input-group-text"><input type="file" /><i class="bi bi-upload"></i></span>-->
           </div>
-          <!-- <img [src]="getPhotoUrl(profilePreviewUrl || user.photo)" class="img-thumbnail rounded mt-2 profile-img" alt="Profile Picture" />-->
         </div>
 
         <div class="mb-3" *ngIf="!user.userId">
-          <label for="password">Password *</label>
+          <label class="form-label">Password *</label>
           <input
             type="password"
-            id="password"
             name="password"
             class="form-control"
-            required
             [(ngModel)]="user.password"
+            required
+            minlength="6"
+            #password="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
           />
+          <div
+            class="text-danger small"
+            *ngIf="password.touched && password.invalid"
+          >
+            <span *ngIf="password.errors?.['required']"
+              >Password is required.</span
+            >
+            <span *ngIf="password.errors?.['minlength']"
+              >Minimum 6 characters required.</span
+            >
+          </div>
         </div>
 
         <div class="mb-3">
