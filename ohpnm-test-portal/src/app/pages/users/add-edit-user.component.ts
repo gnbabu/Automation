@@ -1,7 +1,13 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { IUser, IUserRole } from '@interfaces';
+import {
+  IPriorityStatus,
+  ITimeZone,
+  IUser,
+  IUserRole,
+  IUserStatus,
+} from '@interfaces';
 import { Mappers } from '@mappers';
 import { CommonToasterService, UsersService } from '@services';
 import { Router } from '@angular/router';
@@ -21,14 +27,9 @@ export class AddEditUserComponent implements OnInit {
   profileFile?: File;
   profilePreviewUrl?: string;
   roles: IUserRole[] = [];
-
-  timeZones = [
-    { id: 1, name: 'UTC' },
-    { id: 2, name: 'Eastern Standard Time' },
-    { id: 3, name: 'Central Standard Time' },
-    { id: 4, name: 'India Standard Time' },
-    { id: 5, name: 'Pacific Standard Time' },
-  ];
+  timeZones: ITimeZone[] = [];
+  statuses: IUserStatus[] = [];
+  priorities: IPriorityStatus[] = [];
 
   constructor(
     private router: Router,
@@ -38,12 +39,36 @@ export class AddEditUserComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUserRoles();
+    this.loadTimeZones();
+    this.loadUserStatuses();
+    this.loadPriorityStatuses();
   }
 
   loadUserRoles(): void {
     this.usersService.getUserRoles().subscribe({
       next: (data) => (this.roles = data),
       error: (err) => console.error('Error loading roles:', err),
+    });
+  }
+
+  loadTimeZones(): void {
+    this.usersService.getTimeZones().subscribe({
+      next: (data) => (this.timeZones = data),
+      error: (err) => console.error('Error loading time zones:', err),
+    });
+  }
+
+  loadUserStatuses(): void {
+    this.usersService.getUserStatuses().subscribe({
+      next: (data) => (this.statuses = data),
+      error: (err) => console.error('Error loading statuses:', err),
+    });
+  }
+
+  loadPriorityStatuses(): void {
+    this.usersService.getPriorityStatuses().subscribe({
+      next: (data) => (this.priorities = data),
+      error: (err) => console.error('Error loading priorities:', err),
     });
   }
 

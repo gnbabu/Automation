@@ -141,8 +141,8 @@
             [ngModelOptions]="{ updateOn: 'blur' }"
           >
             <option value="" disabled selected>Select a time zone</option>
-            <option *ngFor="let tz of timeZones" [value]="tz.id">
-              {{ tz.name }}
+            <option *ngFor="let tz of timeZones" [value]="tz.timeZoneId">
+              {{ tz.timeZoneName }}
             </option>
           </select>
           <div
@@ -232,6 +232,49 @@
             [(ngModel)]="user.teams"
             placeholder="e.g. Regression, Development"
           />
+        </div>
+        <!-- Status -->
+        <div class="mb-3">
+          <label class="form-label">Status *</label>
+          <select
+            name="status"
+            class="form-control"
+            [(ngModel)]="user.status"
+            required
+            #status="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
+          >
+            <option value="" disabled selected>Select a status</option>
+            <option *ngFor="let s of statuses" [value]="s.statusId">
+              {{ s.statusName }}
+            </option>
+          </select>
+          <div
+            class="text-danger small"
+            *ngIf="status.touched && status.invalid"
+          >
+            Status is required.
+          </div>
+        </div>
+
+        <!-- Priority (optional) -->
+        <div class="mb-3">
+          <label class="form-label">Priority</label>
+          <select
+            name="priority"
+            class="form-control"
+            [(ngModel)]="user.priorityId"
+            #priority="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
+          >
+            <!-- Placeholder -->
+            <option value="" selected>Select a priority</option>
+
+            <!-- Actual options -->
+            <option *ngFor="let p of priorities" [ngValue]="p.priorityId">
+              {{ p.priorityName }}
+            </option>
+          </select>
         </div>
       </div>
     </div>

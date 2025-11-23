@@ -208,17 +208,21 @@ namespace AutomationAPI.Repositories
             {
                 new SqlParameter("@UserID", user.UserId),
                 new SqlParameter("@UserName", user.UserName),
-                new SqlParameter("@FirstName", user.FirstName),
-                new SqlParameter("@LastName", user.LastName),
+                new SqlParameter("@Password", string.IsNullOrEmpty(user.Password) ? (object)DBNull.Value : user.Password),
+                new SqlParameter("@FirstName", string.IsNullOrEmpty(user.FirstName) ? (object)DBNull.Value : user.FirstName),
+                new SqlParameter("@LastName", string.IsNullOrEmpty(user.LastName) ? (object)DBNull.Value : user.LastName),
                 new SqlParameter("@Email", user.Email),
                 new SqlParameter("@RoleID", user.RoleId),
+                new SqlParameter("@Active", user.Active),
+                new SqlParameter("@TimeZone", user.TimeZone.HasValue ? (object)user.TimeZone.Value : DBNull.Value),
                 new SqlParameter("@TwoFactor", user.TwoFactor),
-                new SqlParameter("@Teams",user.Teams),
-                new SqlParameter("@TimeZone",user.TimeZone),
-                new SqlParameter("@PhoneNumber", user.PhoneNumber)
+                new SqlParameter("@Teams", string.IsNullOrEmpty(user.Teams) ? (object)DBNull.Value : user.Teams),
+                new SqlParameter("@PhoneNumber", string.IsNullOrEmpty(user.PhoneNumber) ? (object)DBNull.Value : user.PhoneNumber),
+                new SqlParameter("@Priority", user.PriorityId.HasValue ? (object)user.PriorityId.Value : DBNull.Value),
+                new SqlParameter("@Status", user.Status.HasValue ? (object)user.Status.Value : DBNull.Value)
             };
 
-            byte[] imageBytes = [];
+            byte[] imageBytes = Array.Empty<byte>();
             if (!string.IsNullOrEmpty(user.Photo))
             {
                 var base64 = user.Photo.Contains(",")
@@ -227,18 +231,17 @@ namespace AutomationAPI.Repositories
 
                 imageBytes = Convert.FromBase64String(base64);
             }
+
             parameters.Add(new SqlParameter
             {
                 ParameterName = "@Photo",
                 SqlDbType = SqlDbType.VarBinary,
-                Value = (imageBytes != null && imageBytes.Length > 0)
-                        ? imageBytes
-                        : (object)DBNull.Value
-
+                Value = (imageBytes.Length > 0) ? imageBytes : (object)DBNull.Value
             });
 
             await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.UpdateUser, parameters.ToArray());
         }
+
 
         public async Task DeleteUserAsync(int userId)
         {
