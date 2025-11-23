@@ -161,11 +161,11 @@ namespace AutomationAPI.Controllers
         }
 
         [HttpGet("roles")]
-        public async Task<IActionResult> GetUserRoles()
+        public async Task<IActionResult> GetUserRolesAsync()
         {
             try
             {
-                var userRoles = await _userRepository.GetUserRoles();
+                var userRoles = await _userRepository.GetUserRolesAsync();
                 return Ok(userRoles);
             }
             catch (Exception ex)
@@ -174,6 +174,52 @@ namespace AutomationAPI.Controllers
                 return StatusCode(500, "An error occurred while fetching user roles.");
             }
         }
+
+        [HttpGet("status")]
+        public async Task<IActionResult> GetUserStatusAsync()
+        {
+            try
+            {
+                var status = await _userRepository.GetUserStatusesAsync();
+                return Ok(status);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching user status.");
+                return StatusCode(500, "An error occurred while fetching user status.");
+            }
+        }
+
+        [HttpGet("timezones")]
+        public async Task<IActionResult> GetTimeZonesAsync()
+        {
+            try
+            {
+                var zones = await _userRepository.GetTimeZonesAsync();
+                return Ok(zones);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching time zones.");
+                return StatusCode(500, "An error occurred while fetching time zones.");
+            }
+        }
+
+        [HttpGet("priorities")]
+        public async Task<IActionResult> GetPriorityStatusAsync()
+        {
+            try
+            {
+                var priorities = await _userRepository.GetPriorityStatusesAsync();
+                return Ok(priorities);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching priority status.");
+                return StatusCode(500, "An error occurred while fetching priority status.");
+            }
+        }
+
 
     }
 }

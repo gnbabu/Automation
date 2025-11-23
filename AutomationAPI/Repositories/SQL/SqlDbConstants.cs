@@ -14,6 +14,9 @@
         public const string GetUserRoles = "[aut].[usp_GetUserRoles]";
         public const string FilterAllUsers = "[aut].[usp_GetFilteredUsers]";
         public const string RegisterUser = "[aut].[usp_RegisterUser]";
+        public const string GetUserStatuses = "[aut].[usp_GetUserStatuses]";
+        public const string GetTimeZones = "[aut].[usp_GetTimeZones]";
+        public const string GetPriorityStatus = "[aut].[usp_GetPriorityStatus]";
 
 
         //Queue Info

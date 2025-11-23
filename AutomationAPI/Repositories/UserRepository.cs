@@ -39,7 +39,7 @@ namespace AutomationAPI.Repositories
                     RoleName = reader.GetString(reader.GetOrdinal("RoleName")),
                     RoleId = reader.GetInt32(reader.GetOrdinal("RoleID")),
                     Active = reader.GetBoolean(reader.GetOrdinal("Active")),
-                    Priority = reader.IsDBNull(reader.GetOrdinal("Priority"))
+                    PriorityId = reader.IsDBNull(reader.GetOrdinal("Priority"))
                         ? null
                         : reader.GetInt32(reader.GetOrdinal("Priority")),
                     PriorityName = reader.IsDBNull(reader.GetOrdinal("PriorityName"))
@@ -80,11 +80,11 @@ namespace AutomationAPI.Repositories
             }
 
         }
+
         public string GetPhotoBase64(byte[] photoBytes)
         {
             return $"data:image/png;base64,{Convert.ToBase64String(photoBytes)}";
         }
-
 
         public async Task<User> GetUserByIdAsync(int userId)
         {
@@ -151,24 +151,24 @@ namespace AutomationAPI.Repositories
 
         public async Task<int> CreateUserAsync(User user)
         {
-
             var parameters = new List<SqlParameter>
             {
                 new SqlParameter("@UserName", user.UserName),
-                new SqlParameter("@Password", user.Password),
-                new SqlParameter("@FirstName", user.FirstName),
-                new SqlParameter("@LastName", user.LastName),
-                new SqlParameter("@Email", user.Email),
+                new SqlParameter("@Password", user.Password ?? (object)DBNull.Value),
+                new SqlParameter("@FirstName", user.FirstName ?? (object)DBNull.Value),
+                new SqlParameter("@LastName", user.LastName ?? (object)DBNull.Value),
+                new SqlParameter("@Email", user.Email ?? (object)DBNull.Value),
                 new SqlParameter("@RoleID", user.RoleId),
                 new SqlParameter("@Active", user.Active),
                 new SqlParameter("@TwoFactor", user.TwoFactor),
-                new SqlParameter("@Teams",user.Teams),
-                new SqlParameter("@TimeZone",user.TimeZone),
-                new SqlParameter("@PhoneNumber", user.PhoneNumber)
-
+                new SqlParameter("@Teams", user.Teams ?? (object)DBNull.Value),
+                new SqlParameter("@TimeZone", user.TimeZone.HasValue ? (object)user.TimeZone.Value : DBNull.Value),
+                new SqlParameter("@PhoneNumber", user.PhoneNumber ?? (object)DBNull.Value),
+                new SqlParameter("@Priority", user.PriorityId .HasValue ? (object)user.PriorityId.Value : DBNull.Value),
+                new SqlParameter("@Status", user.Status.HasValue ? (object)user.Status.Value : DBNull.Value)
             };
 
-
+            // Handle Photo separately
             if (!string.IsNullOrEmpty(user.Photo))
             {
                 var base64 = user.Photo.Contains(",")
@@ -176,26 +176,16 @@ namespace AutomationAPI.Repositories
                     : user.Photo;
 
                 byte[] imageBytes = Convert.FromBase64String(base64);
-
-                parameters.Add(new SqlParameter
-                {
-                    ParameterName = "@Photo",
-                    SqlDbType = SqlDbType.VarBinary,
-                    Value = imageBytes ?? (object)DBNull.Value
-                });
+                parameters.Add(new SqlParameter("@Photo", SqlDbType.VarBinary) { Value = imageBytes });
             }
             else
             {
-                parameters.Add(new SqlParameter
-                {
-                    ParameterName = "@Photo",
-                    SqlDbType = SqlDbType.VarBinary,
-                    Value = (object)DBNull.Value
-                });
+                parameters.Add(new SqlParameter("@Photo", SqlDbType.VarBinary) { Value = DBNull.Value });
             }
 
             return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.CreateUser, parameters.ToArray());
         }
+
 
         public async Task<int> RegisterUserAsync(RegistrationModel model)
         {
@@ -211,7 +201,6 @@ namespace AutomationAPI.Repositories
                 parameters.ToArray()
             );
         }
-
 
         public async Task UpdateUserAsync(User user)
         {
@@ -287,7 +276,7 @@ namespace AutomationAPI.Repositories
                         RoleName = reader.GetString(reader.GetOrdinal("RoleName")),
                         RoleId = reader.GetInt32(reader.GetOrdinal("RoleID")),
                         Active = reader.GetBoolean(reader.GetOrdinal("Active")),
-                        Priority = reader.IsDBNull(reader.GetOrdinal("Priority")) ? null : reader.GetInt32(reader.GetOrdinal("Priority")),
+                        PriorityId = reader.IsDBNull(reader.GetOrdinal("Priority")) ? null : reader.GetInt32(reader.GetOrdinal("Priority")),
                         PriorityName = reader.IsDBNull(reader.GetOrdinal("PriorityName")) ? string.Empty : reader.GetString(reader.GetOrdinal("PriorityName")),
                         LastLogin = reader.IsDBNull(reader.GetOrdinal("LastLogin")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("LastLogin")),
                         TimeZone = reader.IsDBNull(reader.GetOrdinal("TimeZone")) ? null : reader.GetInt32(reader.GetOrdinal("TimeZone")),
@@ -326,7 +315,6 @@ namespace AutomationAPI.Repositories
             }
         }
 
-
         public async Task SetUserActiveStatusAsync(int userId, bool active)
         {
             var parameters = new SqlParameter[]
@@ -338,7 +326,7 @@ namespace AutomationAPI.Repositories
             await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.SetUserActiveStatus, parameters);
         }
 
-        public async Task<IEnumerable<UserRole>> GetUserRoles()
+        public async Task<IEnumerable<UserRole>> GetUserRolesAsync()
         {
             var parameters = new SqlParameter[] { };
             return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetUserRoles, parameters, reader => new UserRole
@@ -348,6 +336,57 @@ namespace AutomationAPI.Repositories
 
             });
         }
+
+        public async Task<IEnumerable<UserStatus>> GetUserStatusesAsync()
+        {
+            var parameters = new SqlParameter[] { };
+
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(
+                SqlDbConstants.GetUserStatuses,
+                parameters,
+                reader => new UserStatus
+                {
+                    StatusId = reader.GetInt32(reader.GetOrdinal("StatusID")),
+                    StatusName = reader.GetString(reader.GetOrdinal("StatusName"))
+                }
+            );
+        }
+
+        public async Task<IEnumerable<AppTimeZone>> GetTimeZonesAsync()
+        {
+            var parameters = new SqlParameter[] { };
+
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(
+                SqlDbConstants.GetTimeZones,
+                parameters,
+                reader => new AppTimeZone
+                {
+                    TimeZoneId = reader.GetInt32(reader.GetOrdinal("TimeZoneID")),
+                    TimeZoneName = reader.GetString(reader.GetOrdinal("TimeZoneName")),
+                    UTCOffsetMinutes = reader.GetInt32(reader.GetOrdinal("UTCOffsetMinutes")),
+                    Description = reader.IsDBNull(reader.GetOrdinal("Description"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("Description"))
+                }
+            );
+        }
+
+        public async Task<IEnumerable<PriorityStatus>> GetPriorityStatusesAsync()
+        {
+            var parameters = new SqlParameter[] { };
+
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(
+                SqlDbConstants.GetPriorityStatus,
+                parameters,
+                reader => new PriorityStatus
+                {
+                    PriorityId = reader.GetInt32(reader.GetOrdinal("PriorityID")),
+                    PriorityName = reader.GetString(reader.GetOrdinal("PriorityName"))
+                }
+            );
+        }
+
+
     }
 
 }

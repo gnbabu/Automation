@@ -12,7 +12,7 @@
         public int? RoleId { get; set; }
         public string? RoleName { get; set; }
         public bool Active { get; set; }
-        public int? Priority { get; set; }
+        public int? PriorityId { get; set; }
         public string? PriorityName { get; set; }
         public DateTime? LastLogin { get; set; }
         public int? TimeZone { get; set; }
@@ -25,4 +25,22 @@
         public string? PasswordHash { get; set; }
 
     }
+    public class UserStatus
+    {
+        public int StatusId { get; set; }
+        public string StatusName { get; set; } = string.Empty;
+    }
+    public class AppTimeZone
+    {
+        public int TimeZoneId { get; set; }
+        public string TimeZoneName { get; set; } = string.Empty;
+        public int UTCOffsetMinutes { get; set; }
+        public string? Description { get; set; }
+    }
+    public class PriorityStatus
+    {
+        public int PriorityId { get; set; }
+        public string PriorityName { get; set; } = string.Empty;
+    }
+
 }

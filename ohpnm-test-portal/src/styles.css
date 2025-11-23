@@ -168,7 +168,7 @@ body {
 .btn-normal {
   background-color: #ffffff;
   font-weight: 500;
-  border: none;
+  border: solid 1px #dee2e6;
   border-radius: 4px;
   padding: 6px 14px;
   cursor: pointer;

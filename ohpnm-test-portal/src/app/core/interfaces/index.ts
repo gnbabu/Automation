@@ -56,6 +56,22 @@ export interface IUserRole {
   roleId: number;
   roleName: string;
 }
+export interface IUserStatus {
+  statusId: number;
+  statusName: string;
+}
+
+export interface ITimeZone {
+  timeZoneId: number;
+  timeZoneName: string;
+  utcOffsetMinutes: number;
+  description?: string; // optional
+}
+
+export interface IPriorityStatus {
+  priorityId: number;
+  priorityName: string;
+}
 
 export interface IChangePasswordRequest {
   oldPassword: string;

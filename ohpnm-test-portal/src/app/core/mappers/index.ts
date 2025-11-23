@@ -3,9 +3,12 @@ import {
   IAutomationData,
   IAutomationDataSection,
   IAutomationFlow,
+  IPriorityStatus,
   IQueueInfo,
+  ITimeZone,
   IUser,
   IUserRole,
+  IUserStatus,
   LibraryInfo,
   LibraryMethodInfo,
   PagedResult,
@@ -24,7 +27,7 @@ export const UserMapper = {
       active: data.active,
       roleId: data.roleId,
       roleName: data.roleName,
-      priorityId: data.priority,
+      priorityId: data.priorityId,
       priorityName: data.priorityName,
       lastLogin: data.lastLogin ? new Date(data.lastLogin) : undefined,
       timeZone: data.timeZone,
@@ -93,6 +96,35 @@ export const UserRoleMapper = {
     return {
       roleId: data.roleId,
       roleName: data.roleName,
+    };
+  },
+};
+
+export const UserStatusMapper = {
+  fromApi(data: any): IUserStatus {
+    return {
+      statusId: data.statusId,
+      statusName: data.statusName,
+    };
+  },
+};
+
+export const TimeZoneMapper = {
+  fromApi(data: any): ITimeZone {
+    return {
+      timeZoneId: data.timeZoneId,
+      timeZoneName: data.timeZoneName,
+      utcOffsetMinutes: data.utcOffsetMinutes,
+      description: data.description,
+    };
+  },
+};
+
+export const PriorityStatusMapper = {
+  fromApi(data: any): IPriorityStatus {
+    return {
+      priorityId: data.priorityId,
+      priorityName: data.priorityName,
     };
   },
 };
@@ -229,4 +261,7 @@ export const Mappers = {
   AutomationDataSectionMapper: AutomationDataSectionMapper,
   QueueInfoMapper: QueueInfoMapper,
   AutomationDataMapper: AutomationDataMapper,
+  UserStatusMapper: UserStatusMapper,
+  TimeZoneMapper: TimeZoneMapper,
+  PriorityStatusMapper: PriorityStatusMapper,
 };

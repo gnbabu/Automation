@@ -13,8 +13,11 @@ namespace AutomationAPI.Repositories.Interfaces
         Task DeleteUserAsync(int userId);
         Task ChangePasswordAsync(ChangePasswordRequest request);
         Task SetUserActiveStatusAsync(int userId, bool active);
-        Task<IEnumerable<UserRole>> GetUserRoles();
+        Task<IEnumerable<UserRole>> GetUserRolesAsync();
         Task<IEnumerable<User>> GetFilteredUsersAsync(UserFilter filters);
         Task<int> RegisterUserAsync(RegistrationModel model);
+        Task<IEnumerable<UserStatus>> GetUserStatusesAsync();
+        Task<IEnumerable<AppTimeZone>> GetTimeZonesAsync();
+        Task<IEnumerable<PriorityStatus>> GetPriorityStatusesAsync();
     }
 }
