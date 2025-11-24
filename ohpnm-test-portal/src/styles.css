@@ -174,3 +174,10 @@ body {
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
+.brand-header-underline {
+  /* width: 60px; */
+  height: 3px;
+  background: linear-gradient(135deg, #1a1c2e 0%, #5c3c9e 100%);
+  margin-bottom: 25px;
+}

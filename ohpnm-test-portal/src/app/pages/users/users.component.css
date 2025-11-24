@@ -12,7 +12,7 @@
 .header-section h1 {
   font-weight: 700;
   font-size: 1.9rem;
-  color: #111827;
+  color: #5c3c9e;
   margin-bottom: 0.3rem;
 }
 
@@ -48,4 +48,5 @@
 .table-card h5 {
   font-weight: 600;
   margin-bottom: 1rem;
+  color: #5c3c9e;
 }
