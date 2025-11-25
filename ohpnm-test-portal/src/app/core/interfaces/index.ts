@@ -233,6 +233,7 @@ export interface ITestCaseModel {
   priority: string;
   testCaseId: string;
   assignedUsers: any[];
+  assignedUserName: string;
   selected?: boolean;
 }
 

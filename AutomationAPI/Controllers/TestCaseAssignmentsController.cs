@@ -135,6 +135,26 @@ namespace AutomationAPI.Controllers
             }
         }
 
+        [HttpGet("library-assigned-testcases")]
+        public async Task<IActionResult> GetAssignedTestCasesForLibraryAsync(string libraryName, string environment)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(libraryName))
+                    return BadRequest("LibraryName is required.");
+
+                var testCases = await _repository.GetAssignedTestCasesForLibraryAndEnvironmentAsync(libraryName, environment);
+
+                return Ok(testCases);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while fetching assigned test cases for library");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
 
         // POST api/TestCaseAssignments/create-or-update
         [HttpPost("create-or-update")]

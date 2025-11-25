@@ -94,7 +94,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
         cellTemplate: this.priorityTemplate,
       },
       {
-        field: 'assignedUsers',
+        field: 'assignedUserName',
         header: 'Current Status',
         sortable: false,
         cellTemplate: this.assignedUsersTemplate,
@@ -169,41 +169,63 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       `${this.selectedLibrary.libraryName}-` +
       `${this.selectedEnvironment.environmentName}`;
 
-    // STEP 1: Load library test cases
+    // STEP 1: Get ALL test cases for selected Library
     this.testSuitesService
       .getAllTestCasesByLibraryName(this.selectedLibrary.libraryName)
       .subscribe({
         next: (libraryCases) => {
-          // Add selected property to each test case
           this.testCases = libraryCases.map((tc) => ({
             ...tc,
             selected: false,
           }));
 
-          // STEP 2: Load assignments
+          // STEP 2: Load ALL assigned testcases (for ALL users)
           this.testCaseManagerService
-            .getTestCasesByAssignmentAndUser(
-              this.selectedUser?.userId ?? 0,
-              assignmentName
+            .getAssignedTestCasesForLibrary(
+              this.selectedLibrary?.libraryName ?? '',
+              this.selectedEnvironment.environmentName
             )
             .subscribe({
-              next: (assigned) => {
-                this.assignedTestCases = assigned;
+              next: (allAssigned) => {
+                // TestCases assigned to ANY user
+                const allAssignedIds = new Set(
+                  allAssigned.map((a) => a.testCaseId)
+                );
 
-                const assignedIds = new Set(assigned.map((a) => a.testCaseId));
+                // STEP 3: Load only assignments for CURRENT USER
+                this.testCaseManagerService
+                  .getTestCasesByAssignmentAndUser(
+                    this.selectedUser?.userId ?? 0,
+                    assignmentName
+                  )
+                  .subscribe({
+                    next: (myAssigned) => {
+                      const myAssignedIds = new Set(
+                        myAssigned.map((a) => a.testCaseId)
+                      );
 
-                // STEP 3: Mark items as selected
-                this.testCases.forEach((tc) => {
-                  tc.selected = assignedIds.has(tc.testCaseId);
-                });
+                      // STEP 4: Filter test cases available for CURRENT USER:
+                      // - Available = Not assigned OR assigned to this user
+                      this.testCases = this.testCases.filter(
+                        (tc) =>
+                          !allAssignedIds.has(tc.testCaseId) || // unassigned
+                          myAssignedIds.has(tc.testCaseId) // or assigned to current user
+                      );
 
-                // STEP 4: selectedMethods must ALWAYS reflect selected test cases
-                // Run in next tick to avoid NG0100 error
-                Promise.resolve().then(() => {
-                  this.selectedMethods = this.testCases.filter(
-                    (tc) => tc.selected
-                  );
-                });
+                      // STEP 5: Mark selected (only for current user)
+                      this.testCases.forEach((tc) => {
+                        tc.selected = myAssignedIds.has(tc.testCaseId);
+                      });
+
+                      // STEP 6: Populate selectedMethods
+                      Promise.resolve().then(() => {
+                        this.selectedMethods = this.testCases.filter(
+                          (tc) => tc.selected
+                        );
+                      });
+                    },
+                    error: (err) => console.error(err),
+                  });
               },
               error: (err) => console.error(err),
             });

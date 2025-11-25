@@ -13,6 +13,7 @@ namespace AutomationAPI.Repositories.Interfaces
 
         //New Assignment Implementation
         Task<IEnumerable<AssignedTestCase>> GetTestCasesByAssignmentNameAndUserAsync(string assignmentName, int assignedUserId);
+        Task<IEnumerable<AssignedTestCase>> GetAssignedTestCasesForLibraryAndEnvironmentAsync(string libraryName, string environment);
         Task CreateOrUpdateAssignmentWithTestCasesAsync(AssignmentCreateUpdateRequest request);
     }
 }

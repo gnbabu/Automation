@@ -199,6 +199,38 @@ namespace AutomationAPI.Repositories
             );
         }
 
+        public async Task<IEnumerable<AssignedTestCase>> GetAssignedTestCasesForLibraryAndEnvironmentAsync(string libraryName, string environment)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@LibraryName", SqlDbType.NVarChar, 255) { Value = libraryName },
+                new SqlParameter("@Environment", SqlDbType.NVarChar, 100) { Value = environment }
+            };
+
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(
+                SqlDbConstants.GetAssignedTestCasesForLibraryAndEnvironment,
+                parameters,
+                reader => new AssignedTestCase
+                {
+                    AssignmentTestCaseId = reader.GetNullableInt("AssignmentTestCaseId") ?? 0,
+                    AssignmentId = reader.GetNullableInt("AssignmentId") ?? 0,
+                    TestCaseId = reader.GetNullableString("TestCaseId") ?? string.Empty,
+                    TestCaseDescription = reader.GetNullableString("TestCaseDescription") ?? string.Empty,
+                    TestCaseStatus = reader.GetNullableString("TestCaseStatus") ?? string.Empty,
+                    ClassName = reader.GetNullableString("ClassName") ?? string.Empty,
+                    LibraryName = reader.GetNullableString("LibraryName") ?? string.Empty,
+                    MethodName = reader.GetNullableString("MethodName") ?? string.Empty,
+                    Priority = reader.GetNullableString("Priority") ?? string.Empty,
+                    StartTime = reader.GetNullableDateTime("StartTime"),
+                    EndTime = reader.GetNullableDateTime("EndTime"),
+                    Duration = reader.GetNullableInt("Duration"),
+                    ErrorMessage = reader.GetNullableString("ErrorMessage"),
+                    AssignedUserId = reader.GetNullableInt("AssignedUserId") ?? 0,
+                    AssignedUserName = reader.GetNullableString("AssignedUserName") ?? string.Empty,
+                    Environment = reader.GetNullableString("Environment") ?? string.Empty
+                });
+        }
+
 
         public async Task CreateOrUpdateAssignmentWithTestCasesAsync(AssignmentCreateUpdateRequest request)
         {
@@ -208,23 +240,25 @@ namespace AutomationAPI.Repositories
             var table = new DataTable();
             table.Columns.Add("TestCaseId", typeof(string));
             table.Columns.Add("TestCaseDescription", typeof(string));
-            table.Columns.Add("TestCaseStatus", typeof(string));
             table.Columns.Add("ClassName", typeof(string));
             table.Columns.Add("LibraryName", typeof(string));
             table.Columns.Add("MethodName", typeof(string));
             table.Columns.Add("Priority", typeof(string));
+            table.Columns.Add("TestCaseStatus", typeof(string)); // LAST
+
 
             foreach (var tc in testCases)
             {
                 table.Rows.Add(
                     tc.TestCaseId,
                     tc.TestCaseDescription ?? (object)DBNull.Value,
-                    tc.TestCaseStatus ?? (object)DBNull.Value,
                     tc.ClassName ?? (object)DBNull.Value,
                     tc.LibraryName ?? (object)DBNull.Value,
                     tc.MethodName ?? (object)DBNull.Value,
-                    tc.Priority ?? (object)DBNull.Value
-                );
+                    tc.Priority ?? (object)DBNull.Value,
+                    tc.TestCaseStatus ?? (object)DBNull.Value
+                    );
+
             }
 
             var testCaseParam = new SqlParameter("@TestCases", SqlDbType.Structured)

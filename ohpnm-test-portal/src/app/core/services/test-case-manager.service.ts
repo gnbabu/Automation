@@ -71,4 +71,15 @@ export class TestCaseManagerService {
       )}`
     );
   }
+
+  getAssignedTestCasesForLibrary(
+    libraryName: string,
+    environment: string
+  ): Observable<IAssignedTestCase[]> {
+    return this.httpService.get<IAssignedTestCase[]>(
+      `TestCaseAssignments/library-assigned-testcases?libraryName=${encodeURIComponent(
+        libraryName
+      )}&environment=${encodeURIComponent(environment)}`
+    );
+  }
 }

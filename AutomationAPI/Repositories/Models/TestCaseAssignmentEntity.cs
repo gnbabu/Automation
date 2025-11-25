@@ -30,6 +30,8 @@
         public string ErrorMessage { get; set; }
         public int AssignedUserId { get; set; }
         public string AssignedUserName { get; set; }
+        public string Environment { get; set; }
+        
     }
 
     public class AssignmentCreateUpdateRequest
