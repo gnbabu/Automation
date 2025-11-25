@@ -205,15 +205,28 @@ export class TestCaseAssignmentUserComponent implements OnInit {
                       );
 
                       // STEP 4: Filter test cases available for CURRENT USER:
-                      // - Available = Not assigned OR assigned to this user
                       this.testCases = this.testCases.filter(
                         (tc) =>
-                          !allAssignedIds.has(tc.testCaseId) || // unassigned
-                          myAssignedIds.has(tc.testCaseId) // or assigned to current user
+                          !allAssignedIds.has(tc.testCaseId) ||
+                          myAssignedIds.has(tc.testCaseId)
                       );
 
-                      // STEP 5: Mark selected (only for current user)
+                      // STEP 5: Assign correct assignedUserName for ALL test cases
                       this.testCases.forEach((tc) => {
+                        const assignedEntry = allAssigned.find(
+                          (a) => a.testCaseId === tc.testCaseId
+                        );
+
+                        if (assignedEntry) {
+                          // 🟦 Test case is assigned → show the correct user name
+                          tc.assignedUserName =
+                            assignedEntry.assignedUserName || '';
+                        } else {
+                          // 🟪 Not assigned → show Unassigned
+                          tc.assignedUserName = '';
+                        }
+
+                        // Mark selected only if assigned to THIS user
                         tc.selected = myAssignedIds.has(tc.testCaseId);
                       });
 

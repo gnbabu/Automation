@@ -133,13 +133,13 @@
 </ng-template>
 
 <!-- Assigned Users Template -->
-<ng-template #assignedUsersTemplate let-row let-value="value">
+<ng-template #assignedUsersTemplate let-row>
   <div class="d-flex align-items-center gap-1">
     <span
-      *ngIf="value?.assignedUserName; else unassigned"
+      *ngIf="row?.assignedUserName; else unassigned"
       class="badge bg-primary"
     >
-      {{ value.assignedUserName }}
+      {{ row.assignedUserName }}
     </span>
 
     <ng-template #unassigned>
