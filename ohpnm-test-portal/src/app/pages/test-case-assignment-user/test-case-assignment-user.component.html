@@ -36,6 +36,18 @@
           (selectionChange)="onUserChange($event)"
         ></app-dropdown>
       </div>
+      <div>
+        <label for="envSelect" class="form-label">Select Environment</label>
+        <app-dropdown
+          id="envSelect"
+          [options]="environments"
+          valueAccessor="environmentName"
+          textAccessor="environmentName"
+          placeholder="Select Environment"
+          [(selected)]="selectedEnvironment"
+          (selectionChange)="onEnvironmentChange($event)"
+        ></app-dropdown>
+      </div>
 
       <div>
         <label for="assignmentStatusSelect" class="form-label"
@@ -52,19 +64,6 @@
         >
         </app-dropdown>
       </div>
-
-      <div>
-        <label for="envSelect" class="form-label">Select Environment</label>
-        <app-dropdown
-          id="envSelect"
-          [options]="environments"
-          valueAccessor="environmentName"
-          textAccessor="environmentName"
-          placeholder="Select Environment"
-          [(selected)]="selectedEnvironment"
-          (selectionChange)="onEnvironmentChange($event)"
-        ></app-dropdown>
-      </div>
     </div>
     <div class="d-flex gap-3">
       <div class="stats-box">
@@ -80,6 +79,71 @@
   <!-- Table Section -->
   <div class="table-card">
     <h5>Pending Test Case List</h5>
-    <div class="table-responsive"></div>
+    <div class="table-responsive">
+      <app-data-grid
+        [selectionEnabled]="true"
+        [columns]="columns"
+        [data]="testCases"
+        [(selectedRows)]="selectedMethods"
+        [pagingEnabled]="true"
+        [pageSize]="10"
+        [sortingMode]="'client'"
+      ></app-data-grid>
+      <div class="footer-note">
+        … {{ unassignedCount }} more test cases pending assignment. Use the
+        checkboxes and the floating bar for bulk actions.
+      </div>
+    </div>
+  </div>
+  <!-- Action Buttons -->
+  <div class="d-flex justify-content-end mt-3 gap-2">
+    <button
+      class="btn-purple"
+      [disabled]="selectedMethods.length === 0"
+      (click)="onSaveAssignments()"
+    >
+      Save Assignments
+    </button>
+    <button
+      class="btn btn-danger"
+      [disabled]="selectedMethods.length === 0"
+      (click)="onResetAssignments()"
+    >
+      Reset Assignments
+    </button>
   </div>
 </div>
+
+<!-- Test Case ID Bold Template -->
+<ng-template #testCaseIdTemplate let-row let-value="value">
+  <span class="fw-bold">{{ value }}</span>
+</ng-template>
+
+<!-- Priority Template -->
+<ng-template #priorityTemplate let-row let-value="value">
+  <span
+    [ngClass]="{
+      'priority-high': value === 'High',
+      'priority-medium': value === 'Medium',
+      'priority-low': value === 'Low'
+    }"
+  >
+    {{ value }}
+  </span>
+</ng-template>
+
+<!-- Assigned Users Template -->
+<ng-template #assignedUsersTemplate let-row let-value="value">
+  <div class="d-flex align-items-center gap-1">
+    <span
+      *ngIf="value?.assignedUserName; else unassigned"
+      class="badge bg-primary"
+    >
+      {{ value.assignedUserName }}
+    </span>
+
+    <ng-template #unassigned>
+      <span class="badge bg-secondary">Unassigned</span>
+    </ng-template>
+  </div>
+</ng-template>

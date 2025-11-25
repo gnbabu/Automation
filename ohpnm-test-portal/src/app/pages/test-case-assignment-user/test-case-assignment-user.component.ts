@@ -1,7 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { GridColumn, IUser, LibraryInfo } from '@interfaces';
+import {
+  GridColumn,
+  IAssignedTestCase,
+  IAssignmentCreateUpdateRequest,
+  ITestCaseModel,
+  IUser,
+  LibraryInfo,
+} from '@interfaces';
 import {
   AuthService,
   CommonToasterService,
@@ -15,11 +22,23 @@ import { DataGridComponent } from 'app/core/components/data-grid/data-grid.compo
 @Component({
   selector: 'app-test-case-assignment-user',
   standalone: true,
-  imports: [AppDropdownComponent, CommonModule, FormsModule],
+  imports: [AppDropdownComponent, CommonModule, FormsModule, DataGridComponent],
   templateUrl: './test-case-assignment-user.component.html',
   styleUrl: './test-case-assignment-user.component.css',
 })
 export class TestCaseAssignmentUserComponent implements OnInit {
+  @ViewChild('testCaseIdTemplate', { static: true })
+  testCaseIdTemplate!: TemplateRef<any>;
+
+  @ViewChild('priorityTemplate', { static: true })
+  priorityTemplate!: TemplateRef<any>;
+
+  @ViewChild('assignedUsersTemplate', { static: true })
+  assignedUsersTemplate!: TemplateRef<any>;
+
+  @ViewChild('assignTesterTemplate', { static: true })
+  assignTesterTemplate!: TemplateRef<any>;
+
   libraries: LibraryInfo[] = [];
   assignmentStatuses: any[] = [];
   selectedLibrary: LibraryInfo | null = null;
@@ -29,6 +48,10 @@ export class TestCaseAssignmentUserComponent implements OnInit {
 
   environments: any[] = [];
   selectedEnvironment: any = null;
+
+  testCases: ITestCaseModel[] = [];
+  assignedTestCases: IAssignedTestCase[] = [];
+  selectedMethods: ITestCaseModel[] = [];
 
   columns: GridColumn[] = [];
   totalCases = 0;
@@ -48,19 +71,49 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     this.loadAssignmentStatuses();
     this.loadUsers();
     this.loadEnvironments();
+    this.setupColumns();
   }
 
+  setupColumns() {
+    this.columns = [
+      {
+        field: 'testCaseId',
+        header: 'Test Case ID',
+        sortable: true,
+        cellTemplate: this.testCaseIdTemplate,
+      },
+      {
+        field: 'description',
+        header: 'Description',
+        sortable: true,
+      },
+      {
+        field: 'priority',
+        header: 'Priority',
+        sortable: true,
+        cellTemplate: this.priorityTemplate,
+      },
+      {
+        field: 'assignedUsers',
+        header: 'Current Status',
+        sortable: false,
+        cellTemplate: this.assignedUsersTemplate,
+      },
+    ];
+  }
   onLibraryChange(library: LibraryInfo | null) {
     this.selectedLibrary = library;
     const libName = library?.libraryName || undefined;
-  }
-
-  onAssignmentStatusChange(status: any) {
-    this.selectedAssignmentStatus = status;
+    this.tryLoadTestCases();
   }
 
   onUserChange(user: IUser | null) {
     this.selectedUser = user;
+    this.tryLoadTestCases();
+  }
+
+  onAssignmentStatusChange(status: any) {
+    this.selectedAssignmentStatus = status;
   }
 
   loadTestSuites() {
@@ -95,6 +148,151 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   }
 
   onEnvironmentChange(env: any) {
+    debugger;
     this.selectedEnvironment = env;
+    this.tryLoadTestCases();
+  }
+
+  tryLoadTestCases() {
+    if (
+      !this.selectedLibrary ||
+      !this.selectedUser ||
+      !this.selectedEnvironment
+    ) {
+      this.testCases = [];
+      this.selectedMethods = [];
+      return;
+    }
+
+    const assignmentName =
+      `${this.selectedUser.userName}-` +
+      `${this.selectedLibrary.libraryName}-` +
+      `${this.selectedEnvironment.environmentName}`;
+
+    // STEP 1: Load library test cases
+    this.testSuitesService
+      .getAllTestCasesByLibraryName(this.selectedLibrary.libraryName)
+      .subscribe({
+        next: (libraryCases) => {
+          // Add selected property to each test case
+          this.testCases = libraryCases.map((tc) => ({
+            ...tc,
+            selected: false,
+          }));
+
+          // STEP 2: Load assignments
+          this.testCaseManagerService
+            .getTestCasesByAssignmentAndUser(
+              this.selectedUser?.userId ?? 0,
+              assignmentName
+            )
+            .subscribe({
+              next: (assigned) => {
+                this.assignedTestCases = assigned;
+
+                const assignedIds = new Set(assigned.map((a) => a.testCaseId));
+
+                // STEP 3: Mark items as selected
+                this.testCases.forEach((tc) => {
+                  tc.selected = assignedIds.has(tc.testCaseId);
+                });
+
+                // STEP 4: selectedMethods must ALWAYS reflect selected test cases
+                // Run in next tick to avoid NG0100 error
+                Promise.resolve().then(() => {
+                  this.selectedMethods = this.testCases.filter(
+                    (tc) => tc.selected
+                  );
+                });
+              },
+              error: (err) => console.error(err),
+            });
+        },
+        error: (err) => console.error(err),
+      });
+  }
+
+  onSaveAssignments() {
+    debugger;
+    if (
+      !this.selectedLibrary ||
+      !this.selectedUser ||
+      !this.selectedEnvironment
+    ) {
+      this.toaster.error('Please select User, Library, and Environment.');
+      return;
+    }
+
+    if (this.selectedMethods.length === 0) {
+      this.toaster.error('No test cases selected.');
+      return;
+    }
+    debugger;
+
+    const request: IAssignmentCreateUpdateRequest = {
+      assignedUser: this.selectedUser.userId ?? 0,
+      assignmentStatus: 'New',
+      releaseName: this.selectedLibrary.libraryName,
+      environment: this.selectedEnvironment.environmentName,
+      assignedBy: this.authService.getLoggedInUserId(),
+      testCases: this.selectedMethods.map((tc) => ({
+        testCaseId: tc.testCaseId,
+        testCaseDescription: tc.description,
+        testCaseStatus: 'New',
+        className: tc.className,
+        libraryName: tc.libraryName,
+        methodName: tc.methodName,
+        priority: tc.priority,
+      })),
+    };
+    debugger;
+    this.testCaseManagerService.saveAssignmentNew(request).subscribe({
+      next: () => {
+        debugger;
+        this.toaster.success('Assignments saved successfully.');
+        this.tryLoadTestCases(); // Refresh grid
+      },
+      error: (err) => {
+        console.error(err);
+        this.toaster.error('Failed to save assignments.');
+      },
+    });
+  }
+
+  onResetAssignments() {
+    if (
+      !this.selectedLibrary ||
+      !this.selectedUser ||
+      !this.selectedEnvironment
+    ) {
+      this.toaster.error('Please select User, Library, and Environment.');
+      return;
+    }
+
+    const assignmentName =
+      `${this.selectedUser.userName}-` +
+      `${this.selectedLibrary.libraryName}-` +
+      `${this.selectedEnvironment.environmentName}`;
+
+    const request: IAssignmentCreateUpdateRequest = {
+      assignedUser: this.selectedUser.userId ?? 0,
+      assignmentStatus: 'Removed',
+      releaseName: this.selectedLibrary.libraryName,
+      environment: this.selectedEnvironment.environmentName,
+      assignedBy: this.authService.getLoggedInUserId(),
+      testCases: [], // EMPTY → Reset all
+    };
+
+    this.testCaseManagerService.saveAssignmentNew(request).subscribe({
+      next: () => {
+        this.toaster.success('All assignments reset.');
+        this.selectedMethods = [];
+        this.tryLoadTestCases(); // reload
+      },
+      error: (err) => {
+        console.error(err);
+        this.toaster.error('Failed to reset assignments.');
+      },
+    });
   }
 }
