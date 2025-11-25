@@ -167,7 +167,33 @@ namespace AutomationAPI.Repositories
             return testCases;
         }
 
+        public async Task<IEnumerable<TestCaseModel>> GetAllTestCasesByLibrary(string libraryName)
+        {
+            var libraries = await GetLibrariesAsync();
 
+            // Filter by library name if provided
+            if (!string.IsNullOrEmpty(libraryName))
+            {
+                libraries = libraries
+                    .Where(l => l.LibraryName.Equals(libraryName, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var testCases = libraries
+                .SelectMany(lib => lib.Classes, (lib, cls) => new { lib, cls })
+                .SelectMany(lc => lc.cls.Methods, (lc, method) => new TestCaseModel
+                {
+                    LibraryName = lc.lib.LibraryName,
+                    ClassName = lc.cls.ClassName,
+                    MethodName = method.MethodName,
+                    Description = method.Description,
+                    Priority = method.Priority,
+                    TestCaseId = method.TestCaseId,
+                    AssignedUsers = new List<string>() // empty, since not required
+                })
+                .ToList();
+
+            return testCases;
+        }
 
     }
 }

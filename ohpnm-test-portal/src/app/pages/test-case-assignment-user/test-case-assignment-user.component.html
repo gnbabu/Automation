@@ -1,0 +1,85 @@
+<div class="test-case-assignments-container">
+  <div class="header-section d-flex justify-content-between align-items-start">
+    <div>
+      <h1>Test Case Assignment New</h1>
+      <small><i class="bi bi-person-gear me-1"></i> Administrative Task</small>
+    </div>
+  </div>
+  <div class="brand-header-underline"></div>
+  <!-- Filter Section -->
+  <div
+    class="filter-card d-flex flex-wrap align-items-center justify-content-between"
+  >
+    <div class="d-flex flex-wrap gap-3 align-items-center">
+      <div>
+        <label for="librarySelect" class="form-label">Test Suite</label>
+        <app-dropdown
+          id="librarySelect"
+          [options]="libraries"
+          valueAccessor="libraryName"
+          textAccessor="libraryName"
+          placeholder="All Suites"
+          [(selected)]="selectedLibrary"
+          (selectionChange)="onLibraryChange($event)"
+        >
+        </app-dropdown>
+      </div>
+      <div>
+        <label for="userSelect" class="form-label">Select User</label>
+        <app-dropdown
+          id="userSelect"
+          [options]="users"
+          valueAccessor="userId"
+          textAccessor="userName"
+          placeholder="Select User"
+          [(selected)]="selectedUser"
+          (selectionChange)="onUserChange($event)"
+        ></app-dropdown>
+      </div>
+
+      <div>
+        <label for="assignmentStatusSelect" class="form-label"
+          >Assignment Status</label
+        >
+        <app-dropdown
+          id="assignmentStatusSelect"
+          [options]="assignmentStatuses"
+          valueAccessor="assignmentStatus"
+          textAccessor="assignmentStatus"
+          placeholder="All Statuses"
+          [(selected)]="selectedAssignmentStatus"
+          (selectionChange)="onAssignmentStatusChange($event)"
+        >
+        </app-dropdown>
+      </div>
+
+      <div>
+        <label for="envSelect" class="form-label">Select Environment</label>
+        <app-dropdown
+          id="envSelect"
+          [options]="environments"
+          valueAccessor="environmentName"
+          textAccessor="environmentName"
+          placeholder="Select Environment"
+          [(selected)]="selectedEnvironment"
+          (selectionChange)="onEnvironmentChange($event)"
+        ></app-dropdown>
+      </div>
+    </div>
+    <div class="d-flex gap-3">
+      <div class="stats-box">
+        <div class="stats-number">{{ totalCases }}</div>
+        <div class="stats-label">Total Cases</div>
+      </div>
+      <div class="stats-box">
+        <div class="stats-number text-primary">{{ unassignedCount }}</div>
+        <div class="stats-label">Unassigned</div>
+      </div>
+    </div>
+  </div>
+  <!-- Table Section -->
+  <div class="table-card">
+    <h5>Pending Test Case List</h5>
+    <div class="table-responsive"></div>
+  </div>
+</div>

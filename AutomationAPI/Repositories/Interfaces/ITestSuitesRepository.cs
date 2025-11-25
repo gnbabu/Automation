@@ -7,5 +7,6 @@ namespace AutomationAPI.Repositories.Interfaces
     {
         Task<IEnumerable<LibraryInfo>> GetLibrariesAsync();
         Task<IEnumerable<TestCaseModel>> GetAllTestCasesAsync(string? libraryName, bool? assigned);
+        Task<IEnumerable<TestCaseModel>> GetAllTestCasesByLibrary(string libraryName);
     }
 }

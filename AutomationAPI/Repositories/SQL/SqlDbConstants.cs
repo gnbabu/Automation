@@ -68,5 +68,13 @@
         public const string DeleteTestCaseAssignments = "[aut].[usp_DeleteTestCaseAssignments]";
 
 
+        //TestCaseAssignmentEntity
+
+        public const string CreateOrUpdateAssignmentWithTestCases = "[aut].[usp_CreateOrUpdateAssignmentWithTestCases]";
+        public const string GetTestCasesByAssignmentNameAndUser = "[aut].[usp_GetTestCasesByAssignmentNameAndUser]";
+
+
+
+
     }
 }

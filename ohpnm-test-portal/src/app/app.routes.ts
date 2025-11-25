@@ -119,6 +119,14 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
+        path: 'test-case-assignment-user',
+        loadComponent: () =>
+          import(
+            './pages/test-case-assignment-user/test-case-assignment-user.component'
+          ).then((m) => m.TestCaseAssignmentUserComponent),
+        canActivate: [authGuard],
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./pages/settings/settings.component').then(

@@ -10,5 +10,9 @@ namespace AutomationAPI.Repositories.Interfaces
         Task BulkInsertAssignmentsAsync(IEnumerable<TestCaseAssignment> assignments);
         Task DeleteAssignmentsByUserIdAsync(int userId);
         Task DeleteAssignmentsAsync(TestCaseAssignmentDeleteRequest request);
+
+        //New Assignment Implementation
+        Task<IEnumerable<AssignedTestCase>> GetTestCasesByAssignmentNameAndUserAsync(string assignmentName, int assignedUserId);
+        Task CreateOrUpdateAssignmentWithTestCasesAsync(AssignmentCreateUpdateRequest request);
     }
 }

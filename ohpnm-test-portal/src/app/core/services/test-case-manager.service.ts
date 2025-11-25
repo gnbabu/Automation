@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import {
+  IAssignedTestCase,
+  IAssignmentCreateUpdateRequest,
   IQueueInfo,
   ITestCaseAssignment,
   ITestCaseAssignmentDeleteRequest,
@@ -48,6 +50,25 @@ export class TestCaseManagerService {
     return this.httpService.post(
       `TestCaseAssignments/delete-assignments`,
       request
+    );
+  }
+  //________________________
+
+  saveAssignmentNew(request: IAssignmentCreateUpdateRequest): Observable<any> {
+    return this.httpService.post(
+      `TestCaseAssignments/create-or-update`,
+      request
+    );
+  }
+
+  getTestCasesByAssignmentAndUser(
+    assignedUserId: number,
+    assignmentName: string
+  ): Observable<IAssignedTestCase[]> {
+    return this.httpService.get<IAssignedTestCase[]>(
+      `TestCaseAssignments/${assignedUserId}/${encodeURIComponent(
+        assignmentName
+      )}`
     );
   }
 }

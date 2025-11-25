@@ -241,3 +241,40 @@ export interface ITestCaseAssignmentDeleteRequest {
   className?: string; // optional
   methodName?: string; // optional
 }
+
+export interface IAssignmentCreateUpdateRequest {
+  assignedUser: number;
+  assignmentStatus: string;
+  releaseName: string;
+  environment: string;
+  assignedBy: number;
+  testCases: ITestCaseRequestModel[];
+}
+
+export interface ITestCaseRequestModel {
+  testCaseId: string;
+  testCaseDescription?: string;
+  testCaseStatus: string;
+  className?: string;
+  libraryName?: string;
+  methodName?: string;
+  priority?: string;
+}
+
+export interface IAssignedTestCase {
+  assignmentTestCaseId: number;
+  assignmentId: number;
+  testCaseId: string;
+  testCaseDescription: string;
+  testCaseStatus: string;
+  className: string;
+  libraryName: string;
+  methodName: string;
+  priority: string;
+  startTime?: string; // ISO string for DateTime
+  endTime?: string; // ISO string for DateTime
+  duration?: number;
+  errorMessage: string;
+  assignedUserId: number;
+  assignedUserName: string;
+}

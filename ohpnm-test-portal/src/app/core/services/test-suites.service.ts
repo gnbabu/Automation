@@ -35,4 +35,14 @@ export class TestSuitesService {
 
     return this.httpService.get<ITestCaseModel[]>(url);
   }
+
+  getAllTestCasesByLibraryName(
+    libraryName: string
+  ): Observable<ITestCaseModel[]> {
+    let url = `TestSuites/GetAllTestCasesByLibrary?libraryName=${encodeURIComponent(
+      libraryName
+    )}`;
+
+    return this.httpService.get<ITestCaseModel[]>(url);
+  }
 }

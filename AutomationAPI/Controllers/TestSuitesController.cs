@@ -22,7 +22,7 @@ namespace AutomationAPI.Controllers
             var libraries = await _testSuitesRepository.GetLibrariesAsync();
             return Ok(libraries);
         }
-
+       
         /// <summary>
         /// Get all test methods with optional filters
         /// </summary>
@@ -32,6 +32,18 @@ namespace AutomationAPI.Controllers
         public async Task<IActionResult> GetAllTestCases([FromQuery] string? libraryName, [FromQuery] bool? assigned)
         {
             var testCases = await _testSuitesRepository.GetAllTestCasesAsync(libraryName, assigned);
+            return Ok(testCases);
+        }
+
+        /// <summary>
+        /// Get all test methods with optional filters
+        /// </summary>
+        /// <param name="libraryName">Optional: filter by library name</param>
+        /// <param name="assigned">Optional: true = assigned, false = unassigned, null = all</param>
+        [HttpGet("GetAllTestCasesByLibrary")]
+        public async Task<IActionResult> GetAllTestCasesByLibrary([FromQuery] string libraryName)
+        {
+            var testCases = await _testSuitesRepository.GetAllTestCasesByLibrary(libraryName);
             return Ok(testCases);
         }
     }
