@@ -57,6 +57,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   totalCases = 0;
   assignedCount = 0;
   unassignedCount = 0;
+  showGrid = false;
 
   constructor(
     private testSuitesService: TestSuitesService,
@@ -110,6 +111,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
 
     this.testCases = [];
     this.selectedMethods = [];
+    this.showGrid = false;
   }
 
   onUserChange(user: IUser | null) {
@@ -178,6 +180,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     ) {
       this.testCases = [];
       this.selectedMethods = [];
+      this.showGrid = false;
       return;
     }
 
@@ -253,6 +256,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
                           (tc) => tc.selected
                         );
                       });
+                      this.showGrid = true;
                     },
                     error: (err) => console.error(err),
                   });

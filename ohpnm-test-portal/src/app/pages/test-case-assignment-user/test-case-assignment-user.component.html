@@ -77,7 +77,7 @@
     </div>
   </div>
   <!-- Table Section -->
-  <div class="table-card">
+  <div class="table-card" *ngIf="showGrid">
     <h5>Pending Test Case List</h5>
     <div class="table-responsive">
       <app-data-grid
@@ -97,7 +97,7 @@
     </div>
   </div>
   <!-- Action Buttons -->
-  <div class="d-flex justify-content-end mt-3 gap-2">
+  <div class="d-flex justify-content-end mt-3 gap-2" *ngIf="showGrid">
     <button
       class="btn-purple"
       [disabled]="selectedMethods.length === 0"
