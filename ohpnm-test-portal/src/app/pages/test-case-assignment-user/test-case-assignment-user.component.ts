@@ -103,12 +103,24 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   }
   onLibraryChange(library: LibraryInfo | null) {
     this.selectedLibrary = library;
-    const libName = library?.libraryName || undefined;
-    this.tryLoadTestCases();
+
+    this.selectedUser = null;
+    this.selectedEnvironment = null;
+    this.selectedAssignmentStatus = null;
+
+    this.testCases = [];
+    this.selectedMethods = [];
   }
 
   onUserChange(user: IUser | null) {
     this.selectedUser = user;
+
+    this.selectedEnvironment = null;
+    this.selectedAssignmentStatus = null;
+
+    this.testCases = [];
+    this.selectedMethods = [];
+
     this.tryLoadTestCases();
   }
 
@@ -148,8 +160,13 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   }
 
   onEnvironmentChange(env: any) {
-    debugger;
     this.selectedEnvironment = env;
+
+    this.selectedAssignmentStatus = null;
+
+    this.testCases = [];
+    this.selectedMethods = [];
+
     this.tryLoadTestCases();
   }
 
@@ -332,14 +349,20 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   }
 
   onSelectionChanged(selectedRows: ITestCaseModel[]) {
-    debugger;
     if (!this.selectedUser) return;
 
     const currentUserName = this.selectedUser.userName;
 
-    // Only update the selected rows (no map, no reassignment of testCases)
+    // 1️⃣ Assign username to selected rows
     selectedRows.forEach((r) => {
       r.assignedUserName = currentUserName;
+    });
+
+    // 2️⃣ Clear user from unselected rows
+    this.testCases.forEach((r) => {
+      if (!selectedRows.some((s) => s.methodName === r.methodName)) {
+        r.assignedUserName = '';
+      }
     });
   }
 }
