@@ -136,12 +136,35 @@ namespace AutomationAPI.Controllers
         }
 
         [HttpGet("library-assigned-testcases")]
+        public async Task<IActionResult> GetAllAssignedTestCasesInLibraryAsync(string libraryName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(libraryName))
+                    return BadRequest("LibraryName is required.");
+
+                var testCases = await _repository.GetAllAssignedTestCasesInLibraryAsync(libraryName);
+
+                return Ok(testCases);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while fetching assigned test cases for library");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
+        [HttpGet("library-environment-assigned-testcases")]
         public async Task<IActionResult> GetAssignedTestCasesForLibraryAsync(string libraryName, string environment)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(libraryName))
                     return BadRequest("LibraryName is required.");
+
+                if (string.IsNullOrWhiteSpace(environment))
+                    return BadRequest("Environment is required.");
 
                 var testCases = await _repository.GetAssignedTestCasesForLibraryAndEnvironmentAsync(libraryName, environment);
 
@@ -153,6 +176,7 @@ namespace AutomationAPI.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
 
 
 

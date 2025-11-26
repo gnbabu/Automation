@@ -73,6 +73,7 @@
         public const string CreateOrUpdateAssignmentWithTestCases = "[aut].[usp_CreateOrUpdateAssignmentWithTestCases]";
         public const string GetTestCasesByAssignmentNameAndUser = "[aut].[usp_GetTestCasesByAssignmentNameAndUser]";
         public const string GetAssignedTestCasesForLibraryAndEnvironment = "[aut].[usp_GetAssignedTestCasesForLibraryAndEnvironment]";
+        public const string GetAllAssignedTestCasesInLibrary = "[aut].[usp_GetAllAssignedTestCasesInLibrary]";
 
 
 

@@ -18,6 +18,7 @@ import {
 } from '@services';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-test-case-assignment-user',
@@ -111,7 +112,18 @@ export class TestCaseAssignmentUserComponent implements OnInit {
 
     this.testCases = [];
     this.selectedMethods = [];
+
     this.showGrid = false;
+
+    this.totalCases = 0;
+    this.assignedCount = 0;
+    this.unassignedCount = 0;
+
+    // Do NOT call API if no library is selected
+    if (!library || !library.libraryName) {
+      return;
+    }
+    this.loadLibraryTestCaseCounts(this.selectedLibrary?.libraryName ?? '');
   }
 
   onUserChange(user: IUser | null) {
@@ -201,7 +213,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
 
           // STEP 2: Load ALL assigned testcases (for ALL users)
           this.testCaseManagerService
-            .getAssignedTestCasesForLibrary(
+            .getAssignedTestCasesForLibraryAndEnvironment(
               this.selectedLibrary?.libraryName ?? '',
               this.selectedEnvironment.environmentName
             )
@@ -269,7 +281,6 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   }
 
   onSaveAssignments() {
-    debugger;
     if (
       !this.selectedLibrary ||
       !this.selectedUser ||
@@ -283,7 +294,6 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       this.toaster.error('No test cases selected.');
       return;
     }
-    debugger;
 
     const request: IAssignmentCreateUpdateRequest = {
       assignedUser: this.selectedUser.userId ?? 0,
@@ -301,12 +311,12 @@ export class TestCaseAssignmentUserComponent implements OnInit {
         priority: tc.priority,
       })),
     };
-    debugger;
+
     this.testCaseManagerService.saveAssignmentNew(request).subscribe({
       next: () => {
-        debugger;
         this.toaster.success('Assignments saved successfully.');
         this.tryLoadTestCases(); // Refresh grid
+        this.loadLibraryTestCaseCounts(this.selectedLibrary?.libraryName ?? '');
       },
       error: (err) => {
         console.error(err);
@@ -344,6 +354,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
         this.toaster.success('All assignments reset.');
         this.selectedMethods = [];
         this.tryLoadTestCases(); // reload
+        this.loadLibraryTestCaseCounts(this.selectedLibrary?.libraryName ?? '');
       },
       error: (err) => {
         console.error(err);
@@ -367,6 +378,26 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       if (!selectedRows.some((s) => s.methodName === r.methodName)) {
         r.assignedUserName = '';
       }
+    });
+  }
+
+  loadLibraryTestCaseCounts(libraryName: string) {
+    this.totalCases = 0;
+    this.assignedCount = 0;
+    this.unassignedCount = 0;
+
+    const allCases$ =
+      this.testSuitesService.getAllTestCasesByLibraryName(libraryName);
+    const assignedCases$ =
+      this.testCaseManagerService.getAllAssignedTestCasesInLibrary(libraryName);
+
+    forkJoin([allCases$, assignedCases$]).subscribe({
+      next: ([allCases, assigned]) => {
+        this.totalCases = allCases.length;
+        this.assignedCount = assigned.length;
+        this.unassignedCount = this.totalCases - this.assignedCount;
+      },
+      error: (err) => console.error('Failed to load counts', err),
     });
   }
 }

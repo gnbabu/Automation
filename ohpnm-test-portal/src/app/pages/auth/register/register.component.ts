@@ -18,6 +18,7 @@ import {
 import { Router } from '@angular/router';
 import { RegisterTipsModalComponent } from '../register-tips/register-tips-modal.component';
 import { LoginCarouselViewComponent } from '../login-carousel-view/login-carousel-view.component';
+import { LoadingOverlayComponent } from 'app/core/components/loader/loading-overlay.component';
 
 @Component({
   selector: 'app-register',
@@ -28,6 +29,7 @@ import { LoginCarouselViewComponent } from '../login-carousel-view/login-carouse
     ReactiveFormsModule,
     RegisterTipsModalComponent,
     LoginCarouselViewComponent,
+    LoadingOverlayComponent,
   ],
 })
 export class RegisterComponent {
