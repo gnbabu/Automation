@@ -330,4 +330,16 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       },
     });
   }
+
+  onSelectionChanged(selectedRows: ITestCaseModel[]) {
+    debugger;
+    if (!this.selectedUser) return;
+
+    const currentUserName = this.selectedUser.userName;
+
+    // Only update the selected rows (no map, no reassignment of testCases)
+    selectedRows.forEach((r) => {
+      r.assignedUserName = currentUserName;
+    });
+  }
 }

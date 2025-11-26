@@ -88,6 +88,7 @@
         [pagingEnabled]="true"
         [pageSize]="10"
         [sortingMode]="'client'"
+        (selectedRowsChange)="onSelectionChanged($event)"
       ></app-data-grid>
       <div class="footer-note">
         … {{ unassignedCount }} more test cases pending assignment. Use the
