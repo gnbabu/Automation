@@ -12,7 +12,7 @@ import {
 import {
   AuthService,
   CommonToasterService,
-  TestCaseManagerService,
+  TestCaseAssignmentService,
   TestSuitesService,
   UsersService,
 } from '@services';
@@ -65,7 +65,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     private authService: AuthService,
     private toaster: CommonToasterService,
     private userService: UsersService,
-    private testCaseManagerService: TestCaseManagerService
+    private testCaseAssignmentService: TestCaseAssignmentService
   ) {}
 
   ngOnInit(): void {
@@ -212,7 +212,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
           }));
 
           // STEP 2: Load ALL assigned testcases (for ALL users)
-          this.testCaseManagerService
+          this.testCaseAssignmentService
             .getAssignedTestCasesForLibraryAndEnvironment(
               this.selectedLibrary?.libraryName ?? '',
               this.selectedEnvironment.environmentName
@@ -225,7 +225,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
                 );
 
                 // STEP 3: Load only assignments for CURRENT USER
-                this.testCaseManagerService
+                this.testCaseAssignmentService
                   .getTestCasesByAssignmentAndUser(
                     this.selectedUser?.userId ?? 0,
                     assignmentName
@@ -312,7 +312,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       })),
     };
 
-    this.testCaseManagerService.saveAssignmentNew(request).subscribe({
+    this.testCaseAssignmentService.saveAssignment(request).subscribe({
       next: () => {
         this.toaster.success('Assignments saved successfully.');
         this.tryLoadTestCases(); // Refresh grid
@@ -349,7 +349,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       testCases: [], // EMPTY → Reset all
     };
 
-    this.testCaseManagerService.saveAssignmentNew(request).subscribe({
+    this.testCaseAssignmentService.saveAssignment(request).subscribe({
       next: () => {
         this.toaster.success('All assignments reset.');
         this.selectedMethods = [];
@@ -389,7 +389,9 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     const allCases$ =
       this.testSuitesService.getAllTestCasesByLibraryName(libraryName);
     const assignedCases$ =
-      this.testCaseManagerService.getAllAssignedTestCasesInLibrary(libraryName);
+      this.testCaseAssignmentService.getAllAssignedTestCasesInLibrary(
+        libraryName
+      );
 
     forkJoin([allCases$, assignedCases$]).subscribe({
       next: ([allCases, assigned]) => {

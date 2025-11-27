@@ -237,13 +237,6 @@ export interface ITestCaseModel {
   selected?: boolean;
 }
 
-export interface ITestCaseAssignmentDeleteRequest {
-  userIds?: number[]; // optional array of user IDs
-  libraryName?: string; // optional
-  className?: string; // optional
-  methodName?: string; // optional
-}
-
 export interface IAssignmentCreateUpdateRequest {
   assignedUser: number;
   assignmentStatus: string;

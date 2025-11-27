@@ -9,5 +9,5 @@ export * from './queue.service';
 export * from './test-runner.service';
 export * from './test-result.service';
 export * from './screenshot.service';
-export * from './test-case-manager.service';
+export * from './test-case-assignment.service';
 export * from './loading.service';

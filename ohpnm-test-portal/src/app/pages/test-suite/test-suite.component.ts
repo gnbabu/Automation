@@ -11,7 +11,7 @@ import {
 import {
   AuthService,
   CommonToasterService,
-  TestCaseManagerService,
+  TestCaseAssignmentService,
   TestRunnerService,
   TestSuitesService,
 } from '@services';
@@ -65,7 +65,7 @@ export class TestSuiteComponent implements OnInit {
     private authService: AuthService,
     private testRunnerService: TestRunnerService,
     private toaster: CommonToasterService,
-    private testCaseManagerService: TestCaseManagerService
+    private testCaseAssignmentService: TestCaseAssignmentService
   ) {}
 
   ngOnInit(): void {
@@ -95,7 +95,8 @@ export class TestSuiteComponent implements OnInit {
   loadLibrariesAndAssignments(userId: any) {
     forkJoin({
       libraries: this.testSuitesService.getLibraries(),
-      assignments: this.testCaseManagerService.getAssignmentsByUserId(userId),
+      assignments:
+        this.testCaseAssignmentService.getAssignmentsByUserId(userId),
     }).subscribe({
       next: ({ libraries, assignments }) => {
         // Build a map for quick lookup: { libraryName -> { className -> [methodName] } }

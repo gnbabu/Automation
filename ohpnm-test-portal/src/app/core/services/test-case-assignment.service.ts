@@ -3,16 +3,14 @@ import {
   IAssignedTestCase,
   IAssignmentCreateUpdateRequest,
   ITestCaseAssignment,
-  ITestCaseAssignmentDeleteRequest,
 } from '@interfaces';
-import { Mappers } from '@mappers';
 import { HttpService } from '@services';
 import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
-export class TestCaseManagerService {
+export class TestCaseAssignmentService {
   constructor(private httpService: HttpService) {}
 
   getAssignmentsByUserId(userId: any): Observable<ITestCaseAssignment[]> {
@@ -21,9 +19,7 @@ export class TestCaseManagerService {
     );
   }
 
-  //________________________
-
-  saveAssignmentNew(request: IAssignmentCreateUpdateRequest): Observable<any> {
+  saveAssignment(request: IAssignmentCreateUpdateRequest): Observable<any> {
     return this.httpService.post(
       `TestCaseAssignments/create-or-update`,
       request
