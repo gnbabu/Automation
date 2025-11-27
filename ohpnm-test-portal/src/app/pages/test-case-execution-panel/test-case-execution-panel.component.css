@@ -1,0 +1,143 @@
+.test-case-execution-container {
+  max-width: 100%;
+  padding: 20px;
+}
+
+/* Header */
+.header-section {
+  background-color: transparent;
+  padding-bottom: 0.5rem;
+}
+
+.header-section h1 {
+  font-weight: 700;
+  font-size: 1.9rem;
+  color: #5c3c9e;
+  margin-bottom: 0.3rem;
+}
+
+.header-section small {
+  color: #2563eb;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* Filter Card */
+.filter-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+  margin-bottom: 1.5rem;
+}
+
+/* Stats Box */
+.stats-box {
+  background: #ffffff;
+  border-radius: 12px;
+  text-align: center;
+  padding: 12px 18px;
+  min-width: 100px;
+}
+
+.stats-number {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.2rem;
+}
+
+.stats-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* Table Card */
+.table-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+}
+
+.table-card h5 {
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.testcase-bold {
+  font-weight: 700;
+  color: #1f2937; /* dark grey */
+}
+
+/* Priority badges */
+.priority-high {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+}
+
+.priority-medium {
+  background-color: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+}
+
+.priority-low {
+  background-color: #dcfce7;
+  color: #065f46;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+}
+
+/* Status */
+.status-pill {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  display: inline-block;
+}
+
+.status-unassigned {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+.user-badge {
+  font-size: 0.9rem;
+}
+
+.footer-note {
+  color: #6b7280;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.priority-high {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.priority-medium {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+.priority-low {
+  color: #198754;
+  font-weight: 600;
+}
+:host ::ng-deep select.form-select {
+  width: 350px !important;
+  height: 44px !important;
+}

@@ -53,6 +53,14 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
+        path: 'test-case-execution-panel',
+        loadComponent: () =>
+          import(
+            './pages/test-case-execution-panel/test-case-execution-panel.component'
+          ).then((m) => m.TestCaseExecutionPanelComponent),
+        canActivate: [authGuard],
+      },
+      {
         path: 'test-data-management',
         loadComponent: () =>
           import(

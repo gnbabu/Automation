@@ -53,6 +53,15 @@
       <span class="hide-on-collapse">Test Explorer</span>
     </a>
     <a
+      [routerLink]="['/test-case-execution-panel']"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="sidebar-link text-decoration-none p-3"
+    >
+      <i class="fas fa-vial me-3"></i>
+      <span class="hide-on-collapse">Test Case Execution Panel</span>
+    </a>
+    <a
       [routerLink]="['/queue-manager']"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: false }"
