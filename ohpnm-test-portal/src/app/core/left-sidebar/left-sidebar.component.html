@@ -81,7 +81,15 @@
       <i class="fas fa-user-check me-3"></i>
       <span class="hide-on-collapse">Test Case Assignment</span>
     </a>
-
+    <a
+      [routerLink]="['/test-data-management']"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="sidebar-link text-decoration-none p-3"
+    >
+      <i class="fas fa-database me-3"></i>
+      <span class="hide-on-collapse">Test Data Management</span>
+    </a>
     <a
       [routerLink]="['/settings']"
       routerLinkActive="active"

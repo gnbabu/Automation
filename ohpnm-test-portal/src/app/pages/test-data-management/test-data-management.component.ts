@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router } from '@angular/router';
+
 import {
   IAutomationData,
   IAutomationDataRequest,
@@ -13,14 +13,13 @@ import {
   AutomationService,
   CommonToasterService,
 } from '@services';
-
 @Component({
-  selector: 'app-configure-test-data',
+  selector: 'app-test-data-management',
   imports: [CommonModule, FormsModule],
-  templateUrl: './configure-test-data.component.html',
-  styleUrl: './configure-test-data.component.css',
+  templateUrl: './test-data-management.component.html',
+  styleUrl: './test-data-management.component.css',
 })
-export class ConfigureTestDataComponent implements OnInit {
+export class TestDataManagementComponent implements OnInit {
   flows: IAutomationFlow[] = [];
   sections: IAutomationDataSection[] = [];
 
@@ -30,7 +29,6 @@ export class ConfigureTestDataComponent implements OnInit {
   existingSectionData?: IAutomationData;
 
   constructor(
-    private router: Router,
     private automationService: AutomationService,
     private toaster: CommonToasterService,
     private authService: AuthService
@@ -107,7 +105,6 @@ export class ConfigureTestDataComponent implements OnInit {
     request$.subscribe({
       next: () => {
         this.toaster.success('Test content saved successfully');
-        this.router.navigate(['/test-suite']);
       },
       error: (err) => {
         console.error('Error saving test content:', err);
@@ -131,9 +128,5 @@ export class ConfigureTestDataComponent implements OnInit {
     }
 
     return true;
-  }
-
-  goBack() {
-    this.router.navigate(['/test-suite']);
   }
 }

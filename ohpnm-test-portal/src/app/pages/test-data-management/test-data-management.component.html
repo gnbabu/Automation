@@ -1,0 +1,87 @@
+<div class="test-data-management-container">
+  <div class="header-section d-flex justify-content-between align-items-start">
+    <div>
+      <h1>Test Data Management</h1>
+    </div>
+  </div>
+  <div class="brand-header-underline"></div>
+  <div class="filter-card">
+    <form #testDataForm="ngForm" (ngSubmit)="onSubmit(testDataForm)">
+      <!-- Dropdown Section -->
+      <div class="border p-3 rounded mb-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="flowName" class="form-label fw-bold">Flow Name</label>
+            <select
+              id="flowName"
+              name="flowName"
+              class="form-select"
+              [(ngModel)]="selectedFlow"
+              (change)="onFlowChange()"
+              required
+              [ngClass]="{
+                'is-invalid': testDataForm.submitted && !selectedFlow
+              }"
+            >
+              <option [ngValue]="undefined">Select Flow</option>
+              <option *ngFor="let flow of flows" [ngValue]="flow">
+                {{ flow.flowName }}
+              </option>
+            </select>
+            <div class="invalid-feedback">Flow Name is required.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label for="section" class="form-label fw-bold">Section</label>
+            <select
+              id="section"
+              name="section"
+              class="form-select"
+              [(ngModel)]="selectedSection"
+              (change)="onSectionChange()"
+              required
+              [disabled]="!sections.length"
+              [ngClass]="{
+                'is-invalid': testDataForm.submitted && !selectedSection
+              }"
+            >
+              <option [ngValue]="undefined">Select Section</option>
+              <option *ngFor="let section of sections" [ngValue]="section">
+                {{ section.sectionName }}
+              </option>
+            </select>
+            <div class="invalid-feedback">Section is required.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Textarea Output Section -->
+      <div class="border p-3 rounded mb-3">
+        <textarea
+          class="form-control"
+          name="testContent"
+          [(ngModel)]="testContent"
+          rows="15"
+          required
+          placeholder="Output will appear here..."
+          [ngClass]="{
+            'is-invalid': testDataForm.submitted && !testContent.trim()
+          }"
+        ></textarea>
+        <div class="invalid-feedback">Test content is required.</div>
+      </div>
+
+      <!-- Save Button -->
+      <div class="text-end">
+        <button
+          class="btn-purple"
+          type="submit"
+          [disabled]="!testDataForm.valid || !testContent.trim()"
+        >
+          <i class="bi bi-save me-1"></i>
+          {{ existingSectionData?.id ? "Update" : "Save" }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

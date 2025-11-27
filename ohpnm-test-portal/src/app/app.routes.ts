@@ -53,11 +53,11 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
-        path: 'configure-test-data',
+        path: 'test-data-management',
         loadComponent: () =>
-          import('./pages/test-suite/configure-test-data.component').then(
-            (m) => m.ConfigureTestDataComponent
-          ),
+          import(
+            './pages/test-data-management/test-data-management.component'
+          ).then((m) => m.TestDataManagementComponent),
         canActivate: [authGuard],
       },
       {
