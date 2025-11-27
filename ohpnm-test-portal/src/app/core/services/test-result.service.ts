@@ -5,7 +5,7 @@ import {
   PagedResult,
   TestResultPayload,
 } from '@interfaces';
-import { Mappers } from '@mappers';
+
 import { HttpService } from '@services';
 import { Observable } from 'rxjs';
 
@@ -14,13 +14,6 @@ import { Observable } from 'rxjs';
 })
 export class TestResultService {
   constructor(private httpService: HttpService) {}
-
-  search(payload: TestResultPayload): Observable<PagedResult<ITestResult>> {
-    return this.httpService.post<PagedResult<ITestResult>>(
-      'TestResults/search',
-      payload
-    );
-  }
 
   getTestResultsByQueueId(queueId: any): Observable<ITestResult[]> {
     return this.httpService.get<ITestResult[]>(`TestResults/${queueId}`);

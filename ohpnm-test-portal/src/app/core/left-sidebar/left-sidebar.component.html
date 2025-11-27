@@ -44,26 +44,6 @@
       <span class="hide-on-collapse">Reports</span>
     </a>
     <a
-      style="display: none"
-      [routerLink]="['/api']"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="sidebar-link text-decoration-none p-3"
-    >
-      <i class="fas fa-plug me-3"></i>
-      <span class="hide-on-collapse">API</span>
-    </a>
-    <a
-      style="display: none"
-      [routerLink]="['/web']"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="sidebar-link text-decoration-none p-3"
-    >
-      <i class="fas fa-globe me-3"></i>
-      <span class="hide-on-collapse">Web</span>
-    </a>
-    <a
       [routerLink]="['/test-suite']"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
@@ -82,38 +62,6 @@
       <span class="hide-on-collapse">Queue Manager</span>
     </a>
     <a
-      [routerLink]="['/test-cases']"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="sidebar-link text-decoration-none p-3"
-    >
-      <i class="fas fa-file-code me-3"></i>
-      <span class="hide-on-collapse">Test Results</span>
-    </a>
-
-    <a
-      *ngIf="isAdmin"
-      [routerLink]="['/test-case-manager']"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="sidebar-link text-decoration-none p-3"
-    >
-      <i class="fas fa-user-check me-3"></i>
-      <span class="hide-on-collapse">Test Case Manager</span>
-    </a>
-
-    <a
-      *ngIf="isAdmin"
-      [routerLink]="['/test-case-assignment']"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="sidebar-link text-decoration-none p-3"
-    >
-      <i class="fas fa-user-check me-3"></i>
-      <span class="hide-on-collapse">Test Case Assignment</span>
-    </a>
-
-    <a
       *ngIf="isAdmin"
       [routerLink]="['/users']"
       routerLinkActive="active"
@@ -131,7 +79,7 @@
       class="sidebar-link text-decoration-none p-3"
     >
       <i class="fas fa-user-check me-3"></i>
-      <span class="hide-on-collapse">Test Case Assignment User</span>
+      <span class="hide-on-collapse">Test Case Assignment</span>
     </a>
 
     <a

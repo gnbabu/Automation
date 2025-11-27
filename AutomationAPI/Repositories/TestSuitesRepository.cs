@@ -113,60 +113,6 @@ namespace AutomationAPI.Repositories
             });
         }
 
-        public async Task<IEnumerable<TestCaseModel>> GetAllTestCasesAsync(string? libraryName, bool? assigned)
-        {
-            var libraries = await GetLibrariesAsync();
-
-            // Await the async repository call
-            var testCaseAssignments = await _testCaseAssignmentRepository.GetAllAssignmentsAsync();
-
-            // Filter by library name if provided
-            if (!string.IsNullOrEmpty(libraryName))
-            {
-                libraries = libraries.Where(l => l.LibraryName.Equals(libraryName, StringComparison.OrdinalIgnoreCase));
-            }
-
-            var testCases = new List<TestCaseModel>();
-
-            foreach (var lib in libraries)
-            {
-                foreach (var cls in lib.Classes)
-                {
-                    foreach (var method in cls.Methods)
-                    {
-                        // Get assigned users safely
-                        var assignedUsers = testCaseAssignments
-                            .Where(a =>
-                                a.LibraryName.Equals(lib.LibraryName, StringComparison.OrdinalIgnoreCase) &&
-                                a.ClassName.Equals(cls.ClassName, StringComparison.OrdinalIgnoreCase) &&
-                                a.MethodName.Equals(method.MethodName, StringComparison.OrdinalIgnoreCase))
-                            .Select(a => a.UserId.ToString())
-                            .ToList();
-
-                        // Apply assigned/unassigned filter
-                        if (assigned.HasValue)
-                        {
-                            if (assigned.Value && (assignedUsers == null || !assignedUsers.Any())) continue; // Only assigned
-                            if (!assigned.Value && assignedUsers.Any()) continue; // Only unassigned
-                        }
-
-                        testCases.Add(new TestCaseModel
-                        {
-                            LibraryName = lib.LibraryName,
-                            ClassName = cls.ClassName,
-                            MethodName = method.MethodName,
-                            Description = method.Description,
-                            Priority = method.Priority,
-                            TestCaseId = method.TestCaseId,
-                            AssignedUsers = assignedUsers ?? new List<string>()
-                        });
-                    }
-                }
-            }
-
-            return testCases;
-        }
-
         public async Task<IEnumerable<TestCaseModel>> GetAllTestCasesByLibrary(string libraryName)
         {
             var libraries = await GetLibrariesAsync();

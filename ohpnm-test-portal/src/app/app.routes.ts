@@ -45,18 +45,6 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
-        path: 'api',
-        loadComponent: () =>
-          import('./pages/api/api.component').then((m) => m.ApiComponent),
-        canActivate: [authGuard],
-      },
-      {
-        path: 'web',
-        loadComponent: () =>
-          import('./pages/web/web.component').then((m) => m.WebComponent),
-        canActivate: [authGuard],
-      },
-      {
         path: 'test-suite',
         loadComponent: () =>
           import('./pages/test-suite/test-suite.component').then(
@@ -86,30 +74,6 @@ export const routes: Routes = [
           import('./pages/queue-manager/queue-detail.component').then(
             (m) => m.QueueDetailsComponent
           ),
-        canActivate: [authGuard],
-      },
-      {
-        path: 'test-cases',
-        loadComponent: () =>
-          import('./pages/test-cases/test-cases.component').then(
-            (m) => m.TestCasesComponent
-          ),
-        canActivate: [authGuard],
-      },
-      {
-        path: 'test-case-manager',
-        loadComponent: () =>
-          import('./pages/test-case-manager/test-case-manager.component').then(
-            (m) => m.TestCaseManagerComponent
-          ),
-        canActivate: [authGuard],
-      },
-      {
-        path: 'test-case-assignment',
-        loadComponent: () =>
-          import(
-            './pages/test-case-assignment/test-case-assignment.component'
-          ).then((m) => m.TestCaseAssignmentComponent),
         canActivate: [authGuard],
       },
       {

@@ -138,13 +138,13 @@
   <div class="d-flex align-items-center gap-1">
     <span
       *ngIf="row?.assignedUserName; else unassigned"
-      class="badge bg-primary"
+      class="badge bg-primary user-badge"
     >
       {{ row.assignedUserName }}
     </span>
 
     <ng-template #unassigned>
-      <span class="badge bg-secondary">Unassigned</span>
+      <span class="badge bg-secondary user-badge">Unassigned</span>
     </ng-template>
   </div>
 </ng-template>

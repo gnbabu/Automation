@@ -58,17 +58,10 @@
         public const string GetScreenshotById = "[aut].[usp_GetScreenshotById]";
 
 
-        public const string GetAllTestCaseAssignments = "[aut].[usp_GetAllTestCaseAssignments]";
-        public const string GetTestCaseAssignmentsByUser = "[aut].[usp_GetTestCaseAssignmentsByUser]";
-        public const string InsertTestCaseAssignment = "[aut].[usp_InsertTestCaseAssignment]";
-        public const string TestCaseAssignmentType = "[aut].[TestCaseAssignmentType]";
-        public const string BulkSyncTestCaseAssignments = "[aut].[usp_SyncTestCaseAssignments]";
-        public const string BulkSyncTestCaseAssignments_New = "[aut].[usp_SyncTestCaseAssignments_New]";
-        public const string DeleteTestCaseAssignmentsByUser = "[aut].[usp_DeleteTestCaseAssignmentsByUser]";
-        public const string DeleteTestCaseAssignments = "[aut].[usp_DeleteTestCaseAssignments]";
+        //Assignments and Test Cases
+        public const string GetAllTestCaseAssignments = "[aut].[usp_GetAllTestCaseAssignments]"; //Need to Remove
+        public const string GetTestCaseAssignmentsByUser = "[aut].[usp_GetTestCaseAssignmentsByUser]";//Need to Remove
 
-
-        //TestCaseAssignmentEntity
 
         public const string CreateOrUpdateAssignmentWithTestCases = "[aut].[usp_CreateOrUpdateAssignmentWithTestCases]";
         public const string GetTestCasesByAssignmentNameAndUser = "[aut].[usp_GetTestCasesByAssignmentNameAndUser]";

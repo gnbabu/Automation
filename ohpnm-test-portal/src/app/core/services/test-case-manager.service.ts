@@ -2,13 +2,8 @@ import { Injectable } from '@angular/core';
 import {
   IAssignedTestCase,
   IAssignmentCreateUpdateRequest,
-  IQueueInfo,
   ITestCaseAssignment,
   ITestCaseAssignmentDeleteRequest,
-  ITestResult,
-  ITestScreenshot,
-  PagedResult,
-  TestResultPayload,
 } from '@interfaces';
 import { Mappers } from '@mappers';
 import { HttpService } from '@services';
@@ -26,32 +21,6 @@ export class TestCaseManagerService {
     );
   }
 
-  saveAssignments(assignments: ITestCaseAssignment[]): Observable<any> {
-    return this.httpService.post(
-      `TestCaseAssignments/bulk-insert`,
-      assignments
-    );
-  }
-
-  saveAssignmentsOld(assignments: ITestCaseAssignment[]): Observable<any> {
-    return this.httpService.post(
-      `TestCaseAssignments/bulk-insert-old`,
-      assignments
-    );
-  }
-
-  deleteAssignments(userId: any): Observable<any> {
-    return this.httpService.delete<any>(`TestCaseAssignments/${userId}`);
-  }
-
-  deleteAssignmentsByCriteria(
-    request: ITestCaseAssignmentDeleteRequest
-  ): Observable<any> {
-    return this.httpService.post(
-      `TestCaseAssignments/delete-assignments`,
-      request
-    );
-  }
   //________________________
 
   saveAssignmentNew(request: IAssignmentCreateUpdateRequest): Observable<any> {
