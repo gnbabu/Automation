@@ -34,27 +34,34 @@ namespace AutomationAPI.Repositories
         }
 
         // Get all assignments by user
-        public async Task<IEnumerable<TestCaseAssignment>> GetAssignmentsByUserIdAsync(int userId)
+        public async Task<IEnumerable<TestCaseAssignmentEntity>> GetAssignmentsByUserIdAsync(int userId)
         {
             var parameters = new[]
             {
                 new SqlParameter("@UserId", SqlDbType.Int) { Value = userId }
             };
 
-            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetTestCaseAssignmentsByUser, parameters, reader => new TestCaseAssignment
-            {
-                AssignmentId = reader.GetNullableInt("AssignmentId") ?? 0,
-                UserId = reader.GetNullableInt("UserId") ?? 0,
-                LibraryName = reader.GetNullableString("LibraryName") ?? string.Empty,
-                ClassName = reader.GetNullableString("ClassName") ?? string.Empty,
-                MethodName = reader.GetNullableString("MethodName") ?? string.Empty,
-                AssignedOn = reader.GetNullableDateTime("AssignedOn") ?? DateTime.MinValue,
-                AssignedBy = reader.GetNullableInt("AssignedBy")
-            }
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetTestCaseAssignmentsByUser, parameters,
+                reader => new TestCaseAssignmentEntity
+                {
+                    AssignmentId = reader.GetNullableInt("AssignmentId") ?? 0,
+                    AssignmentName = reader.GetNullableString("AssignmentName") ?? string.Empty,
+                    AssignmentStatus = reader.GetNullableString("AssignmentStatus") ?? string.Empty,
+                    AssignedUser = reader.GetNullableInt("AssignedUser") ?? 0,
+                    ReleaseName = reader.GetNullableString("ReleaseName") ?? string.Empty,
+                    Environment = reader.GetNullableString("Environment") ?? string.Empty,
+                    AssignedDate = reader.GetNullableDateTime("AssignedDate") ?? DateTime.MinValue,
+                    AssignedBy = reader.GetNullableInt("AssignedBy") ?? 0,
+                    LastUpdatedDate = reader.GetNullableDateTime("LastUpdatedDate") ?? DateTime.MinValue,
+
+                    // From JOIN (if included in SP)
+                    AssignedUserName = reader.GetNullableString("AssignedUserName"),
+                    AssignedByUserName = reader.GetNullableString("AssignedByUserName")
+                }
             );
         }
 
-        
+
         public async Task<IEnumerable<AssignedTestCase>> GetTestCasesByAssignmentNameAndUserAsync(string assignmentName, int assignedUserId)
         {
             var parameters = new[]

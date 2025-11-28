@@ -96,7 +96,7 @@ export class TestSuiteComponent implements OnInit {
     forkJoin({
       libraries: this.testSuitesService.getLibraries(),
       assignments:
-        this.testCaseAssignmentService.getAssignmentsByUserId(userId),
+        this.testCaseAssignmentService.getAssignmentsByUserIdOld(userId),
     }).subscribe({
       next: ({ libraries, assignments }) => {
         // Build a map for quick lookup: { libraryName -> { className -> [methodName] } }

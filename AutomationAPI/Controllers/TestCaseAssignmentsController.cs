@@ -104,6 +104,26 @@ namespace AutomationAPI.Controllers
             }
         }
 
+        [HttpGet("assigned-to/{userId}")]
+        public async Task<IActionResult> GetAssignmentsByUserIdAsync(int userId)
+        {
+            try
+            {
+                if (userId <= 0)
+                    return BadRequest("UserId must be greater than zero.");
+
+                var assignments = await _repository.GetAssignmentsByUserIdAsync(userId);
+
+                return Ok(assignments);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while fetching assignments for the specified user.");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
     }
 }
 

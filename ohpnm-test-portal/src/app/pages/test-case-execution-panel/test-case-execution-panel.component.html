@@ -1,8 +1,156 @@
 <div class="test-case-execution-panelcontainer">
-  <div class="header-section d-flex justify-content-between align-items-start">
+  <!-- Header Section -->
+  <div
+    class="header-section d-flex justify-content-between align-items-start mb-3"
+  >
     <div>
-      <h1>Test Case Execution Panel</h1>
+      <h1 class="mb-1">Test Case Execution Panel</h1>
+      <p class="text-muted mb-0">
+        Schedule and execute the test cases assigned to you.
+      </p>
     </div>
   </div>
-  <div class="brand-header-underline"></div>
+
+  <div class="brand-header-underline mb-3"></div>
+
+  <!-- Assignment Dropdown -->
+  <div class="filter-card p-3 mb-3">
+    <div class="d-flex flex-wrap gap-4 align-items-end">
+      <div class="d-flex flex-column">
+        <label for="assignmentSelect" class="form-label">Assignment</label>
+        <app-dropdown
+          id="assignmentSelect"
+          [options]="assignments"
+          valueAccessor="assignmentId"
+          textAccessor="assignmentName"
+          placeholder="Select Assignment..."
+          [(selected)]="selectedAssignment"
+          (selectionChange)="onAssignmentChange($event)"
+        ></app-dropdown>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selected Assignment Name -->
+  <div class="filter-card p-3 mb-3">
+    <div
+      class="d-flex justify-content-between align-items-center w-100 py-1 px-2"
+    >
+      <span class="fw-semibold">Selected Assignment Name:</span>
+      <span class="text-primary">{{ selectedAssignment?.assignmentName }}</span>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="stat-box">
+        <div class="stat-title">Total Assigned</div>
+        <div class="stat-value">4</div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="stat-box">
+        <div class="stat-title">Pending Execution</div>
+        <div class="stat-value text-warning">4</div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="stat-box">
+        <div class="stat-title">Completed</div>
+        <div class="stat-value text-success">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Schedule Execution -->
+  <div class="filter-card p-3 mb-3">
+    <h5 class="fw-semibold mb-3 w-100">Bulk Schedule Execution (0 selected)</h5>
+
+    <div class="d-flex flex-wrap gap-4 align-items-end">
+      <!-- Browser -->
+      <div class="d-flex flex-column">
+        <label class="form-label">Browser</label>
+        <select class="form-select">
+          <option>Chrome</option>
+          <option>IE</option>
+        </select>
+      </div>
+
+      <!-- Environment -->
+      <div class="d-flex flex-column">
+        <label for="envSelect" class="form-label">Environment</label>
+        <app-dropdown
+          id="envSelect"
+          [options]="environments"
+          valueAccessor="environmentName"
+          textAccessor="environmentName"
+          placeholder="Select Environment"
+          [(selected)]="selectedEnvironment"
+          (selectionChange)="onEnvironmentChange($event)"
+        ></app-dropdown>
+      </div>
+
+      <!-- Date -->
+      <div class="d-flex flex-column">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-control" />
+      </div>
+
+      <!-- Time -->
+      <div class="d-flex flex-column">
+        <label class="form-label">Time</label>
+        <input type="time" class="form-control" />
+      </div>
+
+      <!-- Apply Button -->
+      <div class="d-flex flex-column">
+        <label class="form-label invisible">Action</label>
+        <button class="btn-purple">Apply Bulk Schedule</button>
+      </div>
+    </div>
+  </div>
+  <div class="table-card">
+    <h5>My Assigned Test Cases</h5>
+    <div class="table-responsive">
+      <app-data-grid
+        [selectionEnabled]="true"
+        [columns]="columns"
+        [data]="testCases"
+        [(selectedRows)]="selectedTestCases"
+        [pagingEnabled]="true"
+        [pageSize]="10"
+        [sortingMode]="'client'"
+        (selectedRowsChange)="onSelectionChanged($event)"
+      ></app-data-grid>
+    </div>
+  </div>
 </div>
+
+<!-- Test Case ID Bold Template -->
+<ng-template #testCaseIdTemplate let-row let-value="value">
+  <span class="fw-bold">{{ value }}</span>
+</ng-template>
+
+<!-- Priority Template -->
+<ng-template #priorityTemplate let-row let-value="value">
+  <span
+    [ngClass]="{
+      'priority-high': value === 'High',
+      'priority-medium': value === 'Medium',
+      'priority-low': value === 'Low'
+    }"
+  >
+    {{ value }}
+  </span>
+</ng-template>
+
+<ng-template #statusTemplate let-row let-value="value">
+  <span
+    class="text-uppercase px-2 py-1 rounded-pill testcase-status"
+    [ngClass]="getBadgeClass(value)"
+  >
+    {{ value }}
+  </span>
+</ng-template>

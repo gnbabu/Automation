@@ -60,15 +60,13 @@
 
         //Assignments and Test Cases
         public const string GetAllTestCaseAssignments = "[aut].[usp_GetAllTestCaseAssignments]"; //Need to Remove
-        public const string GetTestCaseAssignmentsByUser = "[aut].[usp_GetTestCaseAssignmentsByUser]";//Need to Remove
 
 
         public const string CreateOrUpdateAssignmentWithTestCases = "[aut].[usp_CreateOrUpdateAssignmentWithTestCases]";
         public const string GetTestCasesByAssignmentNameAndUser = "[aut].[usp_GetTestCasesByAssignmentNameAndUser]";
         public const string GetAssignedTestCasesForLibraryAndEnvironment = "[aut].[usp_GetAssignedTestCasesForLibraryAndEnvironment]";
         public const string GetAllAssignedTestCasesInLibrary = "[aut].[usp_GetAllAssignedTestCasesInLibrary]";
-
-
+        public const string GetTestCaseAssignmentsByUser = "[aut].[GetTestCaseAssignmentsByUser]";
 
 
     }

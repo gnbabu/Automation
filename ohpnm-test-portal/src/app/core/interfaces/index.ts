@@ -255,6 +255,19 @@ export interface ITestCaseRequestModel {
   methodName?: string;
   priority?: string;
 }
+export interface ITestCaseAssignmentEntity {
+  assignmentId: number;
+  assignmentName: string;
+  assignmentStatus: string;
+  assignedUser: number;
+  releaseName: string;
+  environment: string;
+  assignedDate: string; // ISO string from API
+  assignedBy: number;
+  lastUpdatedDate: string; // ISO string from API
+  assignedUserName?: string;
+  assignedByUserName?: string;
+}
 
 export interface IAssignedTestCase {
   assignmentTestCaseId: number;

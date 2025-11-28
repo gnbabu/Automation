@@ -11,6 +11,10 @@
         public DateTime AssignedDate { get; set; }
         public int AssignedBy { get; set; }
         public DateTime LastUpdatedDate { get; set; }
+
+        // Optional (from joined User table)
+        public string AssignedUserName { get; set; }
+        public string AssignedByUserName { get; set; }
     }
 
     public class AssignedTestCase

@@ -3,6 +3,7 @@ import {
   IAssignedTestCase,
   IAssignmentCreateUpdateRequest,
   ITestCaseAssignment,
+  ITestCaseAssignmentEntity,
 } from '@interfaces';
 import { HttpService } from '@services';
 import { Observable } from 'rxjs';
@@ -13,9 +14,16 @@ import { Observable } from 'rxjs';
 export class TestCaseAssignmentService {
   constructor(private httpService: HttpService) {}
 
-  getAssignmentsByUserId(userId: any): Observable<ITestCaseAssignment[]> {
+  //Need to remove
+  getAssignmentsByUserIdOld(userId: any): Observable<ITestCaseAssignment[]> {
     return this.httpService.get<ITestCaseAssignment[]>(
       `TestCaseAssignments/${userId}`
+    );
+  }
+
+  getAssignmentsByUserId(userId: any): Observable<ITestCaseAssignmentEntity[]> {
+    return this.httpService.get<ITestCaseAssignmentEntity[]>(
+      `TestCaseAssignments/assigned-to/${userId}`
     );
   }
 
