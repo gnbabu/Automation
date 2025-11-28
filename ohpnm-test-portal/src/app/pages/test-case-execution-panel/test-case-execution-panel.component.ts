@@ -49,6 +49,12 @@ export class TestCaseExecutionPanelComponent implements OnInit {
   testCases: IAssignedTestCase[] = [];
   selectedTestCases: IAssignedTestCase[] = [];
 
+  stats = {
+    totalAssigned: 0,
+    pendingExecution: 0,
+    completed: 0,
+  };
+
   ngOnInit(): void {
     this.loadAssignments();
     this.setupColumns();
@@ -111,6 +117,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       .subscribe({
         next: (data) => {
           this.testCases = data;
+          this.calculateStats();
         },
         error: (err) => {
           console.error('Error loading test cases:', err);
@@ -167,5 +174,24 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       default:
         return 'bg-light text-dark border';
     }
+  }
+
+  calculateStats() {
+    this.stats.totalAssigned = this.testCases.length;
+
+    this.stats.completed = this.testCases.filter(
+      (x) => x.testCaseStatus === 'Completed'
+    ).length;
+
+    this.stats.pendingExecution =
+      this.stats.totalAssigned - this.stats.completed;
+  }
+
+  resetStats() {
+    this.stats = {
+      totalAssigned: 0,
+      pendingExecution: 0,
+      completed: 0,
+    };
   }
 }

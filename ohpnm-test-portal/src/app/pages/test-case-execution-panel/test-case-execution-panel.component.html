@@ -45,21 +45,21 @@
     <div class="col-md-4">
       <div class="stat-box">
         <div class="stat-title">Total Assigned</div>
-        <div class="stat-value">4</div>
+        <div class="stat-value">{{ stats.totalAssigned }}</div>
       </div>
     </div>
 
     <div class="col-md-4">
       <div class="stat-box">
         <div class="stat-title">Pending Execution</div>
-        <div class="stat-value text-warning">4</div>
+        <div class="stat-value text-warning">{{ stats.pendingExecution }}</div>
       </div>
     </div>
 
     <div class="col-md-4">
       <div class="stat-box">
         <div class="stat-title">Completed</div>
-        <div class="stat-value text-success">0</div>
+        <div class="stat-value text-success">{{ stats.completed }}</div>
       </div>
     </div>
   </div>

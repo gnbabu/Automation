@@ -152,3 +152,8 @@ table td {
   overflow-wrap: anywhere;
   cursor: pointer;
 }
+.checkbox-custom {
+  margin: 3px 3px 3px 4px;
+  height: 20px;
+  width: 15px;
+}
