@@ -1,0 +1,10 @@
+.modal-header {
+  background: #f0f3f7 !important;
+}
+.modal-title {
+  font-size: 1.1rem;
+  color: #374151 !important;
+}
+.modal-body {
+  padding: 2rem !important;
+}

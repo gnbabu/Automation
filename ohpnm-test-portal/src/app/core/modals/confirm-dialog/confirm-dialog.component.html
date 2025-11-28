@@ -1,0 +1,38 @@
+<div
+  #globalConfirmModal
+  class="modal fade"
+  id="globalConfirmModal"
+  tabindex="-1"
+  aria-labelledby="confirmDialogLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ title }}
+        </h5>
+        <button
+          class="btn-close"
+          data-bs-dismiss="modal"
+          (click)="cancel()"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        {{ message }}
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+          (click)="cancel()"
+        >
+          Cancel
+        </button>
+        <button class="btn-purple" (click)="confirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>

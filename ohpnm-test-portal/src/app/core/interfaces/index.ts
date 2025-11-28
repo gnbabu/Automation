@@ -285,4 +285,5 @@ export interface IAssignedTestCase {
   errorMessage: string;
   assignedUserId: number;
   assignedUserName: string;
+  environment: string;
 }

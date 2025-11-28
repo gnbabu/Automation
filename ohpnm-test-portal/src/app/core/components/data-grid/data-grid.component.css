@@ -157,3 +157,7 @@ table td {
   height: 20px;
   width: 15px;
 }
+
+.pagination-header .form-select {
+  width: auto !important;
+}

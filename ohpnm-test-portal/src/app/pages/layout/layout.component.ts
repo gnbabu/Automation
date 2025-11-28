@@ -3,6 +3,7 @@ import { LeftSidebarComponent } from '../../core/left-sidebar/left-sidebar.compo
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { LoadingOverlayComponent } from 'app/core/components/loader/loading-overlay.component';
+import { ConfirmDialogComponent } from 'app/core/modals/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-layout',
@@ -12,6 +13,7 @@ import { LoadingOverlayComponent } from 'app/core/components/loader/loading-over
     CommonModule,
     RouterOutlet,
     LoadingOverlayComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './layout.component.html',
   styleUrl: './layout.component.css',

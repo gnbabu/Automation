@@ -9,11 +9,13 @@ import {
 import {
   AuthService,
   CommonToasterService,
+  ConfirmService,
   TestCaseAssignmentService,
   UsersService,
 } from '@services';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
+import { ConfirmDialogComponent } from 'app/core/modals/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-test-case-execution',
@@ -27,7 +29,8 @@ export class TestCaseExecutionPanelComponent implements OnInit {
     private authService: AuthService,
     private toaster: CommonToasterService,
     private userService: UsersService,
-    private testCaseAssignmentService: TestCaseAssignmentService
+    private testCaseAssignmentService: TestCaseAssignmentService,
+    private confirmService: ConfirmService
   ) {}
 
   @ViewChild('testCaseIdTemplate', { static: true })
@@ -38,6 +41,11 @@ export class TestCaseExecutionPanelComponent implements OnInit {
 
   @ViewChild('statusTemplate', { static: true })
   statusTemplate!: TemplateRef<any>;
+
+  @ViewChild('actionsTemplate', { static: true })
+  actionsTemplate!: TemplateRef<any>;
+
+  @ViewChild('confirmDialog') confirmDialog!: ConfirmDialogComponent;
 
   assignments: ITestCaseAssignmentEntity[] = [];
   selectedAssignment: ITestCaseAssignmentEntity | null = null;
@@ -131,7 +139,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       {
         field: 'testCaseId',
         header: 'Test Case ID',
-        sortable: true,
+        sortable: false,
         cellTemplate: this.testCaseIdTemplate,
       },
       {
@@ -145,6 +153,11 @@ export class TestCaseExecutionPanelComponent implements OnInit {
         sortable: true,
       },
       {
+        field: 'environment',
+        header: 'Environment',
+        sortable: false,
+      },
+      {
         field: 'priority',
         header: 'Priority',
         sortable: true,
@@ -155,6 +168,13 @@ export class TestCaseExecutionPanelComponent implements OnInit {
         header: 'Status',
         sortable: false,
         cellTemplate: this.statusTemplate,
+      },
+      {
+        field: '',
+        header: 'Actions',
+        sortable: false,
+        cellTemplate: this.actionsTemplate, // 🔥 new template
+        width: '180px',
       },
     ];
   }
@@ -193,5 +213,23 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       pendingExecution: 0,
       completed: 0,
     };
+  }
+
+  async onRunNow(testCase: IAssignedTestCase) {
+    const confirmed = await this.confirmService.confirm(
+      'Run Test Case',
+      `Are you sure you want to run Test Case "${testCase.testCaseId}" now?`
+    );
+
+    if (!confirmed) return;
+
+    console.log('Confirmed! Running:', testCase);
+
+    // TODO: API call here
+  }
+
+  onSchedule(testCase: IAssignedTestCase) {
+    console.log('Schedule clicked:', testCase);
+    // TODO: open scheduling modal
   }
 }

@@ -154,3 +154,16 @@
     {{ value }}
   </span>
 </ng-template>
+
+<!-- Action Buttons Template -->
+<ng-template #actionsTemplate let-row>
+  <div class="d-flex gap-2">
+    <!-- Run Now -->
+    <button class="btn-purple" (click)="onRunNow(row)">Run Now</button>
+
+    <!-- Schedule Execution -->
+    <button class="btn btn-sm btn-primary" (click)="onSchedule(row)">
+      Schedule
+    </button>
+  </div>
+</ng-template>

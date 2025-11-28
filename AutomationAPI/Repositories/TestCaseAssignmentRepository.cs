@@ -87,7 +87,8 @@ namespace AutomationAPI.Repositories
                     Duration = reader.GetNullableInt("Duration"),
                     ErrorMessage = reader.GetNullableString("ErrorMessage"),
                     AssignedUserId = reader.GetNullableInt("AssignedUserId") ?? 0,
-                    AssignedUserName = reader.GetNullableString("AssignedUserName") ?? string.Empty
+                    AssignedUserName = reader.GetNullableString("AssignedUserName") ?? string.Empty,
+                    Environment = reader.GetNullableString("Environment") ?? string.Empty
                 }
             );
         }
