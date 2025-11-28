@@ -66,51 +66,25 @@
 
   <!-- Bulk Schedule Execution -->
   <div class="filter-card p-3 mb-3">
-    <h5 class="fw-semibold mb-3 w-100">Bulk Schedule Execution (0 selected)</h5>
-
-    <div class="d-flex flex-wrap gap-4 align-items-end">
-      <!-- Browser -->
-      <div class="d-flex flex-column">
-        <label class="form-label">Browser</label>
-        <select class="form-select">
-          <option>Chrome</option>
-          <option>IE</option>
-        </select>
+    <div class="row align-items-center g-3">
+      <!-- Column 1: Title -->
+      <div class="col-md-6">
+        <h5 class="fw-semibold m-0">
+          Bulk Schedule Execution ({{ selectedTestCases.length }} selected)
+        </h5>
       </div>
 
-      <!-- Environment -->
-      <div class="d-flex flex-column">
-        <label for="envSelect" class="form-label">Environment</label>
-        <app-dropdown
-          id="envSelect"
-          [options]="environments"
-          valueAccessor="environmentName"
-          textAccessor="environmentName"
-          placeholder="Select Environment"
-          [(selected)]="selectedEnvironment"
-          (selectionChange)="onEnvironmentChange($event)"
-        ></app-dropdown>
-      </div>
+      <!-- Column 2: Empty or future elements -->
+      <div class="col-md-3"></div>
 
-      <!-- Date -->
-      <div class="d-flex flex-column">
-        <label class="form-label">Date</label>
-        <input type="date" class="form-control" />
-      </div>
-
-      <!-- Time -->
-      <div class="d-flex flex-column">
-        <label class="form-label">Time</label>
-        <input type="time" class="form-control" />
-      </div>
-
-      <!-- Apply Button -->
-      <div class="d-flex flex-column">
-        <label class="form-label invisible">Action</label>
-        <button class="btn-purple">Apply Bulk Schedule</button>
+      <!-- Column 3: Buttons side-by-side -->
+      <div class="col-md-3 d-flex justify-content-end gap-2">
+        <button class="btn-purple">Bulk Run Now</button>
+        <button class="btn-purple">Bulk Schedule</button>
       </div>
     </div>
   </div>
+
   <div class="table-card">
     <h5>My Assigned Test Cases</h5>
     <div class="table-responsive">
@@ -167,3 +141,6 @@
     </button>
   </div>
 </ng-template>
+<app-schedule-testcases-dialog
+  (submitSchedule)="onBulkSchedule($event)"
+></app-schedule-testcases-dialog>

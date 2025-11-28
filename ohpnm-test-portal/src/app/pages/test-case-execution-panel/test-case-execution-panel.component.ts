@@ -16,10 +16,17 @@ import {
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 import { ConfirmDialogComponent } from 'app/core/modals/confirm-dialog/confirm-dialog.component';
+import { ScheduleTestcasesDialogComponent } from './schedule-testcases-dialog/schedule-testcases-dialog.component';
 
 @Component({
   selector: 'app-test-case-execution',
-  imports: [AppDropdownComponent, CommonModule, FormsModule, DataGridComponent],
+  imports: [
+    AppDropdownComponent,
+    CommonModule,
+    FormsModule,
+    DataGridComponent,
+    ScheduleTestcasesDialogComponent,
+  ],
   standalone: true,
   templateUrl: './test-case-execution-panel.component.html',
   styleUrl: './test-case-execution-panel.component.css',
@@ -46,6 +53,9 @@ export class TestCaseExecutionPanelComponent implements OnInit {
   actionsTemplate!: TemplateRef<any>;
 
   @ViewChild('confirmDialog') confirmDialog!: ConfirmDialogComponent;
+
+  @ViewChild(ScheduleTestcasesDialogComponent)
+  scheduleDialog!: ScheduleTestcasesDialogComponent;
 
   assignments: ITestCaseAssignmentEntity[] = [];
   selectedAssignment: ITestCaseAssignmentEntity | null = null;
@@ -229,7 +239,14 @@ export class TestCaseExecutionPanelComponent implements OnInit {
   }
 
   onSchedule(testCase: IAssignedTestCase) {
+    this.scheduleDialog.open();
     console.log('Schedule clicked:', testCase);
     // TODO: open scheduling modal
+  }
+
+  onBulkSchedule(event: any) {
+    console.log('Bulk schedule values:', event);
+
+    // TODO: call API here
   }
 }
