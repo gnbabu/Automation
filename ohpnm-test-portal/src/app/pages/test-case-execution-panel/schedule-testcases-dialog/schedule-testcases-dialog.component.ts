@@ -18,41 +18,43 @@ import { ModalService } from '@services';
   templateUrl: './schedule-testcases-dialog.component.html',
 })
 export class ScheduleTestcasesDialogComponent implements AfterViewInit {
-  @ViewChild('scheduleModal') modalRef!: ElementRef;
-
-  @Output() submitSchedule = new EventEmitter<{
-    browser: string;
-    date: string;
-    time: string;
-  }>();
+  @ViewChild('scheduleModal') modalElement!: ElementRef;
 
   browser: string = 'Chrome';
   date: string = '';
   time: string = '';
 
-  modalId = 'scheduleTestcasesModal';
+  private callback!: (data: any) => void;
 
   constructor(private modalService: ModalService) {}
 
-  ngAfterViewInit(): void {
-    this.modalService.register(this.modalId, this.modalRef.nativeElement);
+  ngAfterViewInit() {
+    this.modalService.register(
+      'scheduleTestcasesModal',
+      this.modalElement.nativeElement
+    );
   }
 
-  open() {
-    this.modalService.open(this.modalId);
+  /** Open modal and pass callback */
+  open(cb: (data: any) => void) {
+    this.callback = cb;
+    this.modalService.open('scheduleTestcasesModal');
   }
 
+  /** Close modal */
   close() {
-    this.modalService.close(this.modalId);
+    this.modalService.close('scheduleTestcasesModal');
   }
 
+  /** Submit form back to parent */
   submit() {
-    this.submitSchedule.emit({
-      browser: this.browser,
-      date: this.date,
-      time: this.time,
-    });
-
+    if (this.callback) {
+      this.callback({
+        browser: this.browser,
+        date: this.date,
+        time: this.time,
+      });
+    }
     this.close();
   }
 }

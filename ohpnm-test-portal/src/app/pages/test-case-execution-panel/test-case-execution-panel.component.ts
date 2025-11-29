@@ -54,7 +54,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
 
   @ViewChild('confirmDialog') confirmDialog!: ConfirmDialogComponent;
 
-  @ViewChild(ScheduleTestcasesDialogComponent)
+  @ViewChild('scheduleDialog')
   scheduleDialog!: ScheduleTestcasesDialogComponent;
 
   assignments: ITestCaseAssignmentEntity[] = [];
@@ -239,14 +239,41 @@ export class TestCaseExecutionPanelComponent implements OnInit {
   }
 
   onSchedule(testCase: IAssignedTestCase) {
-    this.scheduleDialog.open();
-    console.log('Schedule clicked:', testCase);
-    // TODO: open scheduling modal
+    this.scheduleDialog.open((data: any) => {
+      console.log('Scheduled with:', data);
+
+      // Your API CALL here
+      // this.api.scheduleExecution(data).subscribe(...)
+    });
   }
 
-  onBulkSchedule(event: any) {
-    console.log('Bulk schedule values:', event);
+  async onBulkRunNow() {
+    if (!this.selectedTestCases || this.selectedTestCases.length === 0) {
+      return;
+    }
 
-    // TODO: call API here
+    const testCaseIds = this.selectedTestCases
+      .map((t) => t.testCaseId)
+      .join(', ');
+
+    const confirmed = await this.confirmService.confirm(
+      'Bulk Run Now',
+      `Are you sure you want to run these test cases?\n\n${testCaseIds}`
+    );
+
+    if (!confirmed) return;
+
+    console.log('Bulk Run Confirmed! Running:', this.selectedTestCases);
+
+    // TODO: API call here
+  }
+
+  onBulkSchedule() {
+    this.scheduleDialog.open((data: any) => {
+      console.log('Scheduled with:', data);
+
+      // Your API CALL here
+      // this.api.scheduleExecution(data).subscribe(...)
+    });
   }
 }

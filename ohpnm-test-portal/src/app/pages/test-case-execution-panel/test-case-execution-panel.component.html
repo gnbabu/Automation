@@ -79,8 +79,12 @@
 
       <!-- Column 3: Buttons side-by-side -->
       <div class="col-md-3 d-flex justify-content-end gap-2">
-        <button class="btn-purple">Bulk Run Now</button>
-        <button class="btn-purple">Bulk Schedule</button>
+        <button class="btn-purple" (click)="onBulkRunNow()">
+          Bulk Run Now
+        </button>
+        <button class="btn btn-primary" (click)="onBulkSchedule()">
+          Bulk Schedule
+        </button>
       </div>
     </div>
   </div>
@@ -136,11 +140,7 @@
     <button class="btn-purple" (click)="onRunNow(row)">Run Now</button>
 
     <!-- Schedule Execution -->
-    <button class="btn btn-sm btn-primary" (click)="onSchedule(row)">
-      Schedule
-    </button>
+    <button class="btn btn-primary" (click)="onSchedule(row)">Schedule</button>
   </div>
 </ng-template>
-<app-schedule-testcases-dialog
-  (submitSchedule)="onBulkSchedule($event)"
-></app-schedule-testcases-dialog>
+<app-schedule-testcases-dialog #scheduleDialog> </app-schedule-testcases-dialog>
