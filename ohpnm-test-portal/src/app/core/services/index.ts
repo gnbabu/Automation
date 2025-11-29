@@ -12,3 +12,4 @@ export * from './screenshot.service';
 export * from './test-case-assignment.service';
 export * from './loading.service';
 export * from './confirm.service';
+export * from './test-case-execution.service';

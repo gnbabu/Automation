@@ -304,7 +304,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       testCases: this.selectedMethods.map((tc) => ({
         testCaseId: tc.testCaseId,
         testCaseDescription: tc.description,
-        testCaseStatus: 'New',
+        testCaseStatus: 'Assigned',
         className: tc.className,
         libraryName: tc.libraryName,
         methodName: tc.methodName,

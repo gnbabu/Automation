@@ -287,3 +287,50 @@ export interface IAssignedTestCase {
   assignedUserName: string;
   environment: string;
 }
+
+// Execution Implementation
+export interface ISingleRunNowRequest {
+  assignmentId: number;
+  assignmentTestCaseId: number;
+}
+
+export interface IBulkRunNowRequest {
+  assignmentId: number;
+  assignmentTestCaseIds: number[];
+}
+
+export interface ISingleScheduleRequest {
+  assignmentId: number;
+  assignmentTestCaseId: number;
+  scheduleDate: string; // ISO string
+}
+
+export interface IBulkScheduleRequest {
+  assignmentId: number;
+  assignmentTestCaseIds: number[];
+  scheduleDate: string; // ISO string
+}
+
+export interface IQueueCreateResponse {
+  id: number;
+  queueId: string; // GUID
+}
+
+export enum TestCaseExecutionQueueStatus {
+  Queued = 1,
+  Scheduled = 2,
+  InProgress = 3,
+  Completed = 4,
+  Failed = 5,
+  Cancelled = 6,
+}
+
+export enum TestCaseStatus {
+  Assigned = 1,
+  Queued = 2,
+  Scheduled = 3,
+  Executing = 4,
+  Completed = 5,
+  Failed = 6,
+  Blocked = 7,
+}

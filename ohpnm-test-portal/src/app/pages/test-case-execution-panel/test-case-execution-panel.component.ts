@@ -11,6 +11,7 @@ import {
   CommonToasterService,
   ConfirmService,
   TestCaseAssignmentService,
+  TestCaseExecutionService,
   UsersService,
 } from '@services';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
@@ -35,9 +36,9 @@ export class TestCaseExecutionPanelComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private toaster: CommonToasterService,
-    private userService: UsersService,
     private testCaseAssignmentService: TestCaseAssignmentService,
-    private confirmService: ConfirmService
+    private confirmService: ConfirmService,
+    private testCaseExecutionService: TestCaseExecutionService
   ) {}
 
   @ViewChild('testCaseIdTemplate', { static: true })

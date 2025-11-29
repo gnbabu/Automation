@@ -68,6 +68,14 @@
         public const string GetAllAssignedTestCasesInLibrary = "[aut].[usp_GetAllAssignedTestCasesInLibrary]";
         public const string GetTestCaseAssignmentsByUser = "[aut].[GetTestCaseAssignmentsByUser]";
 
+        //New Queue Implementation
+
+        public const string AssignmentTestCaseIdList = "[aut].[AssignmentTestCaseIdList]";
+        public const string SingleRunTestCaseNow = "[aut].[usp_SingleRunTestCaseNow]";
+        public const string BulkRunTestCasesNow = "[aut].[usp_BulkRunTestCasesNow]";
+        public const string ScheduleSingleTestCase = "[aut].[usp_ScheduleSingleTestCase]";
+        public const string BulkScheduleTestCases = "[aut].[usp_BulkScheduleTestCases]";
+
 
     }
 }
