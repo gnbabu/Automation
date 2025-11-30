@@ -37,6 +37,7 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
   // Two-way binding property
   @Input() selectedRows: any[] = [];
   @Output() selectedRowsChange = new EventEmitter<any[]>();
+  @Input() rowSelectableFn: (row: any) => boolean = () => true;
 
   @Input() fetchServerData?: (
     page: number,
@@ -52,6 +53,14 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
 
   templates: { [key: string]: TemplateRef<any> } = {};
   @ViewChildren(TemplateRef) templateRefs!: QueryList<TemplateRef<any>>;
+
+  // fallback (old behavior) — all rows selectable
+  private defaultRowSelectableFn = (row: any) => true;
+
+  // the function the grid actually uses (either parent-provided or default)
+  get effectiveRowSelectableFn(): (row: any) => boolean {
+    return this.rowSelectableFn || this.defaultRowSelectableFn;
+  }
 
   ngAfterViewInit() {
     this.templateRefs.forEach((templateRef: TemplateRef<any>) => {
@@ -180,18 +189,23 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
 
   toggleSelectAll(event: Event) {
     const checked = (event.target as HTMLInputElement).checked;
+
     this.pagedData.forEach((row) => {
-      row.selected = checked;
-      const originalRow = this.data.find((r) => r === row);
-      if (originalRow) originalRow.selected = checked;
+      if (this.effectiveRowSelectableFn(row)) {
+        row.selected = checked;
+        const originalRow = this.data.find((r) => r === row);
+        if (originalRow) originalRow.selected = checked;
+      }
     });
+
     this.updateSelectedRows();
   }
 
   allSelected(): boolean {
-    return (
-      this.pagedData.length > 0 && this.pagedData.every((row) => row.selected)
+    const selectable = this.pagedData.filter((r) =>
+      this.effectiveRowSelectableFn(r)
     );
+    return selectable.length > 0 && selectable.every((r) => r.selected);
   }
 
   /** Update selectedRows property and emit two-way binding event */
@@ -203,5 +217,12 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
   /** Public method to get selected rows on-demand */
   getSelectedRows(): any[] {
     return this.data.filter((r) => r.selected);
+  }
+
+  isSelectAllDisabled(): boolean {
+    const selectableRows = this.pagedData.filter((r) =>
+      this.effectiveRowSelectableFn(r)
+    );
+    return selectableRows.length === 0;
   }
 }

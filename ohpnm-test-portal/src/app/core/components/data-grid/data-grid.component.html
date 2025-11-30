@@ -39,6 +39,7 @@
             class="checkbox-custom"
             [checked]="allSelected()"
             (change)="toggleSelectAll($event)"
+            [disabled]="isSelectAllDisabled()"
           />
         </th>
 
@@ -77,6 +78,7 @@
             type="checkbox"
             class="checkbox-custom"
             [(ngModel)]="row.selected"
+            [disabled]="!effectiveRowSelectableFn(row)"
             (change)="onRowSelect(row)"
           />
         </td>

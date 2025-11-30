@@ -109,6 +109,7 @@
         [pageSize]="10"
         [sortingMode]="'client'"
         (selectedRowsChange)="onSelectionChanged($event)"
+        [rowSelectableFn]="isTestCaseSelectable"
       ></app-data-grid>
     </div>
   </div>
@@ -148,7 +149,7 @@
     <button
       class="btn-purple"
       (click)="onRunNow(row)"
-      [disabled]="isDisabled(row)"
+      [disabled]="!isTestCaseSelectable(row)"
     >
       Run Now
     </button>
@@ -157,7 +158,7 @@
     <button
       class="btn btn-primary"
       (click)="onSchedule(row)"
-      [disabled]="isDisabled(row)"
+      [disabled]="!isTestCaseSelectable(row)"
     >
       Schedule
     </button>

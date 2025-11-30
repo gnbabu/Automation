@@ -207,8 +207,9 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       (x) => x.testCaseStatus === 'Completed'
     ).length;
 
-    this.stats.pendingExecution =
-      this.stats.totalAssigned - this.stats.completed;
+    this.stats.pendingExecution = this.testCases.filter(
+      (x) => x.testCaseStatus === 'Assigned'
+    ).length;
   }
 
   resetStats() {
@@ -342,7 +343,16 @@ export class TestCaseExecutionPanelComponent implements OnInit {
     });
   }
 
-  isDisabled(tc: IAssignedTestCase): boolean {
-    return ['Queued', 'Scheduled', 'Executing'].includes(tc.testCaseStatus);
+  isTestCaseSelectable(row: any): boolean {
+    const disabledStatuses = [
+      'Queued',
+      'Scheduled',
+      'InProgress',
+      'Completed',
+      'Failed',
+      'Cancelled',
+    ];
+
+    return !disabledStatuses.includes(row.testCaseStatus ?? '');
   }
 }
