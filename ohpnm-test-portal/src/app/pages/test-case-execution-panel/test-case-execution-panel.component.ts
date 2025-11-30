@@ -61,9 +61,6 @@ export class TestCaseExecutionPanelComponent implements OnInit {
   assignments: ITestCaseAssignmentEntity[] = [];
   selectedAssignment: ITestCaseAssignmentEntity | null = null;
 
-  environments: any[] = [];
-  selectedEnvironment: any = null;
-
   columns: GridColumn[] = [];
   testCases: IAssignedTestCase[] = [];
   selectedTestCases: IAssignedTestCase[] = [];
@@ -77,7 +74,6 @@ export class TestCaseExecutionPanelComponent implements OnInit {
   ngOnInit(): void {
     this.loadAssignments();
     this.setupColumns();
-    this.loadEnvironments();
   }
 
   loadAssignments() {
@@ -106,20 +102,6 @@ export class TestCaseExecutionPanelComponent implements OnInit {
     this.selectedAssignment = assignment;
     this.loadAssignedTestCases();
     console.log('Selected Assignment:', assignment);
-  }
-
-  loadEnvironments() {
-    this.environments = [
-      { environmentName: 'DEV' },
-      { environmentName: 'QA' },
-      { environmentName: 'UAT' },
-      { environmentName: 'PROD' },
-    ];
-    this.selectedEnvironment = this.environments[0];
-  }
-
-  onEnvironmentChange(env: any) {
-    this.selectedEnvironment = env;
   }
 
   loadAssignedTestCases() {
@@ -192,16 +174,27 @@ export class TestCaseExecutionPanelComponent implements OnInit {
 
   getBadgeClass(status?: string): string {
     switch (status) {
-      case 'New':
-        return 'bg-info';
-      case 'Completed':
-        return 'bg-success';
-      case 'Running':
+      case 'Assigned':
+        return 'bg-primary text-white';
+
+      case 'Queued':
+        return 'bg-light text-dark border';
+
+      case 'Scheduled':
+        return 'bg-info text-dark';
+
+      case 'InProgress':
         return 'bg-warning text-dark';
+
+      case 'Completed':
+        return 'bg-success text-white';
+
       case 'Failed':
-        return 'bg-danger';
-      case 'Pending':
-        return 'bg-secondary';
+        return 'bg-danger text-white';
+
+      case 'Cancelled':
+        return 'bg-dark text-white';
+
       default:
         return 'bg-light text-dark border';
     }
@@ -234,17 +227,63 @@ export class TestCaseExecutionPanelComponent implements OnInit {
 
     if (!confirmed) return;
 
-    console.log('Confirmed! Running:', testCase);
+    const payload = {
+      assignmentId: this.selectedAssignment?.assignmentId!,
+      assignmentTestCaseId: testCase.assignmentTestCaseId,
+    };
 
-    // TODO: API call here
+    this.testCaseExecutionService.singleRunNow(payload).subscribe({
+      next: (res) => {
+        this.toaster.success('Test case added to execution queue.');
+        this.loadAssignedTestCases(); // Refresh UI
+      },
+      error: () => this.toaster.error('Failed to queue test case.'),
+    });
+  }
+
+  combineDateAndTime(date: string, time: string): Date {
+    const dateObj = new Date(date);
+    const [hours, minutes] = time.split(':').map(Number);
+
+    dateObj.setHours(hours);
+    dateObj.setMinutes(minutes);
+    dateObj.setSeconds(0);
+    dateObj.setMilliseconds(0);
+
+    return dateObj;
+  }
+
+  private formatLocalDateTime(date: Date): string {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+
+    // ISO without timezone — .NET accepts this perfectly
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
   }
 
   onSchedule(testCase: IAssignedTestCase) {
     this.scheduleDialog.open((data: any) => {
-      console.log('Scheduled with:', data);
+      const scheduleDate = this.combineDateAndTime(data.date, data.time);
+      const payload = {
+        assignmentId: this.selectedAssignment?.assignmentId!,
+        assignmentTestCaseId: testCase.assignmentTestCaseId,
+        scheduleDate: this.formatLocalDateTime(scheduleDate),
+      };
 
-      // Your API CALL here
-      // this.api.scheduleExecution(data).subscribe(...)
+      this.testCaseExecutionService.singleSchedule(payload).subscribe({
+        next: () => {
+          this.toaster.success('Test case scheduled successfully.');
+          this.loadAssignedTestCases();
+        },
+        error: () => this.toaster.error('Failed to schedule test case.'),
+      });
     });
   }
 
@@ -264,17 +303,46 @@ export class TestCaseExecutionPanelComponent implements OnInit {
 
     if (!confirmed) return;
 
-    console.log('Bulk Run Confirmed! Running:', this.selectedTestCases);
+    const payload = {
+      assignmentId: this.selectedAssignment?.assignmentId!,
+      assignmentTestCaseIds: this.selectedTestCases.map(
+        (t) => t.assignmentTestCaseId
+      ),
+    };
 
-    // TODO: API call here
+    this.testCaseExecutionService.bulkRunNow(payload).subscribe({
+      next: () => {
+        this.toaster.success('Selected test cases queued successfully.');
+        this.loadAssignedTestCases();
+      },
+      error: () => this.toaster.error('Failed to queue test cases.'),
+    });
   }
 
   onBulkSchedule() {
+    if (!this.selectedTestCases || this.selectedTestCases.length === 0) return;
     this.scheduleDialog.open((data: any) => {
-      console.log('Scheduled with:', data);
+      const scheduleDate = this.combineDateAndTime(data.date, data.time);
 
-      // Your API CALL here
-      // this.api.scheduleExecution(data).subscribe(...)
+      const payload = {
+        assignmentId: this.selectedAssignment?.assignmentId!,
+        assignmentTestCaseIds: this.selectedTestCases.map(
+          (t) => t.assignmentTestCaseId
+        ),
+        scheduleDate: this.formatLocalDateTime(scheduleDate),
+      };
+
+      this.testCaseExecutionService.bulkSchedule(payload).subscribe({
+        next: () => {
+          this.toaster.success('Bulk schedule created successfully.');
+          this.loadAssignedTestCases();
+        },
+        error: () => this.toaster.error('Failed to bulk schedule test cases.'),
+      });
     });
+  }
+
+  isDisabled(tc: IAssignedTestCase): boolean {
+    return ['Queued', 'Scheduled', 'Executing'].includes(tc.testCaseStatus);
   }
 }

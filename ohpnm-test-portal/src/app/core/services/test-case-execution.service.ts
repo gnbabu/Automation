@@ -20,14 +20,14 @@ export class TestCaseExecutionService {
     payload: ISingleRunNowRequest
   ): Observable<IQueueCreateResponse> {
     return this.httpService.post<IQueueCreateResponse>(
-      `TestCaseExecutionQueue/single-run-now`,
+      `TestCaseExecutionQueue/single-run`,
       payload
     );
   }
 
   bulkRunNow(payload: IBulkRunNowRequest): Observable<{ success: boolean }> {
     return this.httpService.post<{ success: boolean }>(
-      `TestCaseExecutionQueue/bulk-run-now`,
+      `TestCaseExecutionQueue/bulk-run`,
       payload
     );
   }
