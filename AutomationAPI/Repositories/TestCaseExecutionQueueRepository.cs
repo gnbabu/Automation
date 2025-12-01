@@ -16,7 +16,7 @@ namespace AutomationAPI.Repositories
             _sqlDataAccessHelper = sqlDataAccessHelper;
         }
 
-
+        
         public async Task<(int Id, Guid QueueId)> SingleRunNowAsync(int assignmentId, int assignmentTestCaseId)
         {
             var parameters = new[]
@@ -38,7 +38,6 @@ namespace AutomationAPI.Repositories
 
             return (row.Id, row.QueueId);
         }
-
 
         public async Task<bool> BulkRunNowAsync(int assignmentId, List<int> assignmentTestCaseIds)
         {
@@ -85,7 +84,6 @@ namespace AutomationAPI.Repositories
             return (row.Id, row.QueueId);
         }
 
-
         public async Task<bool> BulkScheduleAsync(int assignmentId, List<int> assignmentTestCaseIds, DateTime scheduleDate)
         {
             var table = new DataTable();
@@ -107,6 +105,36 @@ namespace AutomationAPI.Repositories
 
             return result == 1;
         }
+
+        public async Task<IEnumerable<PendingExecutionQueue>> GetPendingExecutionQueuesAsync()
+        {
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetPendingExecutionQueues, [],
+                reader => new PendingExecutionQueue
+                {
+                    QueueId = reader.GetGuid("QueueId"),
+                    AssignmentTestCaseId = reader.GetInt32("AssignmentTestCaseId"),
+                    LibraryName = reader.GetNullableString("LibraryName"),
+                    ClassName = reader.GetNullableString("ClassName"),
+                    MethodName = reader.GetNullableString("MethodName"),
+                    Environment = reader.GetNullableString("Environment"),
+                    QueueStatus = reader.GetNullableString("QueueStatus"),
+                    ExecutionDateTime = reader.GetNullableDateTime("ExecutionDateTime")
+                }
+            );
+        }
+
+        public async Task<int> UpdateQueueStatusAsync(Guid queueId, string status)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@QueueId", SqlDbType.UniqueIdentifier, 150) { Value = queueId },
+                new SqlParameter("@QueueStatus", SqlDbType.NVarChar, 150) { Value = status }
+            };
+
+            return await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.UpdateQueueStatus, parameters);
+        }
+
+
     }
 
 }

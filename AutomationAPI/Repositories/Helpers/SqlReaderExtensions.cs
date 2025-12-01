@@ -24,6 +24,12 @@ namespace AutomationAPI.Repositories.Helpers
         {
             return reader.GetNullable<DateTime>(columnName);
         }
+        public static double? GetNullableDouble(this SqlDataReader reader, string column)
+        {
+            var ordinal = reader.GetOrdinal(column);
+            return reader.IsDBNull(ordinal) ? (double?)null : reader.GetDouble(ordinal);
+        }
+
     }
 
 }

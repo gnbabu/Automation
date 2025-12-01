@@ -75,6 +75,13 @@
         public const string BulkRunTestCasesNow = "[aut].[usp_BulkRunTestCasesNow]";
         public const string ScheduleSingleTestCase = "[aut].[usp_ScheduleSingleTestCase]";
         public const string BulkScheduleTestCases = "[aut].[usp_BulkScheduleTestCases]";
+        
+        public const string GetPendingExecutionQueues = "[aut].[usp_GetPendingExecutionQueues]";
+        public const string UpdateQueueStatus = "[aut].[usp_UpdateQueueStatus]";
+
+        //
+        public const string UpdateAssignedTestCaseStatus = "[aut].[usp_UpdateAssignedTestCaseStatus]";
+        
 
 
     }

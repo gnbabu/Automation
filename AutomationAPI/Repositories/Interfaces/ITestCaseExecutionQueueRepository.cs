@@ -1,4 +1,6 @@
-﻿namespace AutomationAPI.Repositories.Interfaces
+﻿using AutomationAPI.Repositories.Models;
+
+namespace AutomationAPI.Repositories.Interfaces
 {
     public interface ITestCaseExecutionQueueRepository
     {
@@ -8,5 +10,8 @@
         Task<(int Id, Guid QueueId)> SingleScheduleAsync(int assignmentId, int assignmentTestCaseId, DateTime scheduleDate);
 
         Task<bool> BulkScheduleAsync(int assignmentId, List<int> assignmentTestCaseIds, DateTime scheduleDate);
+        Task<IEnumerable<PendingExecutionQueue>> GetPendingExecutionQueuesAsync();
+        Task<int> UpdateQueueStatusAsync(Guid queueId, string status);
+
     }
 }

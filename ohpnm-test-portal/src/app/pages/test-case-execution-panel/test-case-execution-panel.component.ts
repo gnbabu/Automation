@@ -186,7 +186,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       case 'InProgress':
         return 'bg-warning text-dark';
 
-      case 'Completed':
+      case 'Passed':
         return 'bg-success text-white';
 
       case 'Failed':
@@ -204,7 +204,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
     this.stats.totalAssigned = this.testCases.length;
 
     this.stats.completed = this.testCases.filter(
-      (x) => x.testCaseStatus === 'Completed'
+      (x) => x.testCaseStatus === 'Passed'
     ).length;
 
     this.stats.pendingExecution = this.testCases.filter(
@@ -348,7 +348,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       'Queued',
       'Scheduled',
       'InProgress',
-      'Completed',
+      'Passed',
       'Failed',
       'Cancelled',
     ];

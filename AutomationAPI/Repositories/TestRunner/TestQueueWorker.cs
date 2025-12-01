@@ -18,12 +18,10 @@ namespace AutomationAPI.Repositories.TestRunner
             while (!stoppingToken.IsCancellationRequested)
             {
                 using var scope = _serviceProvider.CreateScope();
-                var queueRepo = scope.ServiceProvider.GetRequiredService<IQueueRepository>();
-                var resultsRepo = scope.ServiceProvider.GetRequiredService<ITestResultRepository>();
+                var queueRepo = scope.ServiceProvider.GetRequiredService<ITestCaseExecutionQueueRepository>();
+                var resultsRepo = scope.ServiceProvider.GetRequiredService<ITestCaseAssignmentRepository>();
 
-                var pendingItems = await queueRepo.GetAllQueuesAsync();
-
-                pendingItems = pendingItems.Where(q => q.QueueStatus == "New");
+                var pendingItems = await queueRepo.GetPendingExecutionQueuesAsync();
 
                 foreach (var queue in pendingItems)
                 {
@@ -35,28 +33,26 @@ namespace AutomationAPI.Repositories.TestRunner
 
                         foreach (var result in results)
                         {
-                            var duration = string.Empty;
+                            double durationSeconds = 0;
 
                             if (result.StartTime.HasValue && result.EndTime.HasValue)
                             {
-                                // Calculate the time span and format the duration
                                 TimeSpan testDuration = result.EndTime.Value - result.StartTime.Value;
-                                duration = testDuration.TotalSeconds.ToString("F2"); // Store duration in seconds with 2 decimals
+                                durationSeconds = testDuration.TotalSeconds;   // <-- double
                             }
 
-                            var tesrResult = new TestResult
+                            var tesrResult = new AssignedTestCaseStatusUpdate
                             {
-                                Name = result.Name,                                 // Set this to the name of the test
-                                ResultStatus = result.Passed ? "Passed" : "Failed",  // "Passed" or "Failed"
-                                Duration = duration,    // Duration as a string
-                                StartTime = result.StartTime,  // DateTime for start
-                                EndTime = result.EndTime,      // DateTime for end
-                                Message = result.Message,      // Any relevant message (error, success, etc.)
-                                ClassName = result.ClassName,  // Name of the test class
-                                QueueId = queue.QueueId         // QueueId if applicable
+                                AssignmentTestCaseId = queue.AssignmentTestCaseId,
+                                TestCaseStatus = result.Passed ? "Passed" : "Failed",
+                                Duration = durationSeconds,     
+                                StartTime = result.StartTime,
+                                EndTime = result.EndTime,
+                                ErrorMessage = result.Message
                             };
 
-                            await resultsRepo.InsertTestResultsAsync(tesrResult);
+                            await resultsRepo.UpdateAssignedTestCaseStatusAsync(tesrResult);
+
                         }
 
                         queue.QueueStatus = "Completed";

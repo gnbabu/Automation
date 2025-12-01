@@ -84,7 +84,7 @@ namespace AutomationAPI.Repositories
                     Priority = reader.GetNullableString("Priority") ?? string.Empty,
                     StartTime = reader.GetNullableDateTime("StartTime"),
                     EndTime = reader.GetNullableDateTime("EndTime"),
-                    Duration = reader.GetNullableInt("Duration"),
+                    Duration = reader.GetNullableDouble("Duration"),
                     ErrorMessage = reader.GetNullableString("ErrorMessage"),
                     AssignedUserId = reader.GetNullableInt("AssignedUserId") ?? 0,
                     AssignedUserName = reader.GetNullableString("AssignedUserName") ?? string.Empty,
@@ -205,5 +205,26 @@ namespace AutomationAPI.Repositories
 
             await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.CreateOrUpdateAssignmentWithTestCases, sqlParams);
         }
+
+        public async Task<bool> UpdateAssignedTestCaseStatusAsync(AssignedTestCaseStatusUpdate request)
+        {
+            var parameters = new[]
+            {
+                    new SqlParameter("@AssignmentTestCaseId", SqlDbType.Int){ Value = request.AssignmentTestCaseId },
+                    new SqlParameter("@TestCaseStatus", SqlDbType.NVarChar, 100){ Value = (object?)request.TestCaseStatus ?? DBNull.Value },
+                    new SqlParameter("@StartTime", SqlDbType.DateTime2){ Value = (object?)request.StartTime ?? DBNull.Value },
+                    new SqlParameter("@EndTime", SqlDbType.DateTime2){ Value = (object?)request.EndTime ?? DBNull.Value },
+                    new SqlParameter("@Duration", SqlDbType.Float) { Value = request.Duration },
+                    new SqlParameter("@ErrorMessage", SqlDbType.NVarChar, -1){ Value = (object?)request.ErrorMessage ?? DBNull.Value }
+            };
+
+            // Stored procedure returns 1 or 0
+            var result = await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.UpdateAssignedTestCaseStatus, parameters);
+
+            return result == 1;
+        }
+
+
+
     }
 }
