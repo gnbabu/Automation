@@ -16,23 +16,6 @@ namespace AutomationAPI.Repositories
             _sqlDataAccessHelper = sqlDataAccessHelper;
         }
 
-
-        // Get all assignments 
-        public async Task<IEnumerable<TestCaseAssignment>> GetAllAssignmentsAsync()
-        {
-            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAllTestCaseAssignments, [], reader => new TestCaseAssignment
-            {
-                AssignmentId = reader.GetNullableInt("AssignmentId") ?? 0,
-                UserId = reader.GetNullableInt("UserId") ?? 0,
-                LibraryName = reader.GetNullableString("LibraryName") ?? string.Empty,
-                ClassName = reader.GetNullableString("ClassName") ?? string.Empty,
-                MethodName = reader.GetNullableString("MethodName") ?? string.Empty,
-                AssignedOn = reader.GetNullableDateTime("AssignedOn") ?? DateTime.MinValue,
-                AssignedBy = reader.GetNullableInt("AssignedBy")
-            }
-            );
-        }
-
         // Get all assignments by user
         public async Task<IEnumerable<TestCaseAssignmentEntity>> GetAssignmentsByUserIdAsync(int userId)
         {

@@ -42,7 +42,7 @@
         public const string InsertAutomationDataSection = "[aut].[usp_InsertAutomationDataSection]";
         public const string UpdateAutomationDataSections = "[aut].[usp_UpdateAutomationDataSections]";
         public const string DeleteAutomationDataSection = "[aut].[usp_DeleteAutomationDataSection]";
-
+        
 
         //Test Results
 
@@ -58,15 +58,12 @@
         public const string GetScreenshotById = "[aut].[usp_GetScreenshotById]";
 
 
-        //Assignments and Test Cases
-        public const string GetAllTestCaseAssignments = "[aut].[usp_GetAllTestCaseAssignments]"; //Need to Remove
-
 
         public const string CreateOrUpdateAssignmentWithTestCases = "[aut].[usp_CreateOrUpdateAssignmentWithTestCases]";
         public const string GetTestCasesByAssignmentNameAndUser = "[aut].[usp_GetTestCasesByAssignmentNameAndUser]";
         public const string GetAssignedTestCasesForLibraryAndEnvironment = "[aut].[usp_GetAssignedTestCasesForLibraryAndEnvironment]";
         public const string GetAllAssignedTestCasesInLibrary = "[aut].[usp_GetAllAssignedTestCasesInLibrary]";
-        public const string GetTestCaseAssignmentsByUser = "[aut].[GetTestCaseAssignmentsByUser]";
+        public const string GetTestCaseAssignmentsByUser = "[aut].[usp_GetTestCaseAssignmentsByUser]";
 
         //New Queue Implementation
 
@@ -75,14 +72,14 @@
         public const string BulkRunTestCasesNow = "[aut].[usp_BulkRunTestCasesNow]";
         public const string ScheduleSingleTestCase = "[aut].[usp_ScheduleSingleTestCase]";
         public const string BulkScheduleTestCases = "[aut].[usp_BulkScheduleTestCases]";
-        
+
         public const string GetPendingExecutionQueues = "[aut].[usp_GetPendingExecutionQueues]";
         public const string UpdateQueueStatus = "[aut].[usp_UpdateQueueStatus]";
 
         //
         public const string UpdateAssignedTestCaseStatus = "[aut].[usp_UpdateAssignedTestCaseStatus]";
-        
 
+        
 
     }
 }

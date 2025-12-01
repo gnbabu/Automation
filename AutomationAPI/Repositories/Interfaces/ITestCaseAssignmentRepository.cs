@@ -4,9 +4,7 @@ namespace AutomationAPI.Repositories.Interfaces
 {
     public interface ITestCaseAssignmentRepository
     {
-        Task<IEnumerable<TestCaseAssignment>> GetAllAssignmentsAsync();
-
-
+        
         //New Assignment Implementation
         Task<IEnumerable<TestCaseAssignmentEntity>> GetAssignmentsByUserIdAsync(int userId);
         Task<IEnumerable<AssignedTestCase>> GetTestCasesByAssignmentNameAndUserAsync(string assignmentName, int assignedUserId);
