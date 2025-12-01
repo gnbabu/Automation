@@ -48,10 +48,7 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
 
   /** Submit form back to parent */
   submit() {
-    if (!this.browser || !this.date || !this.time) {
-      return; // prevent submit if invalid
-    }
-
+    if (!this.browser || !this.date || !this.time) return;
     if (this.isDateTimeInvalid) return;
 
     if (this.callback) {
@@ -61,15 +58,21 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
         time: this.time,
       });
     }
+
+    // Reset form values  ✔ FIX
+    this.browser = 'Chrome';
+    this.date = '';
+    this.time = '';
+
     this.close();
   }
 
   get isDateTimeInvalid(): boolean {
-    if (!this.date || !this.time) return true;
+    if (!this.date || !this.time) return false; // do not show error initially
 
     const selected = new Date(this.date + 'T' + this.time);
     const now = new Date();
 
-    return selected < now; // invalid if earlier than now
+    return selected < now;
   }
 }

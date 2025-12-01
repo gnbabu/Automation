@@ -43,14 +43,10 @@
         </div>
 
         <!-- Validation message (full width, does not affect alignment) -->
-        <div
-          class="mt-2"
-          *ngIf="date && time && isDateTimeInvalid"
-          style="margin-left: 3px"
-        >
-          <span class="text-danger small">
-            Selected date & time cannot be in the past.
-          </span>
+        <div class="mt-2" *ngIf="date && time && isDateTimeInvalid">
+          <span class="text-danger small"
+            >Selected date & time cannot be in the past.</span
+          >
         </div>
       </div>
 
@@ -60,7 +56,7 @@
         <!-- Disable button when invalid -->
         <button
           class="btn-purple"
-          [disabled]="isDateTimeInvalid"
+          [disabled]="!browser || !date || !time || isDateTimeInvalid"
           (click)="submit()"
         >
           Submit
