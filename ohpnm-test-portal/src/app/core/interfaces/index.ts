@@ -292,23 +292,27 @@ export interface IAssignedTestCase {
 export interface ISingleRunNowRequest {
   assignmentId: number;
   assignmentTestCaseId: number;
+  browser: string;
 }
 
 export interface IBulkRunNowRequest {
   assignmentId: number;
   assignmentTestCaseIds: number[];
+  browser: string;
 }
 
 export interface ISingleScheduleRequest {
   assignmentId: number;
   assignmentTestCaseId: number;
   scheduleDate: string; // ISO string
+  browser: string;
 }
 
 export interface IBulkScheduleRequest {
   assignmentId: number;
   assignmentTestCaseIds: number[];
   scheduleDate: string; // ISO string
+  browser: string;
 }
 
 export interface IQueueCreateResponse {

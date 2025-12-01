@@ -32,7 +32,8 @@ namespace AutomationAPI.Controllers
 
                 var result = await _repo.SingleRunNowAsync(
                     request.AssignmentId,
-                    request.AssignmentTestCaseId
+                    request.AssignmentTestCaseId,
+                    request.Browser
                 );
 
                 return Ok(new QueueCreateResponse
@@ -67,7 +68,8 @@ namespace AutomationAPI.Controllers
 
                 var success = await _repo.BulkRunNowAsync(
                     request.AssignmentId,
-                    request.AssignmentTestCaseIds
+                    request.AssignmentTestCaseIds,
+                    request.Browser
                 );
 
                 return Ok(new { Success = success });
@@ -99,7 +101,8 @@ namespace AutomationAPI.Controllers
                 var result = await _repo.SingleScheduleAsync(
                     request.AssignmentId,
                     request.AssignmentTestCaseId,
-                    request.ScheduleDate
+                    request.ScheduleDate,
+                    request.Browser
                 );
 
                 return Ok(new QueueCreateResponse
@@ -117,10 +120,7 @@ namespace AutomationAPI.Controllers
                 return StatusCode(500, "An unexpected error occurred while scheduling test case.");
             }
         }
-
-        // -------------------------------------------------------
-        // BULK SCHEDULE
-        // -------------------------------------------------------
+        
         [HttpPost("bulk-schedule")]
         public async Task<IActionResult> BulkSchedule([FromBody] BulkScheduleRequest request)
         {
@@ -141,7 +141,8 @@ namespace AutomationAPI.Controllers
                 var success = await _repo.BulkScheduleAsync(
                     request.AssignmentId,
                     request.AssignmentTestCaseIds,
-                    request.ScheduleDate
+                    request.ScheduleDate,
+                    request.Browser
                 );
 
                 return Ok(new { Success = success });

@@ -16,13 +16,14 @@ namespace AutomationAPI.Repositories
             _sqlDataAccessHelper = sqlDataAccessHelper;
         }
 
-        
-        public async Task<(int Id, Guid QueueId)> SingleRunNowAsync(int assignmentId, int assignmentTestCaseId)
+
+        public async Task<(int Id, Guid QueueId)> SingleRunNowAsync(int assignmentId, int assignmentTestCaseId, string browser)
         {
             var parameters = new[]
             {
                 new SqlParameter("@AssignmentId", assignmentId),
-                new SqlParameter("@AssignmentTestCaseId", assignmentTestCaseId)
+                new SqlParameter("@AssignmentTestCaseId", assignmentTestCaseId),
+                new SqlParameter("@Browser", browser)
             };
 
             var result = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.SingleRunTestCaseNow, parameters,
@@ -39,7 +40,7 @@ namespace AutomationAPI.Repositories
             return (row.Id, row.QueueId);
         }
 
-        public async Task<bool> BulkRunNowAsync(int assignmentId, List<int> assignmentTestCaseIds)
+        public async Task<bool> BulkRunNowAsync(int assignmentId, List<int> assignmentTestCaseIds, string browser)
         {
             var table = new DataTable();
             table.Columns.Add("AssignmentTestCaseId", typeof(int));
@@ -53,7 +54,8 @@ namespace AutomationAPI.Repositories
                 {
                     SqlDbType = SqlDbType.Structured,
                     TypeName = "aut.AssignmentTestCaseIdList"
-                }
+                },
+                new SqlParameter("@Browser", browser)
             };
 
             var result = await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.BulkRunTestCasesNow, parameters);
@@ -61,13 +63,14 @@ namespace AutomationAPI.Repositories
             return result == 1;
         }
 
-        public async Task<(int Id, Guid QueueId)> SingleScheduleAsync(int assignmentId, int assignmentTestCaseId, DateTime scheduleDate)
+        public async Task<(int Id, Guid QueueId)> SingleScheduleAsync(int assignmentId, int assignmentTestCaseId, DateTime scheduleDate, string browser)
         {
             var parameters = new[]
             {
                 new SqlParameter("@AssignmentId", assignmentId),
                 new SqlParameter("@AssignmentTestCaseId", assignmentTestCaseId),
-                new SqlParameter("@ScheduleDate", scheduleDate)
+                new SqlParameter("@ScheduleDate", scheduleDate),
+                new SqlParameter("@Browser", browser)
             };
 
             var result = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.ScheduleSingleTestCase, parameters,
@@ -84,7 +87,7 @@ namespace AutomationAPI.Repositories
             return (row.Id, row.QueueId);
         }
 
-        public async Task<bool> BulkScheduleAsync(int assignmentId, List<int> assignmentTestCaseIds, DateTime scheduleDate)
+        public async Task<bool> BulkScheduleAsync(int assignmentId, List<int> assignmentTestCaseIds, DateTime scheduleDate, string browser)
         {
             var table = new DataTable();
             table.Columns.Add("AssignmentTestCaseId", typeof(int));
@@ -93,6 +96,7 @@ namespace AutomationAPI.Repositories
             var parameters = new[]
             {
             new SqlParameter("@AssignmentId", assignmentId),
+            new SqlParameter("@Browser", browser),
             new SqlParameter("@AssignmentTestCaseIds", table)
             {
                 SqlDbType = SqlDbType.Structured,
@@ -117,6 +121,7 @@ namespace AutomationAPI.Repositories
                     ClassName = reader.GetNullableString("ClassName"),
                     MethodName = reader.GetNullableString("MethodName"),
                     Environment = reader.GetNullableString("Environment"),
+                    Browser = reader.GetNullableString("Browser"),
                     QueueStatus = reader.GetNullableString("QueueStatus"),
                     ExecutionDateTime = reader.GetNullableDateTime("ExecutionDateTime")
                 }

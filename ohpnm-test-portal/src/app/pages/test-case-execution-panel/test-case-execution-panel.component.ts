@@ -231,6 +231,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
     const payload = {
       assignmentId: this.selectedAssignment?.assignmentId!,
       assignmentTestCaseId: testCase.assignmentTestCaseId,
+      browser: 'Chrome',
     };
 
     this.testCaseExecutionService.singleRunNow(payload).subscribe({
@@ -276,6 +277,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
         assignmentId: this.selectedAssignment?.assignmentId!,
         assignmentTestCaseId: testCase.assignmentTestCaseId,
         scheduleDate: this.formatLocalDateTime(scheduleDate),
+        browser: data.browser,
       };
 
       this.testCaseExecutionService.singleSchedule(payload).subscribe({
@@ -309,6 +311,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       assignmentTestCaseIds: this.selectedTestCases.map(
         (t) => t.assignmentTestCaseId
       ),
+      browser: 'Chrome',
     };
 
     this.testCaseExecutionService.bulkRunNow(payload).subscribe({
@@ -331,6 +334,7 @@ export class TestCaseExecutionPanelComponent implements OnInit {
           (t) => t.assignmentTestCaseId
         ),
         scheduleDate: this.formatLocalDateTime(scheduleDate),
+        browser: data.browser,
       };
 
       this.testCaseExecutionService.bulkSchedule(payload).subscribe({

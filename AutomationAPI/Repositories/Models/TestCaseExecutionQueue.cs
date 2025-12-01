@@ -18,25 +18,30 @@
     {
         public int AssignmentId { get; set; }
         public int AssignmentTestCaseId { get; set; }
+        public string? Browser { get; set; }
     }
 
     public class BulkRunNowRequest
     {
         public int AssignmentId { get; set; }
         public List<int> AssignmentTestCaseIds { get; set; } = new();
+        public string? Browser { get; set; }
     }
 
     public class SingleScheduleRequest
     {
         public int AssignmentId { get; set; }
         public int AssignmentTestCaseId { get; set; }
+
         public DateTime ScheduleDate { get; set; }
+        public string Browser { get; set; }
     }
     public class BulkScheduleRequest
     {
         public int AssignmentId { get; set; }
         public List<int> AssignmentTestCaseIds { get; set; } = new();
         public DateTime ScheduleDate { get; set; }
+        public string Browser { get; set; }
     }
 
     public class QueueCreateResponse
