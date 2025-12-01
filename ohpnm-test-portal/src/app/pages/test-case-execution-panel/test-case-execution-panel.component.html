@@ -15,8 +15,9 @@
 
   <!-- Assignment Dropdown -->
   <div class="filter-card p-3 mb-3">
-    <div class="d-flex flex-wrap gap-4 align-items-end">
-      <div class="d-flex flex-column">
+    <div class="d-flex justify-content-between align-items-end flex-wrap">
+      <!-- Left Side: Assignment Dropdown -->
+      <div class="d-flex flex-column mb-2">
         <label for="assignmentSelect" class="form-label">Assignment</label>
         <app-dropdown
           id="assignmentSelect"
@@ -27,6 +28,16 @@
           [(selected)]="selectedAssignment"
           (selectionChange)="onAssignmentChange($event)"
         ></app-dropdown>
+      </div>
+
+      <!-- Right Side: Auto Refresh Time -->
+      <div class="d-flex justify-content-end mt-2" *ngIf="lastUpdated">
+        <span class="badge bg-light text-dark border shadow-sm px-3 py-2">
+          🔄 Auto refreshed:
+          <span class="fw-semibold text-primary">
+            {{ lastUpdated | date : "HH:mm:ss" }}
+          </span>
+        </span>
       </div>
     </div>
   </div>

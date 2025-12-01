@@ -1,5 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  TemplateRef,
+  ViewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   GridColumn,
@@ -32,7 +38,7 @@ import { ScheduleTestcasesDialogComponent } from './schedule-testcases-dialog/sc
   templateUrl: './test-case-execution-panel.component.html',
   styleUrl: './test-case-execution-panel.component.css',
 })
-export class TestCaseExecutionPanelComponent implements OnInit {
+export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private toaster: CommonToasterService,
@@ -71,9 +77,35 @@ export class TestCaseExecutionPanelComponent implements OnInit {
     completed: 0,
   };
 
+  refreshInterval: any = null;
+  isUserPerformingAction = false;
+  refreshSeconds = 10; // every 10 seconds
+  lastUpdated: Date | null = null;
+
   ngOnInit(): void {
     this.loadAssignments();
     this.setupColumns();
+    this.startAutoRefresh();
+  }
+
+  startAutoRefresh() {
+    this.refreshInterval = setInterval(() => {
+      if (this.isUserPerformingAction) {
+        console.log('⏸ Auto-refresh paused due to user action');
+        return;
+      }
+
+      console.log('♻ Auto-refreshing test cases...');
+      this.loadAssignedTestCases();
+      this.lastUpdated = new Date(); // update timestamp
+    }, this.refreshSeconds * 1000);
+  }
+
+  stopAutoRefresh() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
   }
 
   loadAssignments() {
@@ -100,7 +132,11 @@ export class TestCaseExecutionPanelComponent implements OnInit {
 
   onAssignmentChange(assignment: ITestCaseAssignmentEntity) {
     this.selectedAssignment = assignment;
-    this.loadAssignedTestCases();
+
+    this.stopAutoRefresh(); // clear old interval
+    this.loadAssignedTestCases(); // load immediately
+
+    this.startAutoRefresh(); // 🔥 start polling for this assignment
     console.log('Selected Assignment:', assignment);
   }
 
@@ -221,12 +257,17 @@ export class TestCaseExecutionPanelComponent implements OnInit {
   }
 
   async onRunNow(testCase: IAssignedTestCase) {
+    this.isUserPerformingAction = true;
+
     const confirmed = await this.confirmService.confirm(
       'Run Test Case',
       `Are you sure you want to run Test Case "${testCase.testCaseId}" now?`
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      this.isUserPerformingAction = false;
+      return;
+    }
 
     const payload = {
       assignmentId: this.selectedAssignment?.assignmentId!,
@@ -235,11 +276,15 @@ export class TestCaseExecutionPanelComponent implements OnInit {
     };
 
     this.testCaseExecutionService.singleRunNow(payload).subscribe({
-      next: (res) => {
+      next: () => {
         this.toaster.success('Test case added to execution queue.');
-        this.loadAssignedTestCases(); // Refresh UI
+        this.loadAssignedTestCases();
+        this.isUserPerformingAction = false; // resume refresh
       },
-      error: () => this.toaster.error('Failed to queue test case.'),
+      error: () => {
+        this.toaster.error('Failed to queue test case.');
+        this.isUserPerformingAction = false;
+      },
     });
   }
 
@@ -271,8 +316,11 @@ export class TestCaseExecutionPanelComponent implements OnInit {
   }
 
   onSchedule(testCase: IAssignedTestCase) {
+    this.isUserPerformingAction = true;
+
     this.scheduleDialog.open((data: any) => {
       const scheduleDate = this.combineDateAndTime(data.date, data.time);
+
       const payload = {
         assignmentId: this.selectedAssignment?.assignmentId!,
         assignmentTestCaseId: testCase.assignmentTestCaseId,
@@ -284,14 +332,21 @@ export class TestCaseExecutionPanelComponent implements OnInit {
         next: () => {
           this.toaster.success('Test case scheduled successfully.');
           this.loadAssignedTestCases();
+          this.isUserPerformingAction = false;
         },
-        error: () => this.toaster.error('Failed to schedule test case.'),
+        error: () => {
+          this.toaster.error('Failed to schedule test case.');
+          this.isUserPerformingAction = false;
+        },
       });
     });
   }
 
   async onBulkRunNow() {
-    if (!this.selectedTestCases || this.selectedTestCases.length === 0) {
+    this.isUserPerformingAction = true;
+
+    if (!this.selectedTestCases.length) {
+      this.isUserPerformingAction = false;
       return;
     }
 
@@ -304,7 +359,10 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       `Are you sure you want to run these test cases?\n\n${testCaseIds}`
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      this.isUserPerformingAction = false;
+      return;
+    }
 
     const payload = {
       assignmentId: this.selectedAssignment?.assignmentId!,
@@ -318,13 +376,23 @@ export class TestCaseExecutionPanelComponent implements OnInit {
       next: () => {
         this.toaster.success('Selected test cases queued successfully.');
         this.loadAssignedTestCases();
+        this.isUserPerformingAction = false;
       },
-      error: () => this.toaster.error('Failed to queue test cases.'),
+      error: () => {
+        this.toaster.error('Failed to queue test cases.');
+        this.isUserPerformingAction = false;
+      },
     });
   }
 
   onBulkSchedule() {
-    if (!this.selectedTestCases || this.selectedTestCases.length === 0) return;
+    this.isUserPerformingAction = true;
+
+    if (!this.selectedTestCases || this.selectedTestCases.length === 0) {
+      this.isUserPerformingAction = false;
+      return;
+    }
+
     this.scheduleDialog.open((data: any) => {
       const scheduleDate = this.combineDateAndTime(data.date, data.time);
 
@@ -341,8 +409,12 @@ export class TestCaseExecutionPanelComponent implements OnInit {
         next: () => {
           this.toaster.success('Bulk schedule created successfully.');
           this.loadAssignedTestCases();
+          this.isUserPerformingAction = false;
         },
-        error: () => this.toaster.error('Failed to bulk schedule test cases.'),
+        error: () => {
+          this.toaster.error('Failed to bulk schedule test cases.');
+          this.isUserPerformingAction = false;
+        },
       });
     });
   }
@@ -358,5 +430,9 @@ export class TestCaseExecutionPanelComponent implements OnInit {
     ];
 
     return !disabledStatuses.includes(row.testCaseStatus ?? '');
+  }
+
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
   }
 }
