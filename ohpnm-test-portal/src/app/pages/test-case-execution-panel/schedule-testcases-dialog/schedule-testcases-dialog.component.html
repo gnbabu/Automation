@@ -41,11 +41,30 @@
             </div>
           </div>
         </div>
+
+        <!-- Validation message (full width, does not affect alignment) -->
+        <div
+          class="mt-2"
+          *ngIf="date && time && isDateTimeInvalid"
+          style="margin-left: 3px"
+        >
+          <span class="text-danger small">
+            Selected date & time cannot be in the past.
+          </span>
+        </div>
       </div>
 
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="close()">Cancel</button>
-        <button class="btn-purple" (click)="submit()">Submit</button>
+
+        <!-- Disable button when invalid -->
+        <button
+          class="btn-purple"
+          [disabled]="isDateTimeInvalid"
+          (click)="submit()"
+        >
+          Submit
+        </button>
       </div>
     </div>
   </div>

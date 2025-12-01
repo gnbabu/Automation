@@ -48,6 +48,12 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
 
   /** Submit form back to parent */
   submit() {
+    if (!this.browser || !this.date || !this.time) {
+      return; // prevent submit if invalid
+    }
+
+    if (this.isDateTimeInvalid) return;
+
     if (this.callback) {
       this.callback({
         browser: this.browser,
@@ -56,5 +62,14 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
       });
     }
     this.close();
+  }
+
+  get isDateTimeInvalid(): boolean {
+    if (!this.date || !this.time) return true;
+
+    const selected = new Date(this.date + 'T' + this.time);
+    const now = new Date();
+
+    return selected < now; // invalid if earlier than now
   }
 }
