@@ -14,7 +14,7 @@ import { DataGridComponent } from 'app/core/components/data-grid/data-grid.compo
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DataGridComponent],
+  imports: [CommonModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
@@ -44,89 +44,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   refreshInterval!: ReturnType<typeof setInterval>;
   refreshMessage: string | null = null;
 
-  ngOnInit(): void {
-    this.columns = [
-      {
-        field: 'queueName',
-        header: 'Queue Name',
-        sortable: true,
-      },
-      {
-        field: 'queueStatus',
-        header: 'Status',
-        sortable: true,
-        cellTemplate: this.statusTemplate,
-      },
-      {
-        field: 'createdDate',
-        header: 'Created',
-        sortable: true,
-        type: 'datetime',
-      },
-      {
-        field: 'actions',
-        header: 'Actions',
-        cellTemplate: this.detailsTemplate, // edit button template
-      },
-    ];
+  ngOnInit(): void {}
 
-    this.loadQueues();
-    this.refreshInterval = setInterval(() => this.loadQueues(), 20000); // Refresh every 20s
-  }
-
-  ngOnDestroy(): void {
-    clearInterval(this.refreshInterval);
-  }
-
-  loadQueues(): void {
-    const payload: IQueueSearchPayload = {
-      userId: this.authService.getLoggedInUserId(),
-      page: 1,
-      pageSize: 0,
-      sortColumn: 'CreatedDate',
-      sortDirection: 'DESC', // Optional: ASC or DESC
-    };
-
-    this.queueService.search(payload).subscribe((response) => {
-      var data = response.data;
-      this.refreshMessage = 'Queue data updated successfully.';
-      this.recentQueues = data.slice(0, 10);
-
-      this.stats[0].count = data.length;
-      this.stats[1].count = data.filter(
-        (q) => q.queueStatus === 'InProgress'
-      ).length;
-      this.stats[2].count = data.filter(
-        (q) => q.queueStatus === 'Completed'
-      ).length;
-      this.stats[3].count = data.filter(
-        (q) => q.queueStatus === 'Failed'
-      ).length;
-      this.stats[4].count = data.filter((q) => q.queueStatus === 'New').length;
-      this.stats[5].count = data.filter((q) =>
-        ['Retried', 'Cancelled'].includes(q.queueStatus ?? '')
-      ).length;
-
-      setTimeout(() => {
-        this.refreshMessage = null;
-      }, 2000);
-    });
-  }
-
-  getBadgeClass(status: string): string {
-    return (
-      {
-        Completed: 'bg-success text-white',
-        InProgress: 'bg-warning text-dark',
-        Failed: 'bg-danger text-white',
-        Awaiting: 'bg-info text-white',
-        Cancelled: 'bg-dark text-white',
-        Retried: 'bg-dark text-white',
-      }[status] || 'bg-secondary text-white'
-    );
-  }
-
-  viewQueueDetails(queue: IQueueInfo) {
-    this.router.navigate(['/queue-manager', queue.queueId, 'details']);
-  }
+  ngOnDestroy(): void {}
 }

@@ -1,8 +1,31 @@
 .settings-container {
-    max-width: 100%;
-    padding: 20px;
-     box-shadow: 
-  0 4px 12px rgba(0, 0, 0, 0.1),      /* soft depth */
-  0 6px 20px rgba(52, 73, 94, 0.25);  /* subtle #34495e glow with opacity */
-  transition: all 0.3s ease-in-out;
-  }
+  max-width: 100%;
+}
+
+/* Header */
+.header-section {
+  background-color: transparent;
+  padding-bottom: 0.5rem;
+}
+
+.header-section h1 {
+  font-weight: 700;
+  font-size: 1.9rem;
+  color: #5c3c9e;
+  margin-bottom: 0.3rem;
+}
+
+.header-section small {
+  color: #2563eb;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* Filter Card */
+.filter-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+  margin-bottom: 1.5rem;
+}

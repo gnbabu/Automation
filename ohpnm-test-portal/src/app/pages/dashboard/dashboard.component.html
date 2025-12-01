@@ -1,71 +1,8 @@
 <div class="dashboard-container">
-  <h4 class="header-h4 mb-4">
-    Dashboard
-    <!-- {{ queueService.AppTitle() }} -->
-  </h4>
-
-  <!-- Summary Cards -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-4" *ngFor="let stat of stats">
-      <div class="card text-white" [ngClass]="stat.bg">
-        <div class="card-body">
-          <h6 class="card-title">{{ stat.title }}</h6>
-          <h4>{{ stat.count }}</h4>
-        </div>
-      </div>
+  <div class="header-section d-flex justify-content-between align-items-start">
+    <div>
+      <h1>Test Case Execution Summary</h1>
     </div>
   </div>
-
-  <div
-    *ngIf="refreshMessage"
-    class="alert alert-info alert-dismissible fade show mt-3"
-    role="alert"
-  >
-    {{ refreshMessage }}
-    <button
-      type="button"
-      class="btn-close"
-      (click)="refreshMessage = null"
-      aria-label="Close"
-    ></button>
-  </div>
-
-  <!-- Recent Queues Table -->
-  <div class="card shadow-sm border-0">
-    <div
-      class="card-header bg-primary text-white d-flex justify-content-between align-items-center recent-queues"
-    >
-      <span>Recent Queues</span>
-      <button class="btn btn-outline-light btn-sm" (click)="loadQueues()">
-        Refresh
-      </button>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <app-data-grid
-          [columns]="columns"
-          [data]="recentQueues"
-          [pagingMode]="'client'"
-          [sortingMode]="'client'"
-          [pageSize]="pageSize"
-          [pagingEnabled]="false"
-        ></app-data-grid>
-      </div>
-    </div>
-  </div>
+  <div class="brand-header-underline"></div>
 </div>
-
-<ng-template #statusTemplate let-row let-value="value">
-  <span
-    class="text-uppercase px-2 py-1 rounded-pill fw-semibold"
-    [ngClass]="getBadgeClass(value)"
-  >
-    {{ value }}
-  </span>
-</ng-template>
-
-<ng-template #detailsTemplate let-row let-value="value">
-  <button type="button" (click)="viewQueueDetails(row)" class="btn-purple">
-    View Details
-  </button>
-</ng-template>

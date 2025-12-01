@@ -37,22 +37,6 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
-        path: 'reports',
-        loadComponent: () =>
-          import('./pages/reports/reports.component').then(
-            (m) => m.ReportsComponent
-          ),
-        canActivate: [authGuard],
-      },
-      {
-        path: 'test-suite',
-        loadComponent: () =>
-          import('./pages/test-suite/test-suite.component').then(
-            (m) => m.TestSuiteComponent
-          ),
-        canActivate: [authGuard],
-      },
-      {
         path: 'test-case-execution-panel',
         loadComponent: () =>
           import(
