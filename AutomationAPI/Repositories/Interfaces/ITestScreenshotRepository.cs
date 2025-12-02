@@ -6,7 +6,7 @@ namespace AutomationAPI.Repositories.Interfaces
     {
         Task<int> InsertScreenshotAsync(TestScreenshot screenshot);
         Task BulkInsertScreenshotsAsync(IEnumerable<TestScreenshot> screenshots);
-        Task<IEnumerable<TestScreenshot>> GetScreenshotsByQueueIdAsync(string queueId, string methodName);
+        Task<IEnumerable<TestScreenshot>> GetScreenshotsByAssignmentTestCaseId(int assignmentTestCaseId);
         Task<TestScreenshot?> GetScreenshotByIdAsync(int id);
     }
 }

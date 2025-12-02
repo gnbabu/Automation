@@ -60,19 +60,19 @@ namespace AutomationAPI.Controllers
         }
 
         [HttpGet("screenshots")]
-        public async Task<IActionResult> GetByQueueId([FromQuery] string queueId, [FromQuery] string? methodName = null)
+        public async Task<IActionResult> GetScreenshotsByAssignmentTestCaseId([FromQuery] int assignmentTestCaseId)
         {
-            if (string.IsNullOrWhiteSpace(queueId))
-                return BadRequest("QueueId is required.");
+            if (assignmentTestCaseId == 0)
+                return BadRequest("Assignment Test Case Id is required.");
 
             try
             {
-                var screenshots = await _repository.GetScreenshotsByQueueIdAsync(queueId, methodName);
+                var screenshots = await _repository.GetScreenshotsByAssignmentTestCaseId(assignmentTestCaseId);
                 return Ok(screenshots);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching Screenshots for QueueId: {QueueId}, MethodName: {MethodName}", queueId, methodName);
+                _logger.LogError(ex, "Error fetching Screenshots for Assignment Test Case Id : {AssignmentTestCaseId}", assignmentTestCaseId);
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }

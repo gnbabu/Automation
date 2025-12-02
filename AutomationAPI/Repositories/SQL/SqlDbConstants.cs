@@ -36,7 +36,7 @@
         // Test Sceenshots
         public const string InsertTestScreenshot = "[aut].[usp_InsertTestScreenshot]";
         public const string BulkInsertTestScreenshots = "[aut].[usp_BulkInsertTestScreenshots]";
-        public const string usp_GetScreenshotsByQueueId = "[aut].[usp_GetScreenshotsByQueueId]";
+        public const string GetScreenshotsByAssignmentTestCaseId = "[aut].[usp_GetScreenshotsByAssignmentTestCaseId]";
         public const string GetScreenshotById = "[aut].[usp_GetScreenshotById]";
 
 

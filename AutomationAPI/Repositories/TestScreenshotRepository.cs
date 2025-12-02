@@ -20,9 +20,7 @@ namespace AutomationAPI.Repositories
         {
             var parameters = new List<SqlParameter>
             {
-                new SqlParameter("@QueueId", SqlDbType.NVarChar, -1) { Value = screenshot.QueueId },
-                new SqlParameter("@ClassName", SqlDbType.NVarChar, -1) { Value = (object?)screenshot.ClassName ?? DBNull.Value },
-                new SqlParameter("@MethodName", SqlDbType.NVarChar, -1) { Value = (object?)screenshot.MethodName ?? DBNull.Value },
+                new SqlParameter("@AssignmentTestCaseId", SqlDbType.Int) { Value = screenshot.AssignmentTestCaseId },
                 new SqlParameter("@Caption", SqlDbType.NVarChar, -1) { Value = (object?)screenshot.Caption ?? DBNull.Value },
                 new SqlParameter("@TakenAt", SqlDbType.DateTime) { Value = (object?)screenshot.TakenAt ?? DBNull.Value }
             };
@@ -45,9 +43,7 @@ namespace AutomationAPI.Repositories
         public async Task BulkInsertScreenshotsAsync(IEnumerable<TestScreenshot> screenshots)
         {
             var table = new DataTable();
-            table.Columns.Add("QueueId", typeof(string));
-            table.Columns.Add("ClassName", typeof(string));
-            table.Columns.Add("MethodName", typeof(string));
+            table.Columns.Add("AssignmentTestCaseId", typeof(int));
             table.Columns.Add("Caption", typeof(string));
             table.Columns.Add("Screenshot", typeof(byte[]));
             table.Columns.Add("TakenAt", typeof(DateTime));
@@ -55,9 +51,7 @@ namespace AutomationAPI.Repositories
             foreach (var s in screenshots)
             {
                 table.Rows.Add(
-                    s.QueueId,
-                    s.ClassName ?? (object)DBNull.Value,
-                    s.MethodName ?? (object)DBNull.Value,
+                    s.AssignmentTestCaseId,
                     s.Caption ?? (object)DBNull.Value,
                     ConvertBase64ToBytes(s.Screenshot) ?? (object)DBNull.Value,
                     s.TakenAt == default ? (object)DBNull.Value : s.TakenAt
@@ -73,20 +67,17 @@ namespace AutomationAPI.Repositories
             await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.BulkInsertTestScreenshots, new[] { param });
         }
 
-        public async Task<IEnumerable<TestScreenshot>> GetScreenshotsByQueueIdAsync(string queueId, string methodName)
+        public async Task<IEnumerable<TestScreenshot>> GetScreenshotsByAssignmentTestCaseId(int assignmentTestCaseId)
         {
             var parameters = new[]
             {
-                new SqlParameter("@QueueId", SqlDbType.NVarChar, -1) { Value = queueId },
-                new SqlParameter("@MethodName", SqlDbType.NVarChar, -1) { Value = methodName }
+                new SqlParameter("@AssignmentTestCaseId", SqlDbType.Int) { Value = assignmentTestCaseId },
             };
 
-            var screenshots = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.usp_GetScreenshotsByQueueId, parameters, reader => new TestScreenshot
+            var screenshots = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetScreenshotsByAssignmentTestCaseId, parameters, reader => new TestScreenshot
             {
                 ID = reader.GetNullableInt("ID") ?? 0,
-                QueueId = reader.GetNullableString("QueueId") ?? string.Empty,
-                ClassName = reader.GetNullableString("ClassName"),
-                MethodName = reader.GetNullableString("MethodName"),
+                AssignmentTestCaseId = reader.GetInt32("AssignmentTestCaseId"),
                 Caption = reader.GetNullableString("Caption") ?? string.Empty,
                 Screenshot = reader["Screenshot"] is byte[] photoBytes ? GetPhotoBase64(photoBytes) : string.Empty,
                 TakenAt = reader.GetNullableDateTime("TakenAt") ?? DateTime.MinValue
@@ -105,9 +96,7 @@ namespace AutomationAPI.Repositories
             var screenshots = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetScreenshotById, parameters, reader => new TestScreenshot
             {
                 ID = reader.GetNullableInt("ID") ?? 0,
-                QueueId = reader.GetNullableString("QueueId") ?? string.Empty,
-                ClassName = reader.GetNullableString("ClassName"),
-                MethodName = reader.GetNullableString("MethodName"),
+                AssignmentTestCaseId = reader.GetInt32("AssignmentTestCaseId"),
                 Caption = reader.GetNullableString("Caption") ?? string.Empty,
                 Screenshot = reader["Screenshot"] is byte[] photoBytes ? GetPhotoBase64(photoBytes) : string.Empty,
                 TakenAt = reader.GetNullableDateTime("TakenAt") ?? DateTime.MinValue
