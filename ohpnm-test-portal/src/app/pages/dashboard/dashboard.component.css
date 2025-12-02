@@ -29,3 +29,33 @@
   padding: 20px 24px;
   margin-bottom: 1.5rem;
 }
+
+.summary-card {
+  border-radius: 12px;
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.row.g-3 > [class^="col"] {
+  display: flex;
+}
+
+.row.g-3 > [class^="col"] > .summary-card {
+  width: 100%;
+}
+.table thead th {
+  background: #f1f4f9;
+  font-weight: 600;
+}
+.status-badge {
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+.log-box {
+  height: 180px;
+  overflow-y: auto;
+}

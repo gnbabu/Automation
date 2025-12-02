@@ -5,4 +5,180 @@
     </div>
   </div>
   <div class="brand-header-underline"></div>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <a href="#" class="text-primary small">Regression Suite 1.5 Results</a>
+      <p class="mt-1 mb-0 fw-semibold">
+        Run ID: <span class="text-primary">#RGN-20251004-001</span>
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+      </button>
+      <button class="btn btn-primary">
+        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- 4 CARD SUMMARY -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="summary-card bg-white shadow-sm">
+        <p class="text-muted small mb-1">TOTAL TESTS</p>
+        <h3 class="fw-bold">120</h3>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="summary-card bg-white shadow-sm">
+        <p class="text-muted small mb-1">PASSED</p>
+        <h3 class="fw-bold text-success">95</h3>
+        <p class="text-muted small">79.2% Success Rate</p>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="summary-card bg-white shadow-sm">
+        <p class="text-muted small mb-1">FAILED</p>
+        <h3 class="fw-bold text-danger">15</h3>
+        <p class="text-muted small">12.5% Failure Rate</p>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="summary-card bg-white shadow-sm">
+        <p class="text-muted small mb-1">RUNNING / SKIPPED</p>
+        <h3 class="fw-bold text-warning">10</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE + LOG SUMMARY -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="bg-white shadow-sm summary-card">
+        <h6 class="fw-bold mb-3">Run Details & Timeline</h6>
+
+        <p><strong>Start Time:</strong> 09:00 AM, 2025-10-04</p>
+        <p><strong>End Time:</strong> 09:04 AM, 2025-10-04</p>
+        <p><strong>Execution Duration:</strong> 4m 12s</p>
+
+        <div>
+          <strong>Data Cleanup Status:</strong>
+          <span class="badge bg-success">Cleanup Successful</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="bg-white shadow-sm summary-card">
+        <h6 class="fw-bold mb-3">High-Level Log Summary</h6>
+
+        <div class="log-box small">
+          <p class="text-secondary mb-1">
+            [09:00:01] Initializing browser for QA-Environment…
+          </p>
+          <p class="text-secondary mb-1">
+            [09:00:10] Starting Test Case: TC-101
+          </p>
+          <p class="text-success mb-1">
+            [09:00:25] TC-101: Verify User Login — PASSED.
+          </p>
+          <p class="text-success mb-1">
+            [09:01:10] TC-205: Validate Address Form — PASSED.
+          </p>
+          <p class="text-danger mb-1">
+            [09:02:18] TC-302: Check Payment Processor — FAILED.
+          </p>
+          <p class="text-warning mb-1">
+            [09:03:45] Skipping optional tests due to timeout…
+          </p>
+        </div>
+
+        <a href="#" class="d-block mt-2 small text-primary"
+          >View Full Execution Log</a
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="bg-white shadow-sm rounded p-3">
+    <h6 class="fw-bold mb-3">Individual Test Case Results (120 Total)</h6>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>TESTCASE ID</th>
+            <th>DESCRIPTION</th>
+            <th>STATUS</th>
+            <th>DURATION</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td>TC-101</td>
+            <td>Verify successful user login via OAuth.</td>
+            <td>
+              <span class="status-badge bg-success text-white">Passed</span>
+            </td>
+            <td>12s</td>
+            <td><i class="bi bi-chevron-right"></i></td>
+          </tr>
+
+          <tr>
+            <td>TC-205</td>
+            <td>Submit order form with missing address line 2.</td>
+            <td>
+              <span class="status-badge bg-danger text-white">Failed</span>
+            </td>
+            <td>25s</td>
+            <td><i class="bi bi-chevron-right"></i></td>
+          </tr>
+
+          <tr>
+            <td>TC-312</td>
+            <td>Validate report generation with large data set.</td>
+            <td>
+              <span class="status-badge bg-warning text-dark">Running</span>
+            </td>
+            <td>-</td>
+            <td><i class="bi bi-chevron-right"></i></td>
+          </tr>
+
+          <tr>
+            <td>TC-404</td>
+            <td>Test multi-factor authentication (MFA) setup.</td>
+            <td>
+              <span class="status-badge bg-secondary text-white">Skipped</span>
+            </td>
+            <td>-</td>
+            <td><i class="bi bi-chevron-right"></i></td>
+          </tr>
+
+          <tr>
+            <td>TC-602</td>
+            <td>Verify password change functionality.</td>
+            <td>
+              <span class="status-badge bg-success text-white">Passed</span>
+            </td>
+            <td>8s</td>
+            <td><i class="bi bi-chevron-right"></i></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-muted small mt-2">
+      … 115 more test cases are listed below. Use filters to narrow down
+      results.
+    </p>
+  </div>
 </div>
