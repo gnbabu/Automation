@@ -34,13 +34,4 @@ export class QueueService {
       Mappers.QueueInfoMapper.fromApi
     );
   }
-
-  getQueueReports(
-    payload: IQueueReportFilterRequest
-  ): Observable<PagedResult<IQueueInfo>> {
-    return this.httpService.post<PagedResult<IQueueInfo>>(
-      'Queue/queue-reports',
-      payload
-    );
-  }
 }

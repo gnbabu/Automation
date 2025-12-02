@@ -6,6 +6,4 @@
         public string RoleName { get; set; }
     }
 
-
-
 }

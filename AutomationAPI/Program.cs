@@ -43,7 +43,6 @@ builder.Services.AddSingleton<IConfiguration>(configuration);
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAutomationRepository, AutomationRepository>();
-builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
 builder.Services.AddScoped<ITestSuitesRepository, TestSuitesRepository>();
 builder.Services.AddScoped<ITestScreenshotRepository, TestScreenshotRepository>();
 builder.Services.AddScoped<ITestCaseAssignmentRepository, TestCaseAssignmentRepository>();

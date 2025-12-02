@@ -31,14 +31,7 @@
         public const string InsertAutomationDataSection = "[aut].[usp_InsertAutomationDataSection]";
         public const string UpdateAutomationDataSections = "[aut].[usp_UpdateAutomationDataSections]";
         public const string DeleteAutomationDataSection = "[aut].[usp_DeleteAutomationDataSection]";
-        
 
-        //Test Results
-
-        public const string SearchTestResults = "[aut].[usp_SearchTestResults]";
-        public const string GetAllTestResults = "[aut].[usp_GetAllTestResults]";
-        public const string GetTestResults = "[aut].[usp_GetTestResults]";
-        public const string InsertTestResults = "[aut].[usp_InsertTestResults]";
 
         // Test Sceenshots
         public const string InsertTestScreenshot = "[aut].[usp_InsertTestScreenshot]";
@@ -47,12 +40,14 @@
         public const string GetScreenshotById = "[aut].[usp_GetScreenshotById]";
 
 
-
+        //Test Case Assignments
         public const string CreateOrUpdateAssignmentWithTestCases = "[aut].[usp_CreateOrUpdateAssignmentWithTestCases]";
         public const string GetTestCasesByAssignmentNameAndUser = "[aut].[usp_GetTestCasesByAssignmentNameAndUser]";
         public const string GetAssignedTestCasesForLibraryAndEnvironment = "[aut].[usp_GetAssignedTestCasesForLibraryAndEnvironment]";
         public const string GetAllAssignedTestCasesInLibrary = "[aut].[usp_GetAllAssignedTestCasesInLibrary]";
         public const string GetTestCaseAssignmentsByUser = "[aut].[usp_GetTestCaseAssignmentsByUser]";
+
+        public const string UpdateAssignedTestCaseStatus = "[aut].[usp_UpdateAssignedTestCaseStatus]";
 
         //New Queue Implementation
 
@@ -61,14 +56,8 @@
         public const string BulkRunTestCasesNow = "[aut].[usp_BulkRunTestCasesNow]";
         public const string ScheduleSingleTestCase = "[aut].[usp_ScheduleSingleTestCase]";
         public const string BulkScheduleTestCases = "[aut].[usp_BulkScheduleTestCases]";
-
         public const string GetPendingExecutionQueues = "[aut].[usp_GetPendingExecutionQueues]";
         public const string UpdateQueueStatus = "[aut].[usp_UpdateQueueStatus]";
-
-        //
-        public const string UpdateAssignedTestCaseStatus = "[aut].[usp_UpdateAssignedTestCaseStatus]";
-
-        
 
     }
 }
