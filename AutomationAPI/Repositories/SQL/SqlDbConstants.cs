@@ -19,17 +19,6 @@
         public const string GetPriorityStatus = "[aut].[usp_GetPriorityStatus]";
 
 
-        //Queue Info
-        public const string GetAllQueues = "[aut].[usp_GetAllQueues]";
-        public const string GetQueueById = "[aut].[usp_GetQueueById]";
-        public const string GetQueues = "[aut].[usp_GetQueues]";
-        public const string InsertQueue = "[aut].[usp_InsertQueue]";
-        public const string UpdateQueue = "[aut].[usp_UpdateQueue]";
-        public const string DeleteQueue = "[aut].[usp_DeleteQueue]";
-        public const string GetQueueReports = "[aut].[usp_GetQueueReports]";
-        public const string SearchQueues = "[aut].[usp_SearchQueues]";
-
-
         //Automation Data
         public const string GetAutomationData = "[aut].[usp_GetAutomationData]";
         public const string GetAutomationDataByFlowName = "[aut].[usp_GetAutomationDataByFlowName]";

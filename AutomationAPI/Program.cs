@@ -42,7 +42,6 @@ builder.Services.AddScoped<SqlDataAccessHelper>();
 builder.Services.AddSingleton<IConfiguration>(configuration);
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IQueueRepository, QueueRepository>();
 builder.Services.AddScoped<IAutomationRepository, AutomationRepository>();
 builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
 builder.Services.AddScoped<ITestSuitesRepository, TestSuitesRepository>();
