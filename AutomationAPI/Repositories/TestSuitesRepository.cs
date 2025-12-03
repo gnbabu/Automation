@@ -20,13 +20,15 @@ namespace AutomationAPI.Repositories
 
         public async Task<IEnumerable<LibraryInfo>> GetLibrariesAsync()
         {
+            List<LibraryMethodInfo> libraryMethodInfos = GetMethodAttributes();
+
+            //string libsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestLibs");
             var libraries = new List<LibraryInfo>();
-            int testCaseCounter = 1; // Sequential counter for IDs
 
             return await Task.Run(() =>
             {
                 if (!Directory.Exists(_libsPath))
-                    return libraries.AsEnumerable();
+                    return Enumerable.Empty<LibraryInfo>();
 
                 var dllFiles = Directory.GetFiles(_libsPath, "*.dll");
 
@@ -38,57 +40,19 @@ namespace AutomationAPI.Repositories
 
                         var testClasses = assembly.GetTypes()
                             .Where(t => t.IsClass && t.IsPublic &&
-                                        t.GetCustomAttributes(typeof(TestFixtureAttribute), false).Any())
+                                t.GetCustomAttributes(typeof(NUnit.Framework.TestFixtureAttribute), false).Any())
                             .Select(t => new ClassInfo
                             {
-
                                 ClassName = t.Name,
                                 Methods = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                                    .Where(m => m.GetCustomAttributes().Any(a =>
-                                        a is TestAttribute ||
-                                        a is TestCaseAttribute ||
-                                        a is TestCaseSourceAttribute))
-                                    .Select(m =>
+                                    .Where(m =>
+                                        m.GetCustomAttributes(typeof(NUnit.Framework.TestAttribute), false).Any() ||
+                                        m.GetCustomAttributes(typeof(NUnit.Framework.TestCaseAttribute), false).Any() ||
+                                        m.GetCustomAttributes(typeof(NUnit.Framework.TestCaseSourceAttribute), false).Any())
+                                    .Select(m => new LibraryMethodInfo
                                     {
-                                        int currentId = testCaseCounter++; // assign sequential ID
-
-                                        // Description
-                                        var descAttr = m.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false)
-                                                        .FirstOrDefault() as System.ComponentModel.DescriptionAttribute;
-                                        string description = descAttr?.Description;
-
-                                        string? priority = null;
-                                        string? testCaseId = null;
-
-                                        // Extract PropertyAttribute safely
-                                        var propertyAttrs = m.GetCustomAttributes(true)
-                                                             .OfType<PropertyAttribute>();
-
-                                        foreach (var propAttr in propertyAttrs)
-                                        {
-                                            // Access non-public Properties dictionary
-                                            var propertiesProp = propAttr.GetType()
-                                                .GetProperty("Properties", BindingFlags.NonPublic | BindingFlags.Instance);
-
-                                            if (propertiesProp?.GetValue(propAttr) is IDictionary dict)
-                                            {
-                                                if (dict.Contains("Priority"))
-                                                    priority = dict["Priority"]?.ToString();
-                                                if (dict.Contains("TestCaseId"))
-                                                    testCaseId = dict["TestCaseId"]?.ToString();
-                                            }
-                                        }
-
-                                        return new LibraryMethodInfo
-                                        {
-                                            MethodName = m.Name,
-                                            Description = description ?? "Description of " + m.Name,
-                                            Priority = priority ?? "High",
-                                            TestCaseId = testCaseId ?? $"TC-{currentId}"  // fallback uses same sequential ID
-                                        };
-                                    })
-                                    .Where(mi => !string.IsNullOrEmpty(mi.MethodName))
-                                    .ToList()
+                                        MethodName = m.Name
+                                    }).ToList()
                             })
                             .Where(c => c.Methods.Any())
                             .ToList();
@@ -104,8 +68,28 @@ namespace AutomationAPI.Repositories
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Failed to load {dllPath}: {ex.Message}");
+                        // Log the error if needed; skip the faulty assembly
                         continue;
+                    }
+                }
+
+                if (libraryMethodInfos != null && libraryMethodInfos.Count() > 0)
+                {
+                    foreach (var lib in libraries)
+                    {
+                        foreach (var cls in lib.Classes)
+                        {
+                            foreach (var method in cls.Methods)
+                            {
+                                var matchedMethod = libraryMethodInfos.FirstOrDefault(m => m.MethodName == method.MethodName);
+                                if (matchedMethod != null)
+                                {
+                                    method.TestCaseId = matchedMethod.TestCaseId;
+                                    method.Priority = matchedMethod.Priority;
+                                    method.Description = matchedMethod.Description;
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -139,6 +123,94 @@ namespace AutomationAPI.Repositories
                 .ToList();
 
             return testCases;
+        }
+
+        public List<LibraryMethodInfo> GetMethodAttributes()
+        {
+            var results = new List<LibraryMethodInfo>();
+
+            if (!Directory.Exists(_libsPath))
+                return null;
+
+            var dllFiles = Directory.GetFiles(_libsPath, "*.dll");
+
+            Type[] types;
+            try
+            {
+                foreach (var dllPath in dllFiles)
+                {
+                    var assembly = Assembly.LoadFrom(dllPath);
+
+                    var classesWithMethods = assembly.GetTypes()
+                            .Where(t => t.IsClass && t.IsPublic &&
+                                        t.GetCustomAttributes(typeof(NUnit.Framework.TestFixtureAttribute), inherit: false).Any())
+                            .Select(t => new
+                            {
+                                Type = t,
+                                Methods = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                                            .Where(m =>
+                                                m.GetCustomAttributes(typeof(NUnit.Framework.TestAttribute), false).Any() ||
+                                                m.GetCustomAttributes(typeof(NUnit.Framework.TestCaseAttribute), false).Any() ||
+                                                m.GetCustomAttributes(typeof(NUnit.Framework.TestCaseSourceAttribute), false).Any())
+                                            .ToArray() // <-- MethodInfo[]
+                            })
+                            .Where(x => x.Methods.Length > 0)
+                            .ToList();
+
+
+                    foreach (var cls in classesWithMethods)
+                    {
+                        foreach (var methodInfo in cls.Methods)
+                        {
+                            LibraryMethodInfo libraryMethodInfo = new LibraryMethodInfo();
+
+                            var libMethod = AttributeInfo.BuildLibraryMethodInfo(methodInfo);
+                            foreach (var attr in libMethod.Attributes)
+                            {
+                                libraryMethodInfo.MethodName = libMethod.MethodName;
+
+                                // If the attribute stores key-value pairs in NamedArguments dictionary:
+                                foreach (var kvp in attr.NamedArguments)
+                                {
+                                    string key = kvp.Key;
+                                    object? value = kvp.Value;
+                                    Console.WriteLine($"Attribute: {attr.AttributeTypeShortName}, Key: {key}, Value: {value}");
+                                }
+                                if (attr.ConstructorArguments != null && attr.ConstructorArguments.Length == 2)
+                                {
+                                    var key = attr.ConstructorArguments[0];
+                                    var value = attr.ConstructorArguments[1];
+
+                                    if (key != null && value != null)
+                                    {
+                                        if (key.Equals("TestCaseId"))
+                                        {
+                                            libraryMethodInfo.TestCaseId = value.ToString() ?? string.Empty;
+                                        }
+                                        if (key.Equals("Priority"))
+                                        {
+                                            libraryMethodInfo.Priority = value.ToString() ?? string.Empty;
+                                        }
+                                        if (key.Equals("Description"))
+                                        {
+                                            libraryMethodInfo.Description = value.ToString() ?? string.Empty;
+                                        }
+                                    }
+                                }
+                            }
+                            results.Add(libraryMethodInfo);
+                        }
+                    }
+
+                }
+            }
+            catch (ReflectionTypeLoadException rtlex)
+            {
+                types = rtlex.Types.Where(t => t != null).ToArray()!;
+            }
+
+
+            return results;
         }
 
     }
