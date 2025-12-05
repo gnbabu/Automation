@@ -7,8 +7,8 @@ import {
   ViewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { GridColumn, IQueueInfo, IQueueSearchPayload } from '@interfaces';
-import { AuthService, QueueService } from '@services';
+import { GridColumn } from '@interfaces';
+import { AuthService } from '@services';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 
 @Component({
@@ -27,11 +27,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   detailsTemplate!: TemplateRef<any>;
 
   // You can add any logic for the dashboard component here if needed
-  constructor(
-    public queueService: QueueService,
-    private authService: AuthService,
-    private router: Router
-  ) {}
+  constructor(private authService: AuthService, private router: Router) {}
   stats = [
     { title: 'Total Queues', count: 0, bg: 'bg-secondary' },
     { title: 'In Progress', count: 0, bg: 'bg-warning' },

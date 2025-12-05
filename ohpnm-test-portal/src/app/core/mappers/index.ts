@@ -4,7 +4,6 @@ import {
   IAutomationDataSection,
   IAutomationFlow,
   IPriorityStatus,
-  IQueueInfo,
   ITimeZone,
   IUser,
   IUserRole,
@@ -187,70 +186,6 @@ export const AutomationDataMapper = {
   },
 };
 
-export const QueueInfoMapper = {
-  fromApi(data: any): IQueueInfo {
-    return {
-      queueId: data.queueId,
-      tagName: data.tagName,
-      empId: data.empId,
-      queueName: data.queueName,
-      queueDescription: data.queueDescription,
-      productLine: data.productLine,
-      queueStatus: data.queueStatus,
-      createdDate: data.createdDate ? new Date(data.createdDate) : undefined,
-      id: data.id,
-      libraryName: data.libraryName,
-      className: data.className,
-      methodName: data.methodName,
-      userId: data.userId,
-      userName: data.userName,
-    };
-  },
-  toApi(queue: IQueueInfo): any {
-    return {
-      id: queue.id,
-      tagName: queue.tagName,
-      empId: queue.empId,
-      queueName: queue.queueName,
-      queueDescription: queue.queueDescription,
-      productLine: queue.productLine,
-      queueStatus: queue.queueStatus,
-      libraryName: queue.libraryName,
-      className: queue.className,
-      methodName: queue.methodName,
-      userId: queue.userId,
-      browser: queue.browser,
-    };
-  },
-  empty(): IQueueInfo {
-    return {
-      id: 0,
-      queueId: '',
-      tagName: '',
-      empId: '',
-      queueName: '',
-      queueDescription: '',
-      productLine: '',
-      queueStatus: '',
-      createdDate: undefined,
-      libraryName: '',
-      className: '',
-      methodName: '',
-      userId: 0,
-      userName: '',
-      browser: '',
-    };
-  },
-  mapPagedResult(apiResult: any): PagedResult<IQueueInfo> {
-    return {
-      data: Array.isArray(apiResult.data)
-        ? apiResult.data.map(QueueInfoMapper.fromApi)
-        : [],
-      totalCount: apiResult.totalCount ?? 0,
-    };
-  },
-};
-
 export const Mappers = {
   UserMapper: UserMapper,
   UserRoleMapper: UserRoleMapper,
@@ -259,7 +194,6 @@ export const Mappers = {
   LibraryMethodInfoMapper: LibraryMethodInfoMapper,
   AutomationFlowMapper: AutomationFlowMapper,
   AutomationDataSectionMapper: AutomationDataSectionMapper,
-  QueueInfoMapper: QueueInfoMapper,
   AutomationDataMapper: AutomationDataMapper,
   UserStatusMapper: UserStatusMapper,
   TimeZoneMapper: TimeZoneMapper,

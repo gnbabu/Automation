@@ -53,22 +53,6 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
-        path: 'queue-manager',
-        loadComponent: () =>
-          import('./pages/queue-manager/queue-manager.component').then(
-            (m) => m.QueueManagerComponent
-          ),
-        canActivate: [authGuard],
-      },
-      {
-        path: 'queue-manager/:queueId/details',
-        loadComponent: () =>
-          import('./pages/queue-manager/queue-detail.component').then(
-            (m) => m.QueueDetailsComponent
-          ),
-        canActivate: [authGuard],
-      },
-      {
         path: 'users',
         loadComponent: () =>
           import('./pages/users/users.component').then((m) => m.UsersComponent),

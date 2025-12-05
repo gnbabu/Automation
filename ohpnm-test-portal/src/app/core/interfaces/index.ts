@@ -121,44 +121,6 @@ export interface IAutomationData {
   userId?: number;
 }
 
-export enum QueueStatus {
-  New = 'New',
-  Running = 'Running',
-  Completed = 'Completed',
-  Failed = 'Failed',
-  Pending = 'Pending', // Optional fallback
-}
-
-export interface IQueueInfo {
-  id: number;
-  queueId?: string;
-  tagName?: string;
-  empId?: string;
-  queueName?: string;
-  queueDescription?: string;
-  productLine?: string;
-  queueStatus?: string;
-  createdDate?: Date;
-  libraryName?: string;
-  className?: string;
-  methodName?: string;
-  userId?: number;
-  userName?: string;
-  browser?: string;
-}
-
-export interface ITestResult {
-  id: number;
-  name?: string;
-  resultStatus?: string;
-  duration?: string;
-  startTime?: Date;
-  endTime?: Date;
-  message?: string;
-  className?: string;
-  queueId?: string;
-}
-
 export interface TestResultPayload {
   userId: number;
   page: number;
@@ -177,52 +139,6 @@ export interface IPage {
   pageSize: number; // Number of items per page
   sortColumn?: string; // Optional: name of the column to sort
   sortDirection: 'ASC' | 'DESC'; // Sort direction
-}
-
-export interface IQueueSearchPayload extends IPage {
-  userId: number;
-}
-
-export interface IQueueReport {
-  id: number;
-  queueName: string;
-  queueStatus:
-    | 'Completed'
-    | 'Failed'
-    | 'In Progress'
-    | 'Awaiting'
-    | 'Retried'
-    | 'Cancelled';
-  startedAt: string;
-  endedAt: string;
-  durationInSeconds: number;
-}
-
-// models/queue-report-filter-request.model.ts
-export interface IQueueReportFilterRequest extends IPage {
-  userId: number;
-  status?: string;
-  fromDate?: string | null;
-  toDate?: string | null;
-}
-export interface ITestScreenshot {
-  id: number;
-  queueId: string;
-  className?: string;
-  methodName?: string;
-  caption: string;
-  screenshot: string; // Base64 string (data:image/png;base64,...)
-  takenAt: string; // ISO date string
-}
-
-export interface ITestCaseAssignment {
-  assignmentId?: number;
-  userId?: number;
-  libraryName: string;
-  className: string;
-  methodName: string;
-  assignedOn?: string; // ISO date string
-  assignedBy?: number;
 }
 
 export interface ITestCaseModel {
@@ -338,4 +254,14 @@ export enum TestCaseStatus {
   Completed = 5,
   Failed = 6,
   Blocked = 7,
+}
+
+export interface ITestScreenshot {
+  id: number;
+  queueId: string;
+  className?: string;
+  methodName?: string;
+  caption: string;
+  screenshot: string; // Base64 string (data:image/png;base64,...)
+  takenAt: string; // ISO date string
 }

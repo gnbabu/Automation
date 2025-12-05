@@ -1,12 +1,5 @@
 import { Injectable } from '@angular/core';
-import {
-  IQueueInfo,
-  ITestResult,
-  ITestScreenshot,
-  PagedResult,
-  TestResultPayload,
-} from '@interfaces';
-import { Mappers } from '@mappers';
+import { ITestScreenshot } from '@interfaces';
 import { HttpService } from '@services';
 import { Observable } from 'rxjs';
 

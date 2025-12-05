@@ -136,6 +136,7 @@ table td {
   overflow: visible;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding: 12px;
 }
 .cell-text {
   display: block;
