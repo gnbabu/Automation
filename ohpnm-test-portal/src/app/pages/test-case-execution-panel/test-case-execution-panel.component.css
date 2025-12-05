@@ -186,3 +186,16 @@
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
+.icon-camera {
+  padding: 0;
+  border: none;
+  justify-content: center;
+  align-items: center;
+  background-color: #fff;
+}
+
+.icon-camera i {
+  font-size: 18px; /* Bigger camera icon */
+  color: red; /* Your theme purple */
+}

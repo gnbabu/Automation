@@ -1,32 +1,31 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ITestScreenshot } from '@interfaces';
 
-declare var bootstrap: any; // Bootstrap JS modal
-
-// Angular-side model matching your C# TestScreenshot
+declare var bootstrap: any;
 
 @Component({
   selector: 'app-test-screenshot-gallery',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './test-screenshot-gallery.component.html',
-  styleUrl: './test-screenshot-gallery.component.css',
+  styleUrls: ['./test-screenshot-gallery.component.css'],
 })
 export class TestScreenshotGalleryComponent {
   @Input() screenshots: ITestScreenshot[] = [];
 
-  selectedImage: ITestScreenshot | null = null;
+  @ViewChild('galleryModal', { static: false }) galleryModal!: ElementRef;
   modalInstance: any;
 
-  openModal(img: ITestScreenshot) {
-    this.selectedImage = img;
-    const modalElement = document.getElementById('imageModal');
-    this.modalInstance = new bootstrap.Modal(modalElement);
+  open() {
+    if (!this.galleryModal) return;
+
+    const modalEl = this.galleryModal.nativeElement;
+    this.modalInstance = new bootstrap.Modal(modalEl);
     this.modalInstance.show();
   }
 
-  closeModal() {
+  close() {
     if (this.modalInstance) {
       this.modalInstance.hide();
     }

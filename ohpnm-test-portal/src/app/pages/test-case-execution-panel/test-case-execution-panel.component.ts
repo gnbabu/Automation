@@ -11,19 +11,21 @@ import {
   GridColumn,
   IAssignedTestCase,
   ITestCaseAssignmentEntity,
+  ITestScreenshot,
 } from '@interfaces';
 import {
   AuthService,
   CommonToasterService,
   ConfirmService,
+  ScreenshotService,
   TestCaseAssignmentService,
   TestCaseExecutionService,
-  UsersService,
 } from '@services';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 import { ConfirmDialogComponent } from 'app/core/modals/confirm-dialog/confirm-dialog.component';
 import { ScheduleTestcasesDialogComponent } from './schedule-testcases-dialog/schedule-testcases-dialog.component';
+import { TestScreenshotGalleryComponent } from './test-screenshot-gallery/test-screenshot-gallery.component';
 
 @Component({
   selector: 'app-test-case-execution',
@@ -33,6 +35,7 @@ import { ScheduleTestcasesDialogComponent } from './schedule-testcases-dialog/sc
     FormsModule,
     DataGridComponent,
     ScheduleTestcasesDialogComponent,
+    TestScreenshotGalleryComponent,
   ],
   standalone: true,
   templateUrl: './test-case-execution-panel.component.html',
@@ -44,7 +47,8 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
     private toaster: CommonToasterService,
     private testCaseAssignmentService: TestCaseAssignmentService,
     private confirmService: ConfirmService,
-    private testCaseExecutionService: TestCaseExecutionService
+    private testCaseExecutionService: TestCaseExecutionService,
+    private screenshotService: ScreenshotService
   ) {}
 
   @ViewChild('testCaseIdTemplate', { static: true })
@@ -64,12 +68,16 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   @ViewChild('scheduleDialog')
   scheduleDialog!: ScheduleTestcasesDialogComponent;
 
+  @ViewChild(TestScreenshotGalleryComponent)
+  gallery!: TestScreenshotGalleryComponent;
+
   assignments: ITestCaseAssignmentEntity[] = [];
   selectedAssignment: ITestCaseAssignmentEntity | null = null;
 
   columns: GridColumn[] = [];
   testCases: IAssignedTestCase[] = [];
   selectedTestCases: IAssignedTestCase[] = [];
+  screenshots: ITestScreenshot[] = [];
 
   stats = {
     totalAssigned: 0,
@@ -434,5 +442,21 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopAutoRefresh();
+  }
+
+  onViewScreenshots(testCase: any) {
+    this.screenshotService
+      .getScreenshotsByAssignmentTestCaseIdAsync(testCase.assignmentTestCaseId)
+      .subscribe({
+        next: (res) => {
+          this.screenshots = res;
+
+          // Wait for child to receive input and render modal DOM
+          setTimeout(() => {
+            this.gallery?.open();
+          }, 150);
+        },
+        error: (err) => console.error('Failed to load screenshots:', err),
+      });
   }
 }

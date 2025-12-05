@@ -173,6 +173,17 @@
     >
       Schedule
     </button>
+    <!-- View Screenshots -->
+    <button
+      class="icon-camera"
+      (click)="onViewScreenshots(row)"
+      *ngIf="row.hasScreenshots"
+      title="View Screenshots"
+    >
+      <i class="bi bi-camera"></i>
+    </button>
   </div>
 </ng-template>
 <app-schedule-testcases-dialog #scheduleDialog> </app-schedule-testcases-dialog>
+<app-test-screenshot-gallery #galleryComponent [screenshots]="screenshots">
+</app-test-screenshot-gallery>

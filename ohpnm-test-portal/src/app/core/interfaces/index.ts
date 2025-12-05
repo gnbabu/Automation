@@ -286,6 +286,7 @@ export interface IAssignedTestCase {
   assignedUserId: number;
   assignedUserName: string;
   environment: string;
+  hasScreenshots: boolean;
 }
 
 // Execution Implementation

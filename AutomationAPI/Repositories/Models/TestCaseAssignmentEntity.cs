@@ -35,7 +35,8 @@
         public int AssignedUserId { get; set; }
         public string AssignedUserName { get; set; }
         public string Environment { get; set; }
-        
+        public bool HasScreenshots { get; set; }
+
     }
 
     public class AssignmentCreateUpdateRequest

@@ -16,12 +16,11 @@ import { Observable } from 'rxjs';
 export class ScreenshotService {
   constructor(private httpService: HttpService) {}
 
-  getScreenshotsByTestResultIdAsync(
-    queueId: any,
-    methodName: any
+  getScreenshotsByAssignmentTestCaseIdAsync(
+    assignmentTestCaseId: any
   ): Observable<ITestScreenshot[]> {
     return this.httpService.get<ITestScreenshot[]>(
-      `TestScreenshots/screenshots?queueId=${queueId}&methodName=${methodName}`
+      `TestScreenshots/screenshots?assignmentTestCaseId=${assignmentTestCaseId}`
     );
   }
 }

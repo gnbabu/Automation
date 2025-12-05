@@ -10,7 +10,7 @@ import {
 } from '@interfaces';
 import { QueueService, ScreenshotService, TestResultService } from '@services';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
-import { TestScreenshotGalleryComponent } from './test-screenshot-gallery/test-screenshot-gallery.component';
+import { TestScreenshotGalleryComponent } from '../test-case-execution-panel/test-screenshot-gallery/test-screenshot-gallery.component';
 
 @Component({
   selector: 'app-queue-detail',
@@ -118,18 +118,5 @@ export class QueueDetailsComponent implements OnInit {
     this.router.navigate(['/queue-manager']);
   }
 
-  viewSceenshots(data: any) {
-    this.screenshotService
-      .getScreenshotsByTestResultIdAsync(data.queueId, data.name)
-      .subscribe({
-        next: (res) => {
-          this.screenshots = res ?? [];
-        },
-        error: (err) => {
-          console.error('Failed to load test results:', err);
-          this.testResults = [];
-          this.totalRecords = 0;
-        },
-      });
-  }
+  viewSceenshots(data: any) {}
 }
