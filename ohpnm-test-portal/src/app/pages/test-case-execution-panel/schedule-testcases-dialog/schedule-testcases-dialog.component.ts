@@ -29,10 +29,12 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
   constructor(private modalService: ModalService) {}
 
   ngAfterViewInit() {
-    this.modalService.register(
-      'scheduleTestcasesModal',
-      this.modalElement.nativeElement
-    );
+    setTimeout(() => {
+      this.modalService.register(
+        'scheduleTestcasesModal',
+        this.modalElement.nativeElement
+      );
+    });
   }
 
   /** Open modal and pass callback */
