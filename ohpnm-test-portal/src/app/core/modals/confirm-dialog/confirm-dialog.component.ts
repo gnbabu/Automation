@@ -1,5 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ConfirmService } from '@services';
+import { Subscription } from 'rxjs';
 declare var bootstrap: any;
 
 @Component({
@@ -14,18 +15,21 @@ export class ConfirmDialogComponent {
   message: string = '';
 
   private modalInstance: any;
+  private subscription!: Subscription;
 
   constructor(private confirmService: ConfirmService) {}
 
   ngAfterViewInit() {
     this.modalInstance = new bootstrap.Modal(this.modalElement.nativeElement);
 
-    // When confirm is triggered from anywhere
-    this.confirmService.onConfirmState().subscribe((data) => {
-      this.title = data.title;
-      this.message = data.message;
-      this.modalInstance.show();
-    });
+    // Ensure NO duplicate subscriptions
+    this.subscription = this.confirmService
+      .onConfirmState()
+      .subscribe((data) => {
+        this.title = data.title;
+        this.message = data.message;
+        this.modalInstance.show();
+      });
   }
 
   confirm() {
@@ -36,5 +40,9 @@ export class ConfirmDialogComponent {
   cancel() {
     this.confirmService.resolve(false);
     this.modalInstance.hide();
+  }
+
+  ngOnDestroy() {
+    this.subscription?.unsubscribe(); // <--- FIX: removes duplicates
   }
 }
