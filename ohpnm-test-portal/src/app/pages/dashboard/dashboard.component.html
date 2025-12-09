@@ -8,9 +8,9 @@
 
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <a href="#" class="text-primary small">Regression Suite 1.5 Results</a>
       <p class="mt-1 mb-0 fw-semibold">
-        Run ID: <span class="text-primary">#RGN-20251004-001</span>
+        Release Name:
+        <span class="text-primary">#{{ selectedLibrary?.libraryName }}</span>
       </p>
     </div>
 
@@ -24,161 +24,194 @@
     </div>
   </div>
 
-  <!-- 4 CARD SUMMARY -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <div class="summary-card bg-white shadow-sm">
-        <p class="text-muted small mb-1">TOTAL TESTS</p>
-        <h3 class="fw-bold">120</h3>
+  <div class="filter-card p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-end flex-wrap">
+      <div>
+        <label for="librarySelect" class="form-label">Release Name</label>
+        <app-dropdown
+          id="librarySelect"
+          [options]="libraries"
+          valueAccessor="libraryName"
+          textAccessor="libraryName"
+          placeholder="All Suites"
+          [(selected)]="selectedLibrary"
+          (selectionChange)="onLibraryChange($event)"
+        ></app-dropdown>
       </div>
-    </div>
 
-    <div class="col-md-3">
-      <div class="summary-card bg-white shadow-sm">
-        <p class="text-muted small mb-1">PASSED</p>
-        <h3 class="fw-bold text-success">95</h3>
-        <p class="text-muted small">79.2% Success Rate</p>
-      </div>
-    </div>
+      <!-- Stats aligned to right -->
+      <div class="d-flex gap-3 ms-auto">
+        <div class="stats-box">
+          <div class="stats-number">{{ totalCases }}</div>
+          <div class="stats-label">Total Cases</div>
+        </div>
 
-    <div class="col-md-3">
-      <div class="summary-card bg-white shadow-sm">
-        <p class="text-muted small mb-1">FAILED</p>
-        <h3 class="fw-bold text-danger">15</h3>
-        <p class="text-muted small">12.5% Failure Rate</p>
-      </div>
-    </div>
-
-    <div class="col-md-3">
-      <div class="summary-card bg-white shadow-sm">
-        <p class="text-muted small mb-1">RUNNING / SKIPPED</p>
-        <h3 class="fw-bold text-warning">10</h3>
+        <div class="stats-box">
+          <div class="stats-number text-primary">{{ unassignedCount }}</div>
+          <div class="stats-label">Unassigned</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- TIMELINE + LOG SUMMARY -->
+  <!-- 4 CARD SUMMARY -->
   <div class="row g-3 mb-4">
-    <div class="col-md-6">
-      <div class="bg-white shadow-sm summary-card">
+    <!-- TOTAL TESTS -->
+    <div class="col-md-3">
+      <div class="summary-card bg-white shadow-sm border-total">
+        <p class="text-muted small mb-1">TOTAL TESTS</p>
+        <h3 class="fw-bold">{{ totalCases }}</h3>
+      </div>
+    </div>
+
+    <!-- PASSED -->
+    <div class="col-md-3">
+      <div class="summary-card bg-white shadow-sm border-passed">
+        <p class="text-muted small mb-1">PASSED</p>
+        <h3 class="fw-bold text-success">{{ passedCount }}</h3>
+        <p class="text-muted small">
+          {{ (passedCount / totalCases) * 100 | number : "1.0-1" }}% Success
+          Rate
+        </p>
+      </div>
+    </div>
+
+    <!-- FAILED -->
+    <div class="col-md-3">
+      <div class="summary-card bg-white shadow-sm border-failed">
+        <p class="text-muted small mb-1">FAILED</p>
+        <h3 class="fw-bold text-danger">{{ failedCount }}</h3>
+        <p class="text-muted small">
+          {{ (failedCount / totalCases) * 100 | number : "1.0-1" }}% Failure
+          Rate
+        </p>
+      </div>
+    </div>
+
+    <!-- RUNNING / SKIPPED -->
+    <div class="col-md-3">
+      <div class="summary-card bg-white shadow-sm border-running">
+        <p class="text-muted small mb-1">RUNNING / SKIPPED</p>
+        <h3 class="fw-bold text-warning">
+          {{ runningCount + skippedCount }}
+        </h3>
+        <p class="text-muted small">
+          {{
+            ((runningCount + skippedCount) / totalCases) * 100
+              | number : "1.0-1"
+          }}%
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <!-- RUN DETAILS -->
+    <div class="col-md-6 d-flex">
+      <div class="run-details-card card-equal p-3 flex-fill">
         <h6 class="fw-bold mb-3">Run Details & Timeline</h6>
 
-        <p><strong>Start Time:</strong> 09:00 AM, 2025-10-04</p>
-        <p><strong>End Time:</strong> 09:04 AM, 2025-10-04</p>
-        <p><strong>Execution Duration:</strong> 4m 12s</p>
+        <div class="rd-row">
+          <span class="rd-label">Start Time:</span>
+          <span>09:00 AM, 2025-10-04</span>
+        </div>
 
-        <div>
-          <strong>Data Cleanup Status:</strong>
-          <span class="badge bg-success">Cleanup Successful</span>
+        <div class="rd-row">
+          <span class="rd-label">End Time:</span>
+          <span>09:04 AM, 2025-10-04</span>
+        </div>
+
+        <div class="rd-row">
+          <span class="rd-label">Execution Duration:</span>
+          <span>4m 12s</span>
+        </div>
+
+        <div class="rd-row">
+          <span class="rd-label">Data Cleanup Status:</span>
+          <span class="badge bg-success px-3 py-2">Cleanup Successful</span>
         </div>
       </div>
     </div>
 
-    <div class="col-md-6">
-      <div class="bg-white shadow-sm summary-card">
+    <!-- LOG SUMMARY -->
+    <div class="col-md-6 d-flex">
+      <div class="log-summary-card card-equal p-3 flex-fill d-flex flex-column">
         <h6 class="fw-bold mb-3">High-Level Log Summary</h6>
 
-        <div class="log-box small">
-          <p class="text-secondary mb-1">
-            [09:00:01] Initializing browser for QA-Environment…
-          </p>
-          <p class="text-secondary mb-1">
-            [09:00:10] Starting Test Case: TC-101
-          </p>
-          <p class="text-success mb-1">
-            [09:00:25] TC-101: Verify User Login — PASSED.
-          </p>
-          <p class="text-success mb-1">
-            [09:01:10] TC-205: Validate Address Form — PASSED.
-          </p>
-          <p class="text-danger mb-1">
-            [09:02:18] TC-302: Check Payment Processor — FAILED.
-          </p>
-          <p class="text-warning mb-1">
-            [09:03:45] Skipping optional tests due to timeout…
-          </p>
+        <div class="log-summary-box flex-grow-1 mb-2">
+          <p class="text-secondary">[09:00:01] Initializing browser…</p>
+          <p class="text-secondary">[09:00:10] Starting Test Case: TC-101</p>
+          <p class="text-success">[09:00:25] TC-101 Passed</p>
+          <p class="text-success">[09:01:10] TC-205 Passed</p>
+          <p class="text-danger">[09:02:18] TC-302 Failed</p>
+          <p class="text-warning">[09:03:45] Skipping optional tests…</p>
         </div>
 
-        <a href="#" class="d-block mt-2 small text-primary"
-          >View Full Execution Log</a
-        >
+        <a href="#" class="small text-primary">View Full Execution Log</a>
       </div>
     </div>
   </div>
 
   <!-- TABLE -->
-  <div class="bg-white shadow-sm rounded p-3">
-    <h6 class="fw-bold mb-3">Individual Test Case Results (120 Total)</h6>
+  <div class="table-card">
+    <h5>Individual Test Case Results ( {{ totalCases }} Total)</h5>
 
     <div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead>
-          <tr>
-            <th>TESTCASE ID</th>
-            <th>DESCRIPTION</th>
-            <th>STATUS</th>
-            <th>DURATION</th>
-            <th>ACTIONS</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr>
-            <td>TC-101</td>
-            <td>Verify successful user login via OAuth.</td>
-            <td>
-              <span class="status-badge bg-success text-white">Passed</span>
-            </td>
-            <td>12s</td>
-            <td><i class="bi bi-chevron-right"></i></td>
-          </tr>
-
-          <tr>
-            <td>TC-205</td>
-            <td>Submit order form with missing address line 2.</td>
-            <td>
-              <span class="status-badge bg-danger text-white">Failed</span>
-            </td>
-            <td>25s</td>
-            <td><i class="bi bi-chevron-right"></i></td>
-          </tr>
-
-          <tr>
-            <td>TC-312</td>
-            <td>Validate report generation with large data set.</td>
-            <td>
-              <span class="status-badge bg-warning text-dark">Running</span>
-            </td>
-            <td>-</td>
-            <td><i class="bi bi-chevron-right"></i></td>
-          </tr>
-
-          <tr>
-            <td>TC-404</td>
-            <td>Test multi-factor authentication (MFA) setup.</td>
-            <td>
-              <span class="status-badge bg-secondary text-white">Skipped</span>
-            </td>
-            <td>-</td>
-            <td><i class="bi bi-chevron-right"></i></td>
-          </tr>
-
-          <tr>
-            <td>TC-602</td>
-            <td>Verify password change functionality.</td>
-            <td>
-              <span class="status-badge bg-success text-white">Passed</span>
-            </td>
-            <td>8s</td>
-            <td><i class="bi bi-chevron-right"></i></td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <app-data-grid
+          [selectionEnabled]="false"
+          [columns]="columns"
+          [data]="testCases"
+          [pagingEnabled]="true"
+          [pageSize]="10"
+          [sortingMode]="'client'"
+        ></app-data-grid>
+      </div>
     </div>
-
-    <p class="text-muted small mt-2">
-      … 115 more test cases are listed below. Use filters to narrow down
-      results.
-    </p>
   </div>
 </div>
+
+<!-- Test Case ID Bold Template -->
+<ng-template #testCaseIdTemplate let-row let-value="value">
+  <span class="fw-bold">{{ value }}</span>
+</ng-template>
+
+<!-- Priority Template -->
+<ng-template #priorityTemplate let-row let-value="value">
+  <span
+    [ngClass]="{
+      'priority-high': value === 'High',
+      'priority-medium': value === 'Medium',
+      'priority-low': value === 'Low'
+    }"
+  >
+    {{ value }}
+  </span>
+</ng-template>
+
+<ng-template #statusTemplate let-row let-value="value">
+  <span
+    class="text-uppercase px-2 py-1 rounded-pill testcase-status"
+    [ngClass]="getBadgeClass(value)"
+  >
+    {{ value }}
+  </span>
+</ng-template>
+
+<!-- Action Buttons Template -->
+<ng-template #actionsTemplate let-row>
+  <div class="d-flex gap-2">
+    <!-- View Screenshots -->
+    <button
+      class="icon-camera"
+      (click)="onViewScreenshots(row)"
+      *ngIf="row.hasScreenshots"
+      title="View Screenshots"
+    >
+      <i class="bi bi-camera"></i>
+    </button>
+  </div>
+</ng-template>
+
+<app-test-screenshot-gallery #galleryComponent [screenshots]="screenshots">
+</app-test-screenshot-gallery>
