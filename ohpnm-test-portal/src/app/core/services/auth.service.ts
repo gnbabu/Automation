@@ -25,17 +25,11 @@ export class AuthService {
       );
   }
 
-  forgotpassword(email: string): Observable<any> {
-    return this.httpService
-      .post<{ token: string; user: any }>(
-        'Authentication/forgotpassword?email=' + email,
-        {}
-      )
-      .pipe(
-        tap((response) => {
-          console.log(response);
-        })
-      );
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.httpService.post<{ message: string }>(
+      'Authentication/forgot-password',
+      { email }
+    );
   }
 
   forgotUsername(email: string): Observable<{ message: string }> {
@@ -43,6 +37,10 @@ export class AuthService {
       'Authentication/forgot-username',
       { email } // ✅ request body
     );
+  }
+
+  resetPassword(data: { token: string; newPassword: string }) {
+    return this.httpService.post('Authentication/reset-password', data);
   }
 
   register(registerRequest: RegisterRequest): Observable<any> {

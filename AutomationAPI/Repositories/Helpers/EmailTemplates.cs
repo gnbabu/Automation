@@ -28,5 +28,16 @@
                     </html>";
         }
 
+        public static string ResetPassword(string link)
+        {
+            return $@"
+                    <h3>Password Reset Request</h3>
+                    <p>Click the link below to reset your password:</p>
+                    <a href='{link}'>Reset Password</a>
+                    <p>This link expires in 30 minutes.</p>
+                    <br/>
+                    <p>OHPNM Automation Portal</p>";
+        }
+
     }
 }

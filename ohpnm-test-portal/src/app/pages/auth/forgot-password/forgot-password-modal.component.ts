@@ -1,7 +1,13 @@
 import { Component, AfterViewInit, ElementRef } from '@angular/core';
 import { AuthService, CommonToasterService, ModalService } from '@services';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 
 @Component({
@@ -41,23 +47,26 @@ export class ForgotPasswordModalComponent implements AfterViewInit {
   }
 
   submitEmail(): void {
-    if (!this.forgotpasswordForm.value.email || !this.validateEmail(this.forgotpasswordForm.value.email)) {
-      this.toaster.info('Please enter valid username and password');
+    const email = this.forgotpasswordForm.value.email;
+
+    if (!email || !this.validateEmail(email)) {
+      this.toaster.info('Please enter a valid email address');
       this.forgotpasswordForm.markAllAsTouched();
       return;
     }
 
-    this.authService.forgotpassword(this.forgotpasswordForm.value.email).subscribe({
+    this.authService.forgotPassword(email).subscribe({
       next: (response) => {
-        if (response === true) {
-          this.toaster.success('Password reset link sent successfully');
-          this.modalService.close('forgotPasswordModal');
-        }
+        this.toaster.success(response.message);
+        this.modalService.close('forgotPasswordModal');
       },
       error: (err: any) => {
-        console.log(err.error);
+        if (err.status === 404) {
+          this.toaster.error(err.error.message);
+        } else {
+          this.toaster.error('Unable to process request. Please try again.');
+        }
       },
-      complete: () => { },
     });
   }
 

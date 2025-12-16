@@ -14,13 +14,15 @@ namespace AutomationAPI.Controllers
         private readonly IEmailService _emailService;
         private readonly ILogger<AuthenticationController> _logger;
         private readonly IUserRepository _userRepository;
+        private readonly IConfiguration _configuration;
 
-        public AuthenticationController(IAuthService authService, ILogger<AuthenticationController> logger, IEmailService emailService, IUserRepository userRepository)
+        public AuthenticationController(IAuthService authService, ILogger<AuthenticationController> logger, IEmailService emailService, IUserRepository userRepository, IConfiguration configuration)
         {
             _authService = authService;
             _logger = logger;
             _emailService = emailService;
             _userRepository = userRepository;
+            _configuration = configuration;
         }
 
         [HttpPost]
@@ -51,30 +53,6 @@ namespace AutomationAPI.Controllers
             }
         }
 
-
-
-        [HttpPost]
-        [Route("forgotpassword")]
-        public async Task<IActionResult> ForgotPassword(string email)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                    return BadRequest("Invalid payload");
-
-                var response = await _authService.ForgotPassword(email);
-
-                if (response == false)
-                    return BadRequest("Invalid data");
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Invalid email {Email}", email);
-                return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
-            }
-        }
 
         [HttpPost]
         [Route("register")]
@@ -140,7 +118,7 @@ namespace AutomationAPI.Controllers
                 return BadRequest("Email is required");
 
             var user = await _userRepository.GetUserByEmailAsync(request.Email);
-            
+
             if (user == null)
             {
                 return NotFound(new
@@ -163,7 +141,64 @@ namespace AutomationAPI.Controllers
             });
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest(new { message = "Email is required." });
 
+            var token = Guid.NewGuid().ToString("N");
+            var expiry = DateTime.UtcNow.AddMinutes(30);
+
+            var success = await _userRepository.ForgotPasswordAsync(
+                request.Email,
+                token,
+                expiry
+            );
+
+            if (!success)
+            {
+                return NotFound(new { message = "No account found with this email." });
+            }
+
+            var baseUrl = _configuration["App:FrontendUrl"]!.TrimEnd('/');
+            var resetLink = $"{baseUrl}/reset-password?token={token}";
+
+            var html = EmailTemplates.ResetPassword(resetLink);
+
+            await _emailService.SendAsync(
+                request.Email,
+                "Reset your password – OHPNM Automation Portal",
+                html
+            );
+
+            return Ok(new { message = "Password reset link sent successfully." });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Token) ||
+                string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new { message = "Invalid request." });
+            }
+
+            // 🔐 Hash password ONCE
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+            var success = await _userRepository.ResetPasswordAsync(
+                request.Token,
+                passwordHash
+            );
+
+            if (!success)
+            {
+                return BadRequest(new { message = "Invalid or expired reset token." });
+            }
+
+            return Ok(new { message = "Password reset successfully." });
+        }
 
     }
 }

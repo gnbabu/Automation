@@ -92,13 +92,6 @@ namespace AutomationAPI.Repositories
         }
 
 
-        public async Task<bool> ForgotPassword(string email)
-        {
-            return true;
-        }
-
-
-
         public async Task<bool> Register(RegistrationModel model)
         {
 

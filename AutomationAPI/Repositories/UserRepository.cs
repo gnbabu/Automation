@@ -408,6 +408,35 @@ namespace AutomationAPI.Repositories
         }
 
 
+        public async Task<bool> ForgotPasswordAsync(string email, string token, DateTime expiry)
+        {
+
+
+            var parameters = new[]
+            {
+                    new SqlParameter("@Email", email),
+                    new SqlParameter("@Token", token),
+                    new SqlParameter("@Expiry", expiry)
+                };
+
+            var status = await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.ForgotPassword, parameters);
+
+            return status == 1;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string token, string passwordHash)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@Token", token),
+                new SqlParameter("@NewPasswordHash", passwordHash)
+            };
+
+            var status = await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.ResetPassword, parameters);
+
+            return status == 1;
+        }
+
 
     }
 

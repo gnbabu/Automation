@@ -20,5 +20,7 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<IEnumerable<AppTimeZone>> GetTimeZonesAsync();
         Task<IEnumerable<PriorityStatus>> GetPriorityStatusesAsync();
         Task<User?> GetUserByEmailAsync(string email);
+        Task<bool> ForgotPasswordAsync(string email, string token, DateTime expiry);
+        Task<bool> ResetPasswordAsync(string token, string passwordHash);
     }
 }

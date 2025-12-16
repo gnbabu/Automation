@@ -18,6 +18,8 @@
         public const string GetTimeZones = "[aut].[usp_GetTimeZones]";
         public const string GetPriorityStatus = "[aut].[usp_GetPriorityStatus]";
         public const string GetUsernameByEmail = "[aut].[usp_GetUsernameByEmail]";
+        public const string ForgotPassword = "[aut].[usp_ForgotPassword]";
+        public const string ResetPassword = "[aut].[usp_ResetPassword]";
 
 
         //Automation Data
