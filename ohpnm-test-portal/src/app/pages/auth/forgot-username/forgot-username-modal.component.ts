@@ -1,7 +1,13 @@
 import { Component, AfterViewInit, ElementRef } from '@angular/core';
 import { AuthService, CommonToasterService, ModalService } from '@services';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 
 @Component({
@@ -41,24 +47,30 @@ export class ForgotUsernameModalComponent implements AfterViewInit {
   }
 
   submitEmail(): void {
-    if (!this.forgotusernameForm.value.email || !this.validateEmail(this.forgotusernameForm.value.email)) {
+    if (
+      !this.forgotusernameForm.value.email ||
+      !this.validateEmail(this.forgotusernameForm.value.email)
+    ) {
       this.toaster.info('Please enter valid username and username');
       this.forgotusernameForm.markAllAsTouched();
       return;
     }
 
-    this.authService.forgotusername(this.forgotusernameForm.value.email).subscribe({
-      next: (response) => {
-        if (response === true) {
-          this.toaster.success('Username reset link sent successfully');
+    this.authService
+      .forgotUsername(this.forgotusernameForm.value.email)
+      .subscribe({
+        next: (response) => {
+          this.toaster.success(response.message);
           this.modalService.close('forgotUsernameModal');
-        }
-      },
-      error: (err: any) => {
-        console.log(err.error);
-      },
-      complete: () => { },
-    });
+        },
+        error: (err: any) => {
+          if (err.status === 404) {
+            this.toaster.error(err.error.message);
+          } else {
+            this.toaster.error('Something went wrong. Please try again.');
+          }
+        },
+      });
   }
 
   validateEmail(email: string): boolean {

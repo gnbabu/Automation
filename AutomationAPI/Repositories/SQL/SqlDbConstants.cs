@@ -17,6 +17,7 @@
         public const string GetUserStatuses = "[aut].[usp_GetUserStatuses]";
         public const string GetTimeZones = "[aut].[usp_GetTimeZones]";
         public const string GetPriorityStatus = "[aut].[usp_GetPriorityStatus]";
+        public const string GetUsernameByEmail = "[aut].[usp_GetUsernameByEmail]";
 
 
         //Automation Data

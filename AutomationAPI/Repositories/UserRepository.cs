@@ -389,6 +389,25 @@ namespace AutomationAPI.Repositories
             );
         }
 
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Email", email)
+            };
+
+            var users = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetUsernameByEmail, parameters,
+                reader => new User
+                {
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserID")),
+                    UserName = reader.GetString(reader.GetOrdinal("UserName")),
+                    Email = reader.GetString(reader.GetOrdinal("Email"))
+                });
+
+            return users.FirstOrDefault();
+        }
+
+
 
     }
 

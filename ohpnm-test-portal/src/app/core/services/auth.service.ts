@@ -38,17 +38,11 @@ export class AuthService {
       );
   }
 
-  forgotusername(email: string): Observable<any> {
-    return this.httpService
-      .post<{ token: string; user: any }>(
-        'Authentication/forgotusername?email=' + email,
-        {}
-      )
-      .pipe(
-        tap((response) => {
-          console.log(response);
-        })
-      );
+  forgotUsername(email: string): Observable<{ message: string }> {
+    return this.httpService.post<{ message: string }>(
+      'Authentication/forgot-username',
+      { email } // ✅ request body
+    );
   }
 
   register(registerRequest: RegisterRequest): Observable<any> {

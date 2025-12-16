@@ -7,6 +7,7 @@ using AutomationAPI.Repositories;
 using AutomationAPI.Repositories.Helpers;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.TestRunner;
+using AutomationAPI.Repositories.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +48,11 @@ builder.Services.AddScoped<ITestSuitesRepository, TestSuitesRepository>();
 builder.Services.AddScoped<ITestScreenshotRepository, TestScreenshotRepository>();
 builder.Services.AddScoped<ITestCaseAssignmentRepository, TestCaseAssignmentRepository>();
 builder.Services.AddScoped<ITestCaseExecutionQueueRepository, TestCaseExecutionQueueRepository>();
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+//builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+
+builder.Services.AddScoped<IEmailService, SendGridEmailService>();
+
 
 builder.Services.AddScoped<ITestRunner, ReflectionTestRunner>();
 

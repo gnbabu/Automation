@@ -1,4 +1,6 @@
-﻿using AutomationAPI.Repositories.Interfaces;
+﻿using AutomationAPI.Repositories;
+using AutomationAPI.Repositories.Helpers;
+using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +11,16 @@ namespace AutomationAPI.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IEmailService _emailService;
         private readonly ILogger<AuthenticationController> _logger;
+        private readonly IUserRepository _userRepository;
 
-        public AuthenticationController(IAuthService authService, ILogger<AuthenticationController> logger)
+        public AuthenticationController(IAuthService authService, ILogger<AuthenticationController> logger, IEmailService emailService, IUserRepository userRepository)
         {
             _authService = authService;
             _logger = logger;
+            _emailService = emailService;
+            _userRepository = userRepository;
         }
 
         [HttpPost]
@@ -114,6 +120,49 @@ namespace AutomationAPI.Controllers
                 return StatusCode(500, new { result = false, message = "An unexpected error occurred during registration." });
             }
         }
+
+
+        [HttpGet("test-email")]
+        public async Task<IActionResult> TestEmail()
+        {
+            await _emailService.SendAsync(
+            "naresh.net2009@gmail.com",
+              "Forgot Username – OHPNM Automation Portal",
+            "<b>SendGrid email working successfully 🚀</b>");
+
+            return Ok("Email sent successfully");
+        }
+
+        [HttpPost("forgot-username")]
+        public async Task<IActionResult> ForgotUsername([FromBody] ForgotUsernameRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest("Email is required");
+
+            var user = await _userRepository.GetUserByEmailAsync(request.Email);
+            
+            if (user == null)
+            {
+                return NotFound(new
+                {
+                    message = "No account found with the provided email address."
+                });
+            }
+
+            var htmlBody = EmailTemplates.BuildForgotUsernameEmail(user.UserName);
+
+            await _emailService.SendAsync(
+                user.Email,
+                "Forgot Username – OHPNM Automation Portal",
+                htmlBody
+            );
+
+            return Ok(new
+            {
+                message = "Username has been sent to your registered email."
+            });
+        }
+
 
 
     }

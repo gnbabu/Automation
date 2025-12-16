@@ -19,5 +19,6 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<IEnumerable<UserStatus>> GetUserStatusesAsync();
         Task<IEnumerable<AppTimeZone>> GetTimeZonesAsync();
         Task<IEnumerable<PriorityStatus>> GetPriorityStatusesAsync();
+        Task<User?> GetUserByEmailAsync(string email);
     }
 }
