@@ -4,8 +4,7 @@
     {
         //User and Usr Role Stored Procedures
         public const string GetAllUsers = "[aut].[usp_GetAllUsers]";
-        public const string GetUserById = "[aut].[usp_GetUserById]";
-        public const string ValidateUserByUsernameAndPassword = "[aut].[usp_ValidateUserByUsernameAndPassword]";
+        public const string GetUserById = "[aut].[usp_GetUserById]";        
         public const string CreateUser = "[aut].[usp_CreateUser]";
         public const string UpdateUser = "[aut].[usp_UpdateUser]";
         public const string DeleteUser = "[aut].[usp_DeleteUser]";
@@ -20,6 +19,8 @@
         public const string GetUsernameByEmail = "[aut].[usp_GetUsernameByEmail]";
         public const string ForgotPassword = "[aut].[usp_ForgotPassword]";
         public const string ResetPassword = "[aut].[usp_ResetPassword]";
+        public const string GetUserByUsername = "[aut].[usp_GetUserByUsername]";
+        public const string UpdateLastLogin = "[aut].[usp_UpdateLastLogin]";
 
 
         //Automation Data

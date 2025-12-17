@@ -32,7 +32,7 @@ namespace AutomationAPI.Repositories
             try
             {
                 // Validate user credentials
-                var user = await _userRepository.ValidateUserByUsernameAndPasswordAsync(model.Username, model.Password);
+                var user = await _userRepository.GetUserByUsernameAsync(model.Username);
 
                 // Check if user exists
                 if (user == null)
@@ -46,14 +46,36 @@ namespace AutomationAPI.Repositories
                     return new AuthResponse { StatusCode = 0, Message = "User is inactive" };
                 }
 
+                bool isPasswordValid = false;
+
+                // ✅ NEW USERS (BCrypt)
+                if (!string.IsNullOrEmpty(user.PasswordHash))
+                {
+                    isPasswordValid = BCrypt.Net.BCrypt.Verify(
+                        model.Password,
+                        user.PasswordHash
+                    );
+                }
+
+                if (!isPasswordValid)
+                {
+                    return new AuthResponse
+                    {
+                        StatusCode = 0,
+                        Message = "Invalid username or password"
+                    };
+                }
+
+                await _userRepository.UpdateLastLoginAsync(user.UserId);
+
                 // Create the claims for the JWT token
                 var authClaims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Role, user.RoleName)
-            };
+                {
+                    new Claim(ClaimTypes.Name, user.UserName),
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim(ClaimTypes.Role, user.RoleName)
+                };
 
                 // Generate the token
                 var token = GenerateToken(authClaims);
@@ -114,30 +136,29 @@ namespace AutomationAPI.Repositories
             if (users.Any(u => u.Email.Equals(model.Email, StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Email already registered.");
 
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
+            model.Password = passwordHash;
 
             var userId = await _userRepository.RegisterUserAsync(model);
 
             return userId > 0;
         }
 
-
         private bool IsValidPassword(string password)
         {
-            if (password.Length < 12) return false;
+            if (string.IsNullOrWhiteSpace(password))
+                return false;
+
+            if (password.Length < 8)
+                return false;
+
             var hasUpper = Regex.IsMatch(password, "[A-Z]");
             var hasLower = Regex.IsMatch(password, "[a-z]");
             var hasDigit = Regex.IsMatch(password, "[0-9]");
             var hasSpecial = Regex.IsMatch(password, "[^a-zA-Z0-9]");
+
             return hasUpper && hasLower && hasDigit && hasSpecial;
         }
-
-        private string HashPassword(string password)
-        {
-            using var sha256 = SHA256.Create();
-            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(bytes);
-        }
-
 
     }
 }

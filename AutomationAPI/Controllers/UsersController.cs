@@ -52,24 +52,6 @@ namespace AutomationAPI.Controllers
             }
         }
 
-        [HttpPost("validate")]
-        public async Task<IActionResult> ValidateUser([FromBody] LoginModel loginModel)
-        {
-            try
-            {
-                var user = await _userRepository.ValidateUserByUsernameAndPasswordAsync(loginModel.Username, loginModel.Password);
-                if (user == null)
-                    return Unauthorized();
-
-                return Ok(user);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error validating user");
-                return StatusCode(500, "An error occurred during validation.");
-            }
-        }
-
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] User user)
         {
@@ -122,12 +104,17 @@ namespace AutomationAPI.Controllers
             return Ok(users);
         }
 
-
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             try
             {
+                if (request == null ||
+                    string.IsNullOrWhiteSpace(request.OldPassword) ||
+                    string.IsNullOrWhiteSpace(request.NewPassword))
+                {
+                    return BadRequest(new { message = "Invalid request." });
+                }
                 await _userRepository.ChangePasswordAsync(request);
 
                 return NoContent();

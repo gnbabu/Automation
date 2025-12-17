@@ -6,8 +6,7 @@ namespace AutomationAPI.Repositories.Interfaces
     public interface IUserRepository
     {
         Task<IEnumerable<User>> GetAllUsersAsync();
-        Task<User> GetUserByIdAsync(int userId);
-        Task<User> ValidateUserByUsernameAndPasswordAsync(string username, string password);
+        Task<User> GetUserByIdAsync(int userId);        
         Task<int> CreateUserAsync(User user);
         Task UpdateUserAsync(User user);
         Task DeleteUserAsync(int userId);
@@ -22,5 +21,7 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<User?> GetUserByEmailAsync(string email);
         Task<bool> ForgotPasswordAsync(string email, string token, DateTime expiry);
         Task<bool> ResetPasswordAsync(string token, string passwordHash);
+        Task<User> GetUserByUsernameAsync(string username);
+        Task UpdateLastLoginAsync(int? userId);
     }
 }

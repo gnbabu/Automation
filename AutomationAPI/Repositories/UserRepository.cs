@@ -2,9 +2,11 @@
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using AutomationAPI.Repositories.SQL;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Reflection;
 using System.Reflection.PortableExecutable;
 
 namespace AutomationAPI.Repositories
@@ -97,6 +99,7 @@ namespace AutomationAPI.Repositories
             {
                 UserId = reader.GetInt32(reader.GetOrdinal("UserID")),
                 UserName = reader.GetString(reader.GetOrdinal("UserName")),
+                PasswordHash = reader.GetString(reader.GetOrdinal("PasswordHash")),
                 FirstName = reader.IsDBNull(reader.GetOrdinal("FirstName"))
                         ? string.Empty
                         : reader.GetString(reader.GetOrdinal("FirstName")),
@@ -125,36 +128,14 @@ namespace AutomationAPI.Repositories
             return users.FirstOrDefault();
         }
 
-        public async Task<User> ValidateUserByUsernameAndPasswordAsync(string username, string password)
-        {
-            var parameters = new SqlParameter[]
-            {
-                new SqlParameter("@Username", username),
-                new SqlParameter("@Password", password)
-            };
-
-            var users = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.ValidateUserByUsernameAndPassword, parameters, reader => new User
-            {
-                UserId = reader.GetInt32(reader.GetOrdinal("UserID")),
-                UserName = reader.GetString(reader.GetOrdinal("UserName")),
-                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
-                LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                Email = reader.GetString(reader.GetOrdinal("Email")),
-                Photo = reader["Photo"] is byte[] photoBytes ? GetPhotoBase64(photoBytes) : string.Empty,
-                RoleName = reader.GetString(reader.GetOrdinal("RoleName")),
-                RoleId = reader.GetInt32(reader.GetOrdinal("RoleID")),
-                Active = reader.GetBoolean(reader.GetOrdinal("Active")),
-            });
-
-            return users.FirstOrDefault();
-        }
-
         public async Task<int> CreateUserAsync(User user)
         {
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(user.Password);
+
             var parameters = new List<SqlParameter>
             {
                 new SqlParameter("@UserName", user.UserName),
-                new SqlParameter("@Password", user.Password ?? (object)DBNull.Value),
+                new SqlParameter("@PasswordHash", passwordHash ?? (object)DBNull.Value),
                 new SqlParameter("@FirstName", user.FirstName ?? (object)DBNull.Value),
                 new SqlParameter("@LastName", user.LastName ?? (object)DBNull.Value),
                 new SqlParameter("@Email", user.Email ?? (object)DBNull.Value),
@@ -193,13 +174,10 @@ namespace AutomationAPI.Repositories
             {
                     new SqlParameter("@Username", model.Username),
                     new SqlParameter("@Email", model.Email),
-                    new SqlParameter("@Password", model.Password)
+                    new SqlParameter("@PasswordHash", model.Password)
             };
 
-            return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(
-                SqlDbConstants.RegisterUser,
-                parameters.ToArray()
-            );
+            return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.RegisterUser, parameters.ToArray());
         }
 
         public async Task UpdateUserAsync(User user)
@@ -207,8 +185,7 @@ namespace AutomationAPI.Repositories
             var parameters = new List<SqlParameter>
             {
                 new SqlParameter("@UserID", user.UserId),
-                new SqlParameter("@UserName", user.UserName),
-                new SqlParameter("@Password", string.IsNullOrEmpty(user.Password) ? (object)DBNull.Value : user.Password),
+                new SqlParameter("@UserName", user.UserName),                
                 new SqlParameter("@FirstName", string.IsNullOrEmpty(user.FirstName) ? (object)DBNull.Value : user.FirstName),
                 new SqlParameter("@LastName", string.IsNullOrEmpty(user.LastName) ? (object)DBNull.Value : user.LastName),
                 new SqlParameter("@Email", user.Email),
@@ -300,23 +277,38 @@ namespace AutomationAPI.Repositories
 
         public async Task ChangePasswordAsync(ChangePasswordRequest request)
         {
+            // 1️⃣ Get user
+            var user = await GetUserByIdAsync(request.UserId);
+
+            if (user == null || !user.Active)
+            {
+                throw new InvalidOperationException("User not found or inactive.");
+            }
+
+            // 2️⃣ Verify old password (BCrypt)
+            if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
+            {
+                throw new InvalidOperationException("Incorrect current password.");
+            }
+
+            // 3️⃣ Hash new password
+            var newPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+            // 4️⃣ Call stored procedure (NO OLD PASSWORD)
             var parameters = new SqlParameter[]
             {
                 new SqlParameter("@UserID", request.UserId),
-                new SqlParameter("@OldPassword", request.OldPassword),
-                new SqlParameter("@NewPassword", request.NewPassword)
+                new SqlParameter("@NewPasswordHash", newPasswordHash)
             };
-
 
             var result = await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.ChangePassword, parameters);
 
-            // Check the result to determine if the password change was successful
-            if (result == 0)
+            if (result != 1)
             {
-                // If StatusCode is 0, it means the old password was incorrect or user not found
-                throw new InvalidOperationException("Error: Incorrect current password or user not found.");
+                throw new InvalidOperationException("Failed to change password.");
             }
         }
+
 
         public async Task SetUserActiveStatusAsync(int userId, bool active)
         {
@@ -437,6 +429,39 @@ namespace AutomationAPI.Repositories
             return status == 1;
         }
 
+        public async Task<User> GetUserByUsernameAsync(string username)
+        {
+            var parameters = new SqlParameter[]
+            {
+                new SqlParameter("@Username", username),
+            };
+
+            var users = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetUserByUsername, parameters, reader => new User
+            {
+                UserId = reader.GetInt32(reader.GetOrdinal("UserID")),
+                UserName = reader.GetString(reader.GetOrdinal("UserName")),
+                PasswordHash = reader.GetString(reader.GetOrdinal("PasswordHash")),
+                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                Email = reader.GetString(reader.GetOrdinal("Email")),
+                Photo = reader["Photo"] is byte[] photoBytes ? GetPhotoBase64(photoBytes) : string.Empty,
+                RoleName = reader.GetString(reader.GetOrdinal("RoleName")),
+                RoleId = reader.GetInt32(reader.GetOrdinal("RoleID")),
+                Active = reader.GetBoolean(reader.GetOrdinal("Active")),
+            });
+
+            return users.FirstOrDefault();
+        }
+
+        public async Task UpdateLastLoginAsync(int? userId)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@UserID", userId)
+            };
+
+            await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.UpdateLastLogin, parameters);
+        }
 
     }
 
