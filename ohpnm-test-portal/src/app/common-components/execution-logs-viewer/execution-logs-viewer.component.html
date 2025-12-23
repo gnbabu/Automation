@@ -36,6 +36,13 @@
 
             <!-- Step Name -->
             <span>{{ log.stepName }}</span>
+            <!-- Screenshot Icon -->
+            <i
+              *ngIf="log.screenshotId"
+              class="bi bi-camera-fill text-primary cursor-pointer"
+              title="View Screenshot"
+              (click)="viewScreenshot(log.screenshotId)"
+            ></i>
           </div>
 
           <div class="log-message">

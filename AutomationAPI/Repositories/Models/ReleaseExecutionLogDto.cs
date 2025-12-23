@@ -12,6 +12,10 @@
         public string LogMessage { get; set; }
         public TestCaseLogLevel LogLevel { get; set; }
         public ExecutionStatus ExecutionStatus { get; set; }
+
+        public int? ScreenshotId { get; set; }
+        public string? ErrorStackTrace { get; set; }
+
         public DateTime CreatedAt { get; set; }
     }
 }

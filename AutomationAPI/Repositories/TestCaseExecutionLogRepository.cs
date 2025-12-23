@@ -71,6 +71,12 @@ namespace AutomationAPI.Repositories
                     LogMessage = reader.GetString(reader.GetOrdinal("LogMessage")),
                     LogLevel = Enum.Parse<TestCaseLogLevel>(reader.GetString(reader.GetOrdinal("LogLevel")), true),
                     ExecutionStatus = Enum.Parse<ExecutionStatus>(reader.GetString(reader.GetOrdinal("ExecutionStatus")), true),
+                    ScreenshotId = reader.IsDBNull(reader.GetOrdinal("ScreenshotId"))
+                    ? null
+                    : reader.GetInt32(reader.GetOrdinal("ScreenshotId")),
+                    ErrorStackTrace = reader.IsDBNull(reader.GetOrdinal("ErrorStackTrace"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("ErrorStackTrace")),
                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt"))
                 });
         }

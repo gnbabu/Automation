@@ -41,4 +41,7 @@ export class ExecutionLogsViewerComponent {
   onViewFullLog() {
     this.viewFullLog.emit();
   }
+  viewScreenshot(screenshotId: number): void {
+    if (!screenshotId) return;
+  }
 }

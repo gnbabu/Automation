@@ -75,7 +75,7 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   @ViewChild(TestScreenshotGalleryComponent)
   gallery!: TestScreenshotGalleryComponent;
 
-  @ViewChild(ExecutionLogsDialogComponent)
+  @ViewChild('logsDialog')
   executionLogsDialog!: ExecutionLogsDialogComponent;
 
   assignments: ITestCaseAssignmentEntity[] = [];

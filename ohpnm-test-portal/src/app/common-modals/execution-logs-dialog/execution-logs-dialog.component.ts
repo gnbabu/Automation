@@ -1,8 +1,9 @@
-import { Component, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalService } from '@services';
 import { ITestCaseExecutionLog } from '@interfaces';
 import { ExecutionLogsViewerComponent } from 'app/common-components/execution-logs-viewer/execution-logs-viewer.component';
+
+declare var bootstrap: any;
 
 @Component({
   selector: 'app-execution-logs-dialog',
@@ -11,30 +12,34 @@ import { ExecutionLogsViewerComponent } from 'app/common-components/execution-lo
   templateUrl: './execution-logs-dialog.component.html',
   styleUrls: ['./execution-logs-dialog.component.css'],
 })
-export class ExecutionLogsDialogComponent implements AfterViewInit {
-  @ViewChild('executionLogsModal') modalElement!: ElementRef;
+export class ExecutionLogsDialogComponent {
+  @ViewChild('executionLogsModal', { static: false })
+  modalElement!: ElementRef;
 
   logs: ITestCaseExecutionLog[] = [];
-
-  constructor(private modalService: ModalService) {}
-
-  ngAfterViewInit(): void {
-    setTimeout(() => {
-      this.modalService.register(
-        'executionLogsModal',
-        this.modalElement.nativeElement
-      );
-    });
-  }
+  private modalInstance: any;
 
   /** Open modal with logs */
   open(logs: ITestCaseExecutionLog[]): void {
     this.logs = logs ?? [];
-    this.modalService.open('executionLogsModal');
+
+    if (!this.modalInstance) {
+      this.modalInstance = new bootstrap.Modal(
+        this.modalElement.nativeElement,
+        {
+          backdrop: 'static',
+          keyboard: false,
+        }
+      );
+    }
+
+    this.modalInstance.show();
   }
 
   /** Close modal */
   close(): void {
-    this.modalService.close('executionLogsModal');
+    if (this.modalInstance) {
+      this.modalInstance.hide();
+    }
   }
 }

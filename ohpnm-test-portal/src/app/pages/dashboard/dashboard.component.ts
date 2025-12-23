@@ -81,7 +81,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   recentLogs: ITestCaseExecutionLog[] = [];
   showFullLogs = false;
 
-  @ViewChild(ExecutionLogsDialogComponent)
+  @ViewChild('logsDialog')
   executionLogsDialog!: ExecutionLogsDialogComponent;
 
   // You can add any logic for the dashboard component here if needed
