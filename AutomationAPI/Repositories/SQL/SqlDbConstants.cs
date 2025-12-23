@@ -4,7 +4,7 @@
     {
         //User and Usr Role Stored Procedures
         public const string GetAllUsers = "[aut].[usp_GetAllUsers]";
-        public const string GetUserById = "[aut].[usp_GetUserById]";        
+        public const string GetUserById = "[aut].[usp_GetUserById]";
         public const string CreateUser = "[aut].[usp_CreateUser]";
         public const string UpdateUser = "[aut].[usp_UpdateUser]";
         public const string DeleteUser = "[aut].[usp_DeleteUser]";
@@ -62,6 +62,14 @@
         public const string BulkScheduleTestCases = "[aut].[usp_BulkScheduleTestCases]";
         public const string GetPendingExecutionQueues = "[aut].[usp_GetPendingExecutionQueues]";
         public const string UpdateQueueStatus = "[aut].[usp_UpdateQueueStatus]";
+
+
+        //Test Case Execution Logs
+        public const string AddTestCaseExecutionLog = "[aut].[usp_AddTestCaseExecutionLog]";
+        public const string GetTestCaseExecutionLogs = "[aut].[usp_GetTestCaseExecutionLogs]";
+        public const string GetAssignmentExecutionLogs = "[aut].[usp_GetAssignmentExecutionLogs]";
+        public const string GetReleaseExecutionLogs = "[aut].[usp_GetReleaseExecutionLogs]";
+
 
     }
 }

@@ -135,20 +135,10 @@
 
     <!-- LOG SUMMARY -->
     <div class="col-md-6 d-flex">
-      <div class="log-summary-card card-equal p-3 flex-fill d-flex flex-column">
-        <h6 class="fw-bold mb-3">High-Level Log Summary</h6>
-
-        <div class="log-summary-box flex-grow-1 mb-2">
-          <p class="text-secondary">[09:00:01] Initializing browser…</p>
-          <p class="text-secondary">[09:00:10] Starting Test Case: TC-101</p>
-          <p class="text-success">[09:00:25] TC-101 Passed</p>
-          <p class="text-success">[09:01:10] TC-205 Passed</p>
-          <p class="text-danger">[09:02:18] TC-302 Failed</p>
-          <p class="text-warning">[09:03:45] Skipping optional tests…</p>
-        </div>
-
-        <a href="#" class="small text-primary">View Full Execution Log</a>
-      </div>
+      <app-execution-logs-viewer
+        class="flex-fill"
+        [logs]="recentLogs"
+      ></app-execution-logs-viewer>
     </div>
   </div>
 

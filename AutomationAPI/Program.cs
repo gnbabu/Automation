@@ -8,6 +8,7 @@ using AutomationAPI.Repositories.Helpers;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.TestRunner;
 using AutomationAPI.Repositories.Models;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +49,8 @@ builder.Services.AddScoped<ITestSuitesRepository, TestSuitesRepository>();
 builder.Services.AddScoped<ITestScreenshotRepository, TestScreenshotRepository>();
 builder.Services.AddScoped<ITestCaseAssignmentRepository, TestCaseAssignmentRepository>();
 builder.Services.AddScoped<ITestCaseExecutionQueueRepository, TestCaseExecutionQueueRepository>();
+builder.Services.AddScoped<ITestCaseExecutionLogRepository, TestCaseExecutionLogRepository>();
+
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 //builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
@@ -109,6 +112,12 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter());
+    });
 // ------------------------------
 // Build the app
 // ------------------------------

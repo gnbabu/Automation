@@ -10,6 +10,7 @@ import {
 import {
   GridColumn,
   IAssignedTestCase,
+  ITestCaseExecutionLog,
   ITestScreenshot,
   LibraryInfo,
 } from '@interfaces';
@@ -18,6 +19,7 @@ import {
   CommonToasterService,
   ScreenshotService,
   TestCaseAssignmentService,
+  TestCaseExecutionLogsService,
   TestSuitesService,
   UsersService,
 } from '@services';
@@ -25,6 +27,7 @@ import { DataGridComponent } from 'app/core/components/data-grid/data-grid.compo
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 import { forkJoin, map } from 'rxjs';
 import { TestScreenshotGalleryComponent } from '../test-case-execution-panel/test-screenshot-gallery/test-screenshot-gallery.component';
+import { ExecutionLogsViewerComponent } from 'app/common-components/execution-logs-viewer/execution-logs-viewer.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -34,6 +37,7 @@ import { TestScreenshotGalleryComponent } from '../test-case-execution-panel/tes
     AppDropdownComponent,
     DataGridComponent,
     TestScreenshotGalleryComponent,
+    ExecutionLogsViewerComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
@@ -71,6 +75,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   runningCount = 0;
   skippedCount = 0;
 
+  executionLogs: ITestCaseExecutionLog[] = [];
+  recentLogs: ITestCaseExecutionLog[] = [];
+  showFullLogs = false;
+
   // You can add any logic for the dashboard component here if needed
   constructor(
     private testSuitesService: TestSuitesService,
@@ -78,7 +86,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private toaster: CommonToasterService,
     private userService: UsersService,
     private testCaseAssignmentService: TestCaseAssignmentService,
-    private screenshotService: ScreenshotService
+    private screenshotService: ScreenshotService,
+    private executionLogsService: TestCaseExecutionLogsService
   ) {}
 
   ngOnInit(): void {
@@ -158,6 +167,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Load merged test cases (assigned + unassigned)
     this.mergeLibraryTestCases(library.libraryName).subscribe((merged) => {
       this.testCases = merged;
+
+      // 🔥 Load logs by library
+      this.loadLibraryExecutionLogs(library.libraryName);
 
       this.passedCount = merged.filter(
         (tc) => tc.testCaseStatus === 'Passed'
@@ -278,4 +290,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
   ngOnDestroy(): void {}
+
+  loadLibraryExecutionLogs(libraryName: string): void {
+    if (!libraryName) return;
+
+    this.executionLogsService.getReleaseLogs(libraryName).subscribe({
+      next: (logs) => {
+        this.executionLogs = logs;
+
+        // High-level summary (latest 5 logs)
+        this.recentLogs = [...logs]
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+          .slice(0, 5);
+      },
+      error: () => {
+        this.executionLogs = [];
+        this.recentLogs = [];
+      },
+    });
+  }
 }

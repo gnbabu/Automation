@@ -265,3 +265,17 @@ export interface ITestScreenshot {
   screenshot: string; // Base64 string (data:image/png;base64,...)
   takenAt: string; // ISO date string
 }
+
+export interface ITestCaseExecutionLog {
+  logId: number;
+  assignmentId: number;
+  assignmentTestCaseId: number;
+  testCaseId: string;
+  stepName: string;
+  logMessage: string;
+  logLevel: 'Info' | 'Pass' | 'Warning' | 'Fail';
+  executionStatus: 'Running' | 'Passed' | 'Failed';
+  screenshotId?: number;
+  errorStackTrace?: string;
+  createdAt: string;
+}

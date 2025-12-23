@@ -1,0 +1,60 @@
+<div class="execution-log-card d-flex flex-column h-100">
+  <!-- Header -->
+  <div class="log-header d-flex align-items-center justify-content-between">
+    <h6 class="mb-0 fw-bold">Execution Logs</h6>
+    <span class="badge bg-secondary"> {{ logs.length }} steps </span>
+  </div>
+
+  <!-- Logs -->
+  <div class="log-body flex-grow-1">
+    <ng-container *ngIf="(logs?.length ?? 0) > 0; else empty">
+      <div
+        class="log-row"
+        *ngFor="let log of logs; trackBy: trackByLogId"
+        [ngClass]="(log.executionStatus || '').toLowerCase()"
+      >
+        <!-- Time -->
+        <div class="log-time">
+          {{ log.createdAt | date : "HH:mm:ss" }}
+        </div>
+
+        <!-- Icon -->
+        <div class="log-icon">
+          <i [ngClass]="getIcon(log.logLevel)"></i>
+        </div>
+
+        <!-- Content -->
+        <div class="log-content">
+          <div class="log-title d-flex align-items-center gap-2">
+            <!-- Test Case Badge -->
+            <span class="badge bg-light text-dark border">
+              {{ log.testCaseId }}
+            </span>
+
+            <!-- Step Name -->
+            <span>{{ log.stepName }}</span>
+          </div>
+
+          <div class="log-message">
+            {{ log.logMessage }}
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Empty State -->
+    <ng-template #empty>
+      <div class="empty-state">
+        <i class="bi bi-journal-text"></i>
+        <p>No execution logs available</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Footer -->
+  <div class="log-footer text-end">
+    <button class="btn btn-sm btn-outline-primary">
+      View Full Execution Log
+    </button>
+  </div>
+</div>
