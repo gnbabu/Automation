@@ -28,6 +28,7 @@ import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropd
 import { forkJoin, map } from 'rxjs';
 import { TestScreenshotGalleryComponent } from '../test-case-execution-panel/test-screenshot-gallery/test-screenshot-gallery.component';
 import { ExecutionLogsViewerComponent } from 'app/common-components/execution-logs-viewer/execution-logs-viewer.component';
+import { ExecutionLogsDialogComponent } from 'app/common-modals/execution-logs-dialog/execution-logs-dialog.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -38,6 +39,7 @@ import { ExecutionLogsViewerComponent } from 'app/common-components/execution-lo
     DataGridComponent,
     TestScreenshotGalleryComponent,
     ExecutionLogsViewerComponent,
+    ExecutionLogsDialogComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
@@ -78,6 +80,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   executionLogs: ITestCaseExecutionLog[] = [];
   recentLogs: ITestCaseExecutionLog[] = [];
   showFullLogs = false;
+
+  @ViewChild(ExecutionLogsDialogComponent)
+  executionLogsDialog!: ExecutionLogsDialogComponent;
 
   // You can add any logic for the dashboard component here if needed
   constructor(
@@ -238,9 +243,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
             assignedUserName: '',
             environment: '',
             hasScreenshots: false,
+            hasLogs: false,
           } as IAssignedTestCase;
         });
-        debugger;
+
         return merged;
       })
     );
@@ -311,5 +317,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.recentLogs = [];
       },
     });
+  }
+
+  openFullLogsModal() {
+    this.executionLogsDialog.open(this.executionLogs);
+  }
+
+  onViewLogs(row: any) {
+    this.executionLogsService
+      .getTestCaseLogs(row.assignmentId, row.assignmentTestCaseId)
+      .subscribe((logs) => {
+        this.executionLogsDialog.open(logs);
+      });
   }
 }

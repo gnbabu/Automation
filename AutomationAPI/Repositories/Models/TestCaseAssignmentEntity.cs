@@ -36,6 +36,7 @@
         public string AssignedUserName { get; set; }
         public string Environment { get; set; }
         public bool HasScreenshots { get; set; }
+        public bool HasLogs { get; set; }
 
     }
 

@@ -182,8 +182,19 @@
     >
       <i class="bi bi-camera"></i>
     </button>
+
+    <!-- View Execution Logs -->
+    <button
+      class="icon-logs"
+      *ngIf="row.hasLogs"
+      (click)="onViewLogs(row)"
+      title="View Execution Logs"
+    >
+      <i class="bi bi-journal-text"></i>
+    </button>
   </div>
 </ng-template>
 <app-schedule-testcases-dialog #scheduleDialog> </app-schedule-testcases-dialog>
 <app-test-screenshot-gallery #galleryComponent [screenshots]="screenshots">
 </app-test-screenshot-gallery>
+<app-execution-logs-dialog></app-execution-logs-dialog>

@@ -72,7 +72,8 @@ namespace AutomationAPI.Repositories
                     AssignedUserId = reader.GetNullableInt("AssignedUserId") ?? 0,
                     AssignedUserName = reader.GetNullableString("AssignedUserName") ?? string.Empty,
                     Environment = reader.GetNullableString("Environment") ?? string.Empty,
-                    HasScreenshots = reader.GetBoolean(reader.GetOrdinal("HasScreenshots"))
+                    HasScreenshots = reader.GetBoolean(reader.GetOrdinal("HasScreenshots")),
+                    HasLogs = reader.GetBoolean(reader.GetOrdinal("HasLogs"))
                 }
             );
         }
@@ -137,7 +138,8 @@ namespace AutomationAPI.Repositories
                     AssignedUserId = reader.GetNullableInt("AssignedUserId") ?? 0,
                     AssignedUserName = reader.GetNullableString("AssignedUserName") ?? string.Empty,
                     Environment = reader.GetNullableString("Environment") ?? string.Empty,
-                    HasScreenshots = reader.GetBoolean(reader.GetOrdinal("HasScreenshots"))
+                    HasScreenshots = reader.GetBoolean(reader.GetOrdinal("HasScreenshots")),
+                    HasLogs = reader.GetBoolean(reader.GetOrdinal("HasLogs"))
                 });
         }
 

@@ -138,7 +138,10 @@
       <app-execution-logs-viewer
         class="flex-fill"
         [logs]="recentLogs"
+        [showViewFullButton]="true"
+        (viewFullLog)="openFullLogsModal()"
       ></app-execution-logs-viewer>
+      <app-execution-logs-dialog></app-execution-logs-dialog>
     </div>
   </div>
 
@@ -199,6 +202,15 @@
       title="View Screenshots"
     >
       <i class="bi bi-camera"></i>
+    </button>
+    <!-- View Execution Logs -->
+    <button
+      class="icon-logs"
+      *ngIf="row.hasLogs"
+      (click)="onViewLogs(row)"
+      title="View Execution Logs"
+    >
+      <i class="bi bi-journal-text"></i>
     </button>
   </div>
 </ng-template>

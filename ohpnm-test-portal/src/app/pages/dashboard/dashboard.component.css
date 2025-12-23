@@ -238,17 +238,41 @@
   transition: background-color 0.2s;
 }
 
-.icon-camera {
+/* Base icon button (shared) */
+.icon-camera,
+.icon-logs {
   padding: 0;
   border: none;
+  background-color: #fff;
+  display: inline-flex;
   justify-content: center;
   align-items: center;
-  background-color: #fff;
+  cursor: pointer;
 }
 
+/* Camera icon */
 .icon-camera i {
-  font-size: 18px; /* Bigger camera icon */
-  color: red; /* Your theme purple */
+  font-size: 20px;
+  color: #dc3545; /* red for screenshots */
+}
+
+/* Logs icon */
+.icon-logs i {
+  font-size: 20px;
+  color: #6f42c1; /* purple for logs */
+}
+
+/* Hover effect */
+.icon-camera:hover i,
+.icon-logs:hover i {
+  opacity: 0.75;
+}
+
+/* Disabled state (optional future use) */
+.icon-camera:disabled,
+.icon-logs:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 /* Equal height fix */

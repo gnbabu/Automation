@@ -82,6 +82,8 @@ namespace AutomationAPI.Repositories
                 LogId = reader.GetInt64(reader.GetOrdinal("LogId")),
                 AssignmentId = reader.GetInt32(reader.GetOrdinal("AssignmentId")),
                 AssignmentTestCaseId = reader.GetInt32(reader.GetOrdinal("AssignmentTestCaseId")),
+                TestCaseId = reader.GetString(reader.GetOrdinal("TestCaseId")),
+                TestCaseDescription = reader.GetString(reader.GetOrdinal("TestCaseDescription")),
                 StepName = reader.GetString(reader.GetOrdinal("StepName")),
                 LogMessage = reader.GetString(reader.GetOrdinal("LogMessage")),
                 LogLevel = Enum.Parse<TestCaseLogLevel>(reader.GetString(reader.GetOrdinal("LogLevel")), true),

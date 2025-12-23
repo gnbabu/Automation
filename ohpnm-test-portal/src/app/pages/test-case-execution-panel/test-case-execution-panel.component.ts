@@ -19,6 +19,7 @@ import {
   ConfirmService,
   ScreenshotService,
   TestCaseAssignmentService,
+  TestCaseExecutionLogsService,
   TestCaseExecutionService,
 } from '@services';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
@@ -26,6 +27,7 @@ import { DataGridComponent } from 'app/core/components/data-grid/data-grid.compo
 import { ConfirmDialogComponent } from 'app/core/modals/confirm-dialog/confirm-dialog.component';
 import { ScheduleTestcasesDialogComponent } from './schedule-testcases-dialog/schedule-testcases-dialog.component';
 import { TestScreenshotGalleryComponent } from './test-screenshot-gallery/test-screenshot-gallery.component';
+import { ExecutionLogsDialogComponent } from 'app/common-modals/execution-logs-dialog/execution-logs-dialog.component';
 
 @Component({
   selector: 'app-test-case-execution',
@@ -36,6 +38,7 @@ import { TestScreenshotGalleryComponent } from './test-screenshot-gallery/test-s
     DataGridComponent,
     ScheduleTestcasesDialogComponent,
     TestScreenshotGalleryComponent,
+    ExecutionLogsDialogComponent,
   ],
   standalone: true,
   templateUrl: './test-case-execution-panel.component.html',
@@ -48,7 +51,8 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
     private testCaseAssignmentService: TestCaseAssignmentService,
     private confirmService: ConfirmService,
     private testCaseExecutionService: TestCaseExecutionService,
-    private screenshotService: ScreenshotService
+    private screenshotService: ScreenshotService,
+    private executionLogsService: TestCaseExecutionLogsService
   ) {}
 
   @ViewChild('testCaseIdTemplate', { static: true })
@@ -70,6 +74,9 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
   @ViewChild(TestScreenshotGalleryComponent)
   gallery!: TestScreenshotGalleryComponent;
+
+  @ViewChild(ExecutionLogsDialogComponent)
+  executionLogsDialog!: ExecutionLogsDialogComponent;
 
   assignments: ITestCaseAssignmentEntity[] = [];
   selectedAssignment: ITestCaseAssignmentEntity | null = null;
@@ -457,6 +464,14 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
           }, 150);
         },
         error: (err) => console.error('Failed to load screenshots:', err),
+      });
+  }
+
+  onViewLogs(row: any) {
+    this.executionLogsService
+      .getTestCaseLogs(row.assignmentId, row.assignmentTestCaseId)
+      .subscribe((logs) => {
+        this.executionLogsDialog.open(logs);
       });
   }
 }

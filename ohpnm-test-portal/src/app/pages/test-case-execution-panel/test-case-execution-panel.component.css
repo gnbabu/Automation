@@ -197,5 +197,18 @@
 
 .icon-camera i {
   font-size: 18px; /* Bigger camera icon */
-  color: red; /* Your theme purple */
+  color: red;
+}
+
+.icon-logs {
+  padding: 0;
+  border: none;
+  justify-content: center;
+  align-items: center;
+  background-color: #fff;
+}
+
+.icon-logs i {
+  font-size: 18px; /* Bigger camera icon */
+  color: #6f42c1; /* Your theme purple */
 }

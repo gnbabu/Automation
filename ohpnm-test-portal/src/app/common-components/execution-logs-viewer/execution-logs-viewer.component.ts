@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ITestCaseExecutionLog } from '@interfaces';
 
 @Component({
@@ -11,6 +11,15 @@ import { ITestCaseExecutionLog } from '@interfaces';
 })
 export class ExecutionLogsViewerComponent {
   @Input() logs: ITestCaseExecutionLog[] = [];
+
+  /** Enables reuse */
+  @Input() showViewFullButton = false;
+
+  /** Parent controls navigation / modal */
+  @Output() viewFullLog = new EventEmitter<void>();
+
+  @Input() showHeader = true;
+  @Input() title = 'Execution Logs';
 
   getIcon(level: string): string {
     switch (level) {
@@ -24,7 +33,12 @@ export class ExecutionLogsViewerComponent {
         return 'bi bi-info-circle-fill text-secondary';
     }
   }
+
   trackByLogId(_: number, log: any): number {
     return log.logId;
+  }
+
+  onViewFullLog() {
+    this.viewFullLog.emit();
   }
 }

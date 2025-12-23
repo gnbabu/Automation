@@ -6,6 +6,9 @@
         public int AssignmentId { get; set; }
         public int AssignmentTestCaseId { get; set; }
 
+        public string TestCaseId { get; set; }
+        public string TestCaseDescription { get; set; }
+
         public string StepName { get; set; }
         public string LogMessage { get; set; }
         public TestCaseLogLevel LogLevel { get; set; } // -- Info | Pass | Fail | Warning

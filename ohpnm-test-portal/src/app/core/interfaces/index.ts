@@ -203,6 +203,7 @@ export interface IAssignedTestCase {
   assignedUserName: string;
   environment: string;
   hasScreenshots: boolean;
+  hasLogs: boolean;
 }
 
 // Execution Implementation
