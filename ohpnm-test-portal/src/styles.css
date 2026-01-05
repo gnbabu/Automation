@@ -182,3 +182,15 @@ body {
   background: linear-gradient(135deg, #1a1c2e 0%, #5c3c9e 100%);
   margin-bottom: 25px;
 }
+
+.wrapper.collapsed .sidebar .profile-img {
+  width: 53px;
+  height: 53px;
+}
+.wrapper.collapsed .profile-img-wrapper {
+  padding: 2px;
+}
+.wrapper.collapsed .logo-underline {
+  opacity: 0;
+  width: 0;
+}

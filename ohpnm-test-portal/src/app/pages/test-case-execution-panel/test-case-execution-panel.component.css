@@ -154,11 +154,12 @@
 }
 /* Stat cards */
 .stat-box {
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 22px;
   background: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   height: 100%;
+  border-bottom: 6px solid transparent;
 }
 
 .stat-title {
@@ -211,4 +212,20 @@
 .icon-logs i {
   font-size: 18px; /* Bigger camera icon */
   color: #6f42c1; /* Your theme purple */
+}
+
+.border-total {
+  border-bottom-color: #007bff; /* Blue */
+}
+
+.border-passed {
+  border-bottom-color: #28a745; /* Green */
+}
+
+.border-failed {
+  border-bottom-color: #dc3545; /* Red */
+}
+
+.border-running {
+  border-bottom-color: #ffc107; /* Yellow */
 }
