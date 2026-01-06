@@ -164,7 +164,9 @@ namespace AutomationAPI.Controllers
             var baseUrl = _configuration["App:FrontendUrl"]!.TrimEnd('/');
             var resetLink = $"{baseUrl}/reset-password?token={token}";
 
-            var html = EmailTemplates.ResetPassword(resetLink);
+            var user = await _userRepository.GetUserByEmailAsync(request.Email);
+            
+            var html = EmailTemplates.ResetPassword(resetLink, user.UserName);
 
             await _emailService.SendAsync(
                 request.Email,
