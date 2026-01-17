@@ -1,0 +1,98 @@
+<div class="container my-5 p-4 shadow-sm bg-white rounded-4 user-form-wrapper">
+  <!-- Page Header -->
+  <h4 class="headerTitle">
+    {{ isEdit ? "Edit Environment" : "Create Environment" }}
+  </h4>
+  <div class="brand-underline"></div>
+
+  <!-- Form -->
+  <form #envForm="ngForm" (ngSubmit)="save()">
+    <div class="row">
+      <!-- Left Column -->
+      <div class="col-md-6">
+        <!-- Environment Name -->
+        <div class="mb-3">
+          <label class="form-label">Environment Name *</label>
+
+          <input
+            name="environmentName"
+            class="form-control"
+            [(ngModel)]="model.environmentName"
+            required
+            maxlength="50"
+            #envName="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
+            placeholder="e.g. UAT"
+          />
+
+          <div
+            class="text-danger small"
+            *ngIf="envName.touched && envName.invalid"
+          >
+            Environment Name is required.
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="mb-3">
+          <label class="form-label">Status *</label>
+
+          <select
+            name="isActive"
+            class="form-select"
+            [(ngModel)]="model.isActive"
+            required
+            #status="ngModel"
+            [ngModelOptions]="{ updateOn: 'blur' }"
+          >
+            <option [ngValue]="true">Active</option>
+            <option [ngValue]="false">Inactive</option>
+          </select>
+
+          <div
+            class="text-danger small"
+            *ngIf="status.touched && status.invalid"
+          >
+            Status is required.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="col-md-6">
+        <!-- Description -->
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+
+          <textarea
+            rows="4"
+            name="description"
+            class="form-control"
+            [(ngModel)]="model.description"
+            maxlength="255"
+            placeholder="Describe the environment"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-end mt-4 gap-2">
+      <button
+        type="button"
+        class="btn btn-outline-secondary"
+        (click)="cancel()"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="submit"
+        class="btn-purple"
+        [disabled]="!envForm.valid || isSaving"
+      >
+        {{ isEdit ? "Update Environment" : "Create Environment" }}
+      </button>
+    </div>
+  </form>
+</div>

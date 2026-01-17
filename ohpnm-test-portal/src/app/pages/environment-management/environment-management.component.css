@@ -1,0 +1,57 @@
+.environment-management-container {
+  max-width: 100%;
+}
+
+/* Header */
+.header-section {
+  background-color: transparent;
+}
+
+.header-section h1 {
+  font-weight: 700;
+  font-size: 1.9rem;
+  color: #5c3c9e;
+  margin-bottom: 0.3rem;
+}
+
+.header-section small {
+  color: #2563eb;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* =====================================
+   CARD BODY (LOCAL ONLY)
+===================================== */
+.env-body p {
+  margin-bottom: 0.45rem;
+  font-size: 0.95rem;
+  color: #34495e;
+}
+
+/* =====================================
+   ACTION BUTTONS (LOCAL)
+===================================== */
+.env-actions {
+  margin-top: 1rem;
+}
+
+.env-actions .btn {
+  font-size: 0.8rem;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+/* =====================================
+   MOBILE TWEAKS (LOCAL)
+===================================== */
+@media (max-width: 576px) {
+  .env-header {
+    font-size: 1rem;
+    padding: 14px 16px;
+  }
+
+  .env-body p {
+    font-size: 0.9rem;
+  }
+}

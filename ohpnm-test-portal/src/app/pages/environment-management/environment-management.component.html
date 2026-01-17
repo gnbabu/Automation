@@ -1,0 +1,75 @@
+<div class="environment-management-container">
+  <!-- Header Section -->
+  <div
+    class="header-section d-flex justify-content-between align-items-start mb-3"
+  >
+    <div>
+      <h1 class="mb-1">Environment Management</h1>
+      <small class="text-muted">Manage application environments</small>
+    </div>
+  </div>
+
+  <div class="brand-header-underline mb-3"></div>
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"></h4>
+    <a routerLink="/environment-management/new" class="btn btn-danger">
+      <i class="fas fa-plus me-2"></i> Create Environment
+    </a>
+  </div>
+  <!-- ✅ 3 Columns Per Row -->
+  <div class="row g-4">
+    <div class="col-12 col-md-6 col-lg-4" *ngFor="let env of environments">
+      <div class="card env-card h-100">
+        <div
+          class="env-header"
+          [ngClass]="'env-theme-' + getTheme(env.environmentName)"
+        >
+          <span>{{ env.environmentName }}</span>
+
+          <span
+            class="status-pill"
+            [ngClass]="env.isActive ? 'bg-success' : 'bg-secondary'"
+          >
+            {{ env.isActive ? "Active" : "Inactive" }}
+          </span>
+        </div>
+
+        <div class="card-body env-body">
+          <p><strong>Description:</strong> {{ env.description }}</p>
+          <p><strong>Created By:</strong> {{ env.userName }}</p>
+          <p>
+            <strong>Created On:</strong>
+            {{ env.createdOn | date: "dd-MMM-yyyy" }}
+          </p>
+
+          <div class="env-actions d-flex justify-content-end gap-2 mt-3">
+            <a
+              class="btn btn-outline-secondary btn-sm"
+              [routerLink]="['/environment-management/edit', env.environmentId]"
+            >
+              Edit
+            </a>
+
+            <button
+              class="btn btn-sm"
+              [ngClass]="
+                env.isActive ? 'btn-outline-warning' : 'btn-outline-success'
+              "
+              (click)="toggle(env)"
+            >
+              {{ env.isActive ? "Disable" : "Enable" }}
+            </button>
+
+            <button
+              class="btn btn-outline-danger btn-sm"
+              (click)="delete(env.environmentId)"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

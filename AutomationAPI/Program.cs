@@ -50,6 +50,8 @@ builder.Services.AddScoped<ITestScreenshotRepository, TestScreenshotRepository>(
 builder.Services.AddScoped<ITestCaseAssignmentRepository, TestCaseAssignmentRepository>();
 builder.Services.AddScoped<ITestCaseExecutionQueueRepository, TestCaseExecutionQueueRepository>();
 builder.Services.AddScoped<ITestCaseExecutionLogRepository, TestCaseExecutionLogRepository>();
+builder.Services.AddScoped<IReleaseRepository, ReleaseRepository>();
+builder.Services.AddScoped<IEnvironmentRepository, EnvironmentRepository>();
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 //builder.Services.AddScoped<IEmailService, SmtpEmailService>();

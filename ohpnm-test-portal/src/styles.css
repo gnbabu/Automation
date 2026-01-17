@@ -30,7 +30,8 @@ body {
   border-right: 4px solid #1abc9c;
 
   /* Multiple shadows for shine + glow */
-  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.4),
+  box-shadow:
+    4px 0 12px rgba(0, 0, 0, 0.4),
     /* main soft shadow */ 6px 0 20px rgba(26, 188, 156, 0.5),
     /* teal glow */ inset -2px 0 8px rgba(255, 255, 255, 0.15); /* subtle inner shine */
 
@@ -193,4 +194,121 @@ body {
 .wrapper.collapsed .logo-underline {
   opacity: 0;
   width: 0;
+}
+
+/* =====================================
+   GLOBAL BASE
+===================================== */
+
+/* =====================================
+   CSS VARIABLES (THEME)
+===================================== */
+:root {
+  --green1: #2ecc71;
+  --green2: #27ae60;
+
+  --orange1: #f1c40f;
+  --orange2: #f39c12;
+
+  --blue1: #3498db;
+  --blue2: #2980b9;
+
+  --purple1: #9b59b6;
+  --purple2: #8e44ad;
+
+  --teal1: #1abc9c;
+  --teal2: #16a085;
+}
+
+/* =====================================
+   PAGE HEADER (USED ACROSS PAGES)
+===================================== */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+/* =====================================
+   CARD FOUNDATION (REUSED)
+===================================== */
+.env-card {
+  border-radius: 14px !important;
+  border: none !important;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.env-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+}
+
+/* =====================================
+   CARD HEADER (SHARED)
+===================================== */
+.env-header {
+  padding: 16px 20px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.15rem;
+  border-radius: 14px 14px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* =====================================
+   STATUS PILL (SHARED)
+===================================== */
+.status-pill {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-weight: 600;
+}
+
+/* =====================================
+   HEADER GRADIENT THEMES
+===================================== */
+.env-theme-green {
+  background: linear-gradient(135deg, var(--green1), var(--green2));
+}
+
+.env-theme-orange {
+  background: linear-gradient(135deg, var(--orange1), var(--orange2));
+}
+
+.env-theme-blue {
+  background: linear-gradient(135deg, var(--blue1), var(--blue2));
+}
+
+.env-theme-purple {
+  background: linear-gradient(135deg, var(--purple1), var(--purple2));
+}
+
+.env-theme-teal {
+  background: linear-gradient(135deg, var(--teal1), var(--teal2));
+}
+
+/* =====================================
+   BUTTON COLOR OVERRIDES (OPTIONAL)
+===================================== */
+.btn-outline-warning {
+  --bs-btn-color: #f39c12;
+  --bs-btn-border-color: #f39c12;
+}
+
+.btn-outline-success {
+  --bs-btn-color: #27ae60;
+  --bs-btn-border-color: #27ae60;
+}
+
+.btn-outline-danger {
+  --bs-btn-color: #e74c3c;
+  --bs-btn-border-color: #e74c3c;
 }

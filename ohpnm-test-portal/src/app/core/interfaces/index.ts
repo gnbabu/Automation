@@ -280,3 +280,24 @@ export interface ITestCaseExecutionLog {
   errorStackTrace?: string;
   createdAt: string;
 }
+
+// models/environment.model.ts
+export interface IEnvironmentModel {
+  environmentId: number;
+  environmentName: string;
+  description?: string;
+  isActive: boolean;
+  createdBy: number;
+  createdOn: string;
+  userName: string;
+  email: string;
+}
+
+// models/environment-request.dto.ts
+export interface IEnvironmentRequestDto {
+  environmentId?: number;
+  environmentName: string;
+  description?: string;
+  createdBy: number;
+  isActive?: boolean;
+}

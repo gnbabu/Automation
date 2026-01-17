@@ -71,5 +71,22 @@
         public const string GetReleaseExecutionLogs = "[aut].[usp_GetReleaseExecutionLogs]";
 
 
+        // Release Management
+
+        public const string CreateRelease = "[aut].[usp_CreateRelease]";
+        public const string UpdateRelease = "[aut].[usp_UpdateRelease]";
+        public const string GetAllReleases = "[aut].[usp_GetAllRelease]";
+        public const string GetReleaseById = "[aut].[usp_GetReleaseById]";
+        public const string SignOffRelease = "[aut].[usp_ReleaseSignOff]";
+
+
+        // Environment Management
+        public const string EnvironmentCreate = "[aut].[usp_EnvironmentCreate]";
+        public const string EnvironmentGetAll = "[aut].[usp_EnvironmentGetAll]";
+        public const string EnvironmentGetById = "[aut].[usp_EnvironmentGetById]";
+        public const string EnvironmentUpdate = "[aut].[usp_EnvironmentUpdate]";
+        public const string EnvironmentSoftDelete = "[aut].[usp_EnvironmentSoftDelete]";
+        public const string EnvironmentHardDelete = "[aut].[usp_EnvironmentHardDelete]";
+
     }
 }
