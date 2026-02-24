@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Maximus Workbench</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ===== GLOBAL ===== */
+      body {
+        background: #f4f3f8;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 14px;
+      }
+
+      /* ===== TOP THIN STRIP ===== */
+      .top-strip {
+        background: #2f0f4f;
+        color: #fff;
+        font-size: 12px;
+        padding: 4px 0;
+      }
+      .top-strip a {
+        color: #fff;
+        text-decoration: none;
+        margin-left: 20px;
+      }
+
+      /* ===== MAIN HEADER ===== */
+      .main-header {
+        background: #5c2d91;
+        color: #fff;
+        padding: 18px 0;
+      }
+      .brand {
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .department {
+        font-weight: 400;
+        margin-left: 10px;
+      }
+      .user-section {
+        text-align: right;
+        font-size: 13px;
+      }
+
+      /* ===== MENU BAR ===== */
+      .menu-bar {
+        background: #e9e6f0;
+        border-bottom: 1px solid #d8d3e4;
+      }
+      .menu-bar .nav-link {
+        color: #4a2675;
+        font-weight: 500;
+        padding: 14px 18px;
+      }
+      .menu-bar .nav-link.active {
+        color: #5c2d91;
+        font-weight: 600;
+      }
+      .menu-bar .nav-link:hover {
+        color: #5c2d91;
+      }
+
+      /* ===== SUB HEADER ===== */
+      .sub-header {
+        font-size: 12.5px;
+        color: #6e6a78;
+        padding: 10px 0;
+      }
+
+      /* ===== WORKBENCH CARD ===== */
+      .workbench-card {
+        border-radius: 14px;
+        border: none;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      }
+      .workbench-header {
+        background: #ece9f3;
+        padding: 18px 22px;
+        border-bottom: 1px solid #ddd7e8;
+        border-top-left-radius: 14px;
+        border-top-right-radius: 14px;
+      }
+      .workbench-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #4a2675;
+      }
+
+      /* ===== BUTTONS ===== */
+      .btn-adv {
+        border: 1px solid #5c2d91;
+        color: #5c2d91;
+        font-size: 13px;
+      }
+      .btn-assign {
+        background: #f4f3f8;
+        border: 1px solid #dcd8e7;
+        font-size: 13px;
+      }
+
+      /* ===== TABLE ===== */
+      .table {
+        margin-bottom: 0;
+      }
+      .table thead {
+        background: #f6f4fa;
+        font-size: 13px;
+      }
+      .table thead input {
+        font-size: 12px;
+        border: 1px solid #ddd7e8;
+      }
+      .table tbody tr {
+        border-bottom: 1px solid #f0edf6;
+      }
+      .table tbody tr:nth-child(even) {
+        background: #f9f7fc;
+      }
+      .table tbody tr:hover {
+        background: #f1eef8;
+      }
+      .table a {
+        color: #5c2d91;
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      /* ===== PAGINATION ===== */
+      .card-footer {
+        background: #ffffff;
+        border-top: 1px solid #ebe7f3;
+      }
+      .pagination .page-item.active .page-link {
+        background: #5c2d91;
+        border-color: #5c2d91;
+      }
+
+      /* ===== FOOTER ===== */
+      .footer {
+        background: #5c2d91;
+        color: #fff;
+        padding: 35px 0;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+
+  <body class="d-flex flex-column min-vh-100">
+    <!-- TOP STRIP -->
+    <div class="top-strip">
+      <div class="container text-end">
+        <a href="#">Resources</a>
+        <a href="#">FAQ</a>
+        <a href="#">Contact us</a>
+      </div>
+    </div>
+
+    <!-- MAIN HEADER -->
+    <div class="main-header">
+      <div class="container d-flex justify-content-between align-items-center">
+        <div>
+          <span class="brand">maximus</span>
+          <span class="department">DEPARTMENT OF MEDICAID</span>
+        </div>
+        <div class="user-section">
+          John Doe<br />
+          <small>Log Out</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- MENU -->
+    <div class="menu-bar">
+      <div class="container">
+        <ul class="nav">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">My Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Provider Network Management</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Medicaid Home</a>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="#">Learning</a></li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Fee Schedule</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Report Management</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Correspondence</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-fill">
+      <div class="container sub-header d-flex justify-content-between">
+        <div>Home ></div>
+        <div>Last Login : 05/31/2022 | 02:18 PM</div>
+      </div>
+
+      <div class="container mb-5">
+        <div class="card workbench-card">
+          <div
+            class="workbench-header d-flex justify-content-between align-items-center"
+          >
+            <div class="workbench-title">Workbench</div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-adv">Advanced Search</button>
+              <button class="btn btn-sm btn-assign">Assign to User</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Credentialing ID</th>
+                  <th>Provider Name</th>
+                  <th>Practice Type</th>
+                  <th>Tax ID</th>
+                  <th>NPI</th>
+                  <th>Specialty</th>
+                  <th>Medicaid ID</th>
+                  <th>Assigned To</th>
+                </tr>
+                <tr>
+                  <th></th>
+                  <th>
+                    <input
+                      class="form-control form-control-sm"
+                      placeholder="Search"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      class="form-control form-control-sm"
+                      placeholder="Search"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      class="form-control form-control-sm"
+                      placeholder="Search"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      class="form-control form-control-sm"
+                      placeholder="Search"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      class="form-control form-control-sm"
+                      placeholder="Search"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      class="form-control form-control-sm"
+                      placeholder="Search"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      class="form-control form-control-sm"
+                      placeholder="Search"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      class="form-control form-control-sm"
+                      placeholder="Search"
+                    />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><input type="checkbox" /></td>
+                  <td><a href="#">987654321</a></td>
+                  <td>Doe, John</td>
+                  <td>Behavioral Health Para-Professionals</td>
+                  <td>123456789</td>
+                  <td>1234567890</td>
+                  <td>Qualified MH Specialist</td>
+                  <td>1234567</td>
+                  <td>Unassigned</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            class="card-footer d-flex justify-content-between align-items-center p-3"
+          >
+            <small>Showing 1 - 10 of 20 entries</small>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item active">
+                <a class="page-link" href="#">1</a>
+              </li>
+              <li class="page-item"><a class="page-link" href="#">2</a></li>
+              <li class="page-item"><a class="page-link" href="#">3</a></li>
+              <li class="page-item"><a class="page-link" href="#">Next</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer mt-auto">
+      <div class="container d-flex justify-content-between">
+        <div>
+          Security, Privacy & Accessibility<br />
+          Terms of Usage Policy<br />
+          State Manage Site
+        </div>
+        <div>Copyright information. All rights reserved. 2024</div>
+      </div>
+    </footer>
+  </body>
+</html>
