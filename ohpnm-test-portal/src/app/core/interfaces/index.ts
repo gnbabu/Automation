@@ -301,3 +301,88 @@ export interface IEnvironmentRequestDto {
   createdBy: number;
   isActive?: boolean;
 }
+
+// ============ Release Management ============
+export interface IReleaseModel {
+  releaseId: number;
+  releaseName: string;
+  version: string;
+  environmentId?: number;
+  environmentName: string;
+  description: string;
+  releaseFolderPath: string;
+  releaseLifecycle: string;
+  isActive: boolean;
+  signOffStatus: string;
+  signedOffBy: string;
+  signedOffOn?: string;
+  createdOn: string;
+  createdBy: string;
+  modifiedBy: string;
+  modifiedOn?: string;
+  activatedBy: string;
+  activatedOn?: string;
+  // Cheap, filesystem-based readiness indicator for list/detail badges (no reflection).
+  dllFileCount: number;
+  folderReady: boolean;
+  // Test summary
+  totalTests: number;
+  passedTests: number;
+  failedTests: number;
+  skippedTests: number;
+  runningTests: number;
+}
+
+export interface IReleaseRequestDto {
+  releaseId?: number;
+  releaseName: string;
+  version: string;
+  environmentId?: number;
+  description?: string;
+  releaseLifecycle?: string;
+  isActive?: boolean;
+  createdBy?: string;
+  modifiedBy?: string;
+}
+
+export interface IReleaseSignOffRequest {
+  signOffStatus: 'Approved' | 'Rejected';
+  signOffBy?: string;
+  comments?: string;
+}
+
+export interface IReleaseActivateRequest {
+  activatedBy?: string;
+}
+
+export interface IReleaseSignOff {
+  releaseSignOffId: number;
+  releaseId: number;
+  signOffStatus: string;
+  signOffBy: string;
+  signOffOn?: string;
+  comments: string;
+  createdOn: string;
+}
+
+export interface IReleaseNotification {
+  releaseNotificationId: number;
+  releaseId: number;
+  notificationType: string;
+  recipientUserId?: number;
+  recipientEmail: string;
+  status: string;
+  message: string;
+  createdOn: string;
+  sentOn?: string;
+}
+
+// Read-only readiness check: DLLs are placed in the release folder by the existing
+// controlled build/deployment process, not uploaded through this application.
+export interface IReleaseReadiness {
+  folderExists: boolean;
+  dllFiles: string[];
+  usableDllCount: number;
+  isReady: boolean;
+  message: string;
+}

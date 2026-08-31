@@ -1,6 +1,38 @@
 [
   {
     "ContainingType": "AutomationAPI.Controllers.AuthenticationController",
+    "Method": "ForgotPassword",
+    "RelativePath": "api/Authentication/forgot-password",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.ForgotPasswordRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.AuthenticationController",
+    "Method": "ForgotUsername",
+    "RelativePath": "api/Authentication/forgot-username",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.ForgotUsernameRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.AuthenticationController",
     "Method": "Login",
     "RelativePath": "api/Authentication/login",
     "HttpMethod": "POST",
@@ -13,6 +45,48 @@
         "IsRequired": true
       }
     ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.AuthenticationController",
+    "Method": "Register",
+    "RelativePath": "api/Authentication/register",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "AutomationAPI.Repositories.Models.RegistrationModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.AuthenticationController",
+    "Method": "ResetPassword",
+    "RelativePath": "api/Authentication/reset-password",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.ResetPasswordRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.AuthenticationController",
+    "Method": "TestEmail",
+    "RelativePath": "api/Authentication/test-email",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -175,122 +249,280 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "AutomationAPI.Controllers.QueueController",
-    "Method": "GetQueues",
-    "RelativePath": "api/Queue",
+    "ContainingType": "AutomationAPI.Controllers.EnvironmentController",
+    "Method": "GetAll",
+    "RelativePath": "api/Environment",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [
-      {
-        "Name": "queueId",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "queueStatus",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
+    "Parameters": [],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "AutomationAPI.Controllers.QueueController",
-    "Method": "InsertQueue",
-    "RelativePath": "api/Queue",
+    "ContainingType": "AutomationAPI.Controllers.EnvironmentController",
+    "Method": "Create",
+    "RelativePath": "api/Environment",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "queue",
-        "Type": "AutomationAPI.Repositories.Models.QueueInfo",
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.EnvironmentRequestDto",
         "IsRequired": true
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "AutomationAPI.Controllers.QueueController",
-    "Method": "GetQueueById",
-    "RelativePath": "api/Queue/{queueId}",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "queueId",
-        "Type": "System.String",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.QueueController",
-    "Method": "UpdateQueueStatus",
-    "RelativePath": "api/Queue/{queueId}",
+    "ContainingType": "AutomationAPI.Controllers.EnvironmentController",
+    "Method": "Update",
+    "RelativePath": "api/Environment",
     "HttpMethod": "PUT",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "queueId",
-        "Type": "System.String",
-        "IsRequired": true
-      },
-      {
-        "Name": "queueStatus",
-        "Type": "System.String",
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.EnvironmentRequestDto",
         "IsRequired": true
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "AutomationAPI.Controllers.QueueController",
-    "Method": "DeleteQueue",
-    "RelativePath": "api/Queue/{queueId}",
+    "ContainingType": "AutomationAPI.Controllers.EnvironmentController",
+    "Method": "GetById",
+    "RelativePath": "api/Environment/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.EnvironmentController",
+    "Method": "HardDelete",
+    "RelativePath": "api/Environment/{id}/hard",
     "HttpMethod": "DELETE",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "queueId",
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.EnvironmentController",
+    "Method": "SoftDelete",
+    "RelativePath": "api/Environment/{id}/soft",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "GetAll",
+    "RelativePath": "api/Release",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "Create",
+    "RelativePath": "api/Release",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.ReleaseRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "Get",
+    "RelativePath": "api/Release/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "Update",
+    "RelativePath": "api/Release/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.ReleaseRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "Delete",
+    "RelativePath": "api/Release/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "Activate",
+    "RelativePath": "api/Release/{id}/activate",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.ReleaseActivateRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "GetNotifications",
+    "RelativePath": "api/Release/{id}/notifications",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "GetReadiness",
+    "RelativePath": "api/Release/{id}/readiness",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "SignOff",
+    "RelativePath": "api/Release/{id}/signoff",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.ReleaseSignOffRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.ReleaseController",
+    "Method": "GetSignOffHistory",
+    "RelativePath": "api/Release/{id}/signoff-history",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
+    "Method": "GetTestCasesByAssignmentAndUserAsync",
+    "RelativePath": "api/TestCaseAssignments/{assignedUserId}/{assignmentName}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "assignedUserId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "assignmentName",
         "Type": "System.String",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.QueueController",
-    "Method": "GetQueueReports",
-    "RelativePath": "api/Queue/queue-reports",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "payload",
-        "Type": "AutomationAPI.Repositories.Models.QueueReportFilterRequest",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.QueueController",
-    "Method": "SearchQueuesAsync",
-    "RelativePath": "api/Queue/search",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "payload",
-        "Type": "AutomationAPI.Repositories.Models.QueueSearchPayload",
         "IsRequired": true
       }
     ],
@@ -299,7 +531,7 @@
   {
     "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
     "Method": "GetAssignmentsByUserIdAsync",
-    "RelativePath": "api/TestCaseAssignments/{userId}",
+    "RelativePath": "api/TestCaseAssignments/assigned-to/{userId}",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -314,177 +546,185 @@
   },
   {
     "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
-    "Method": "DeleteAssignmentsByUserId",
-    "RelativePath": "api/TestCaseAssignments/{userId}",
-    "HttpMethod": "DELETE",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "userId",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
-    "Method": "BulkInsertAssignmentsAsync",
-    "RelativePath": "api/TestCaseAssignments/bulk-insert",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "assignments",
-        "Type": "System.Collections.Generic.List\u00601[[AutomationAPI.Repositories.Models.TestCaseAssignment, AutomationAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
-    "Method": "BulkInsertAssignmentsOldAsync",
-    "RelativePath": "api/TestCaseAssignments/bulk-insert-old",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "assignments",
-        "Type": "System.Collections.Generic.List\u00601[[AutomationAPI.Repositories.Models.TestCaseAssignment, AutomationAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
-    "Method": "DeleteAssignments",
-    "RelativePath": "api/TestCaseAssignments/delete-assignments",
+    "Method": "CreateOrUpdateAssignmentWithTestCasesAsync",
+    "RelativePath": "api/TestCaseAssignments/create-or-update",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
         "Name": "request",
-        "Type": "AutomationAPI.Repositories.Models.TestCaseAssignmentDeleteRequest",
+        "Type": "AutomationAPI.Repositories.Models.AssignmentCreateUpdateRequest",
         "IsRequired": true
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "AutomationAPI.Controllers.TestResultsController",
-    "Method": "InsertTestResultsAsync",
-    "RelativePath": "api/TestResults",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "testResult",
-        "Type": "AutomationAPI.Repositories.Models.TestResult",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Int32",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.TestResultsController",
-    "Method": "GetTestResultsByQueueIdAsync",
-    "RelativePath": "api/TestResults/{queueId}",
+    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
+    "Method": "GetAllAssignedTestCasesInLibraryAsync",
+    "RelativePath": "api/TestCaseAssignments/library-assigned-testcases",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "queueId",
+        "Name": "libraryName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseAssignmentsController",
+    "Method": "GetAssignedTestCasesForLibraryAsync",
+    "RelativePath": "api/TestCaseAssignments/library-environment-assigned-testcases",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "libraryName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "environment",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseExecutionLogsController",
+    "Method": "Add",
+    "RelativePath": "api/TestCaseExecutionLogs",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "log",
+        "Type": "AutomationAPI.Repositories.Models.TestCaseExecutionLog",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseExecutionLogsController",
+    "Method": "GetExecutionLogs",
+    "RelativePath": "api/TestCaseExecutionLogs/assignments/{assignmentId}/logs",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "assignmentId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseExecutionLogsController",
+    "Method": "GetTestCaseLogs",
+    "RelativePath": "api/TestCaseExecutionLogs/assignments/{assignmentId}/testcases/{assignmentTestCaseId}/logs",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "assignmentId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "assignmentTestCaseId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseExecutionLogsController",
+    "Method": "GetReleaseLogs",
+    "RelativePath": "api/TestCaseExecutionLogs/releases/{releaseName}/logs",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "releaseName",
         "Type": "System.String",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[AutomationAPI.Repositories.Models.TestResult, AutomationAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
   },
   {
-    "ContainingType": "AutomationAPI.Controllers.TestResultsController",
-    "Method": "GetAllTestResultsAsync",
-    "RelativePath": "api/TestResults/all",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": [
-      {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[AutomationAPI.Repositories.Models.TestResult, AutomationAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "AutomationAPI.Controllers.TestResultsController",
-    "Method": "SearchTestResultsAsync",
-    "RelativePath": "api/TestResults/search",
+    "ContainingType": "AutomationAPI.Controllers.TestCaseExecutionQueueController",
+    "Method": "BulkRunNow",
+    "RelativePath": "api/TestCaseExecutionQueue/bulk-run",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "payload",
-        "Type": "AutomationAPI.Repositories.Models.TestResultPayload",
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.BulkRunNowRequest",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "AutomationAPI.Repositories.Models.PagedResult\u00601[[AutomationAPI.Repositories.Models.TestResult, AutomationAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
   },
   {
-    "ContainingType": "AutomationAPI.Controllers.TestRunnerController",
-    "Method": "RunTestAsync",
-    "RelativePath": "api/TestRunner/run-test",
+    "ContainingType": "AutomationAPI.Controllers.TestCaseExecutionQueueController",
+    "Method": "BulkSchedule",
+    "RelativePath": "api/TestCaseExecutionQueue/bulk-schedule",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "queue",
-        "Type": "AutomationAPI.Repositories.Models.QueueInfo",
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.BulkScheduleRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseExecutionQueueController",
+    "Method": "SingleRunNow",
+    "RelativePath": "api/TestCaseExecutionQueue/single-run",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.SingleRunNowRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.TestCaseExecutionQueueController",
+    "Method": "SingleSchedule",
+    "RelativePath": "api/TestCaseExecutionQueue/single-schedule",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "AutomationAPI.Repositories.Models.SingleScheduleRequest",
         "IsRequired": true
       }
     ],
@@ -540,20 +780,15 @@
   },
   {
     "ContainingType": "AutomationAPI.Controllers.TestScreenshotsController",
-    "Method": "GetByQueueId",
+    "Method": "GetScreenshotsByAssignmentTestCaseId",
     "RelativePath": "api/TestScreenshots/screenshots",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "queueId",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "methodName",
-        "Type": "System.String",
+        "Name": "assignmentTestCaseId",
+        "Type": "System.Int32",
         "IsRequired": false
       }
     ],
@@ -561,8 +796,8 @@
   },
   {
     "ContainingType": "AutomationAPI.Controllers.TestSuitesController",
-    "Method": "GetAllTestCases",
-    "RelativePath": "api/TestSuites/GetAllTestCases",
+    "Method": "GetAllTestCasesByLibrary",
+    "RelativePath": "api/TestSuites/GetAllTestCasesByLibrary",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -570,11 +805,6 @@
       {
         "Name": "libraryName",
         "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "assigned",
-        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       }
     ],
@@ -698,7 +928,33 @@
   },
   {
     "ContainingType": "AutomationAPI.Controllers.UsersController",
-    "Method": "GetUserRoles",
+    "Method": "GetUsers",
+    "RelativePath": "api/Users/Filters",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "filters",
+        "Type": "AutomationAPI.Repositories.Models.UserFilter",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.UsersController",
+    "Method": "GetPriorityStatusAsync",
+    "RelativePath": "api/Users/priorities",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.UsersController",
+    "Method": "GetUserRolesAsync",
     "RelativePath": "api/Users/roles",
     "HttpMethod": "GET",
     "IsController": true,
@@ -708,18 +964,22 @@
   },
   {
     "ContainingType": "AutomationAPI.Controllers.UsersController",
-    "Method": "ValidateUser",
-    "RelativePath": "api/Users/validate",
-    "HttpMethod": "POST",
+    "Method": "GetUserStatusAsync",
+    "RelativePath": "api/Users/status",
+    "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [
-      {
-        "Name": "loginModel",
-        "Type": "AutomationAPI.Repositories.Models.LoginModel",
-        "IsRequired": true
-      }
-    ],
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AutomationAPI.Controllers.UsersController",
+    "Method": "GetTimeZonesAsync",
+    "RelativePath": "api/Users/timezones",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   },
   {

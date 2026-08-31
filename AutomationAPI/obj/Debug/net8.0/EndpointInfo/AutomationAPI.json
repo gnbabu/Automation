@@ -36,6 +36,142 @@
         }
       }
     },
+    "/api/Authentication/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Authentication/test-email": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Authentication/forgot-username": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotUsernameRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotUsernameRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotUsernameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Authentication/forgot-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Authentication/reset-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Automation/flows": {
       "get": {
         "tags": [
@@ -288,26 +424,65 @@
         }
       }
     },
-    "/api/Queue/search": {
+    "/api/Environment": {
+      "get": {
+        "tags": [
+          "Environment"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
       "post": {
         "tags": [
-          "Queue"
+          "Environment"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueueSearchPayload"
+                "$ref": "#/components/schemas/EnvironmentRequestDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueueSearchPayload"
+                "$ref": "#/components/schemas/EnvironmentRequestDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/QueueSearchPayload"
+                "$ref": "#/components/schemas/EnvironmentRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Environment"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvironmentRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvironmentRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvironmentRequestDto"
               }
             }
           }
@@ -319,18 +494,129 @@
         }
       }
     },
-    "/api/Queue/{queueId}": {
+    "/api/Environment/{id}": {
       "get": {
         "tags": [
-          "Queue"
+          "Environment"
         ],
         "parameters": [
           {
-            "name": "queueId",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Environment/{id}/soft": {
+      "delete": {
+        "tags": [
+          "Environment"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Environment/{id}/hard": {
+      "delete": {
+        "tags": [
+          "Environment"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Release": {
+      "get": {
+        "tags": [
+          "Release"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Release"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Release/{id}": {
+      "get": {
+        "tags": [
+          "Release"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -342,15 +628,16 @@
       },
       "put": {
         "tags": [
-          "Queue"
+          "Release"
         ],
         "parameters": [
           {
-            "name": "queueId",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -358,17 +645,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/ReleaseRequestDto"
               }
             },
             "text/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/ReleaseRequestDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/ReleaseRequestDto"
               }
             }
           }
@@ -381,11 +668,196 @@
       },
       "delete": {
         "tags": [
-          "Queue"
+          "Release"
         ],
         "parameters": [
           {
-            "name": "queueId",
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Release/{id}/readiness": {
+      "get": {
+        "tags": [
+          "Release"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Release/{id}/activate": {
+      "post": {
+        "tags": [
+          "Release"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseActivateRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseActivateRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseActivateRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Release/{id}/signoff": {
+      "post": {
+        "tags": [
+          "Release"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseSignOffRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseSignOffRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseSignOffRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Release/{id}/signoff-history": {
+      "get": {
+        "tags": [
+          "Release"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Release/{id}/notifications": {
+      "get": {
+        "tags": [
+          "Release"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/TestCaseAssignments/{assignedUserId}/{assignmentName}": {
+      "get": {
+        "tags": [
+          "TestCaseAssignments"
+        ],
+        "parameters": [
+          {
+            "name": "assignedUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "assignmentName",
             "in": "path",
             "required": true,
             "schema": {
@@ -400,21 +872,73 @@
         }
       }
     },
-    "/api/Queue": {
+    "/api/TestCaseAssignments/create-or-update": {
+      "post": {
+        "tags": [
+          "TestCaseAssignments"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCreateUpdateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCreateUpdateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCreateUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/TestCaseAssignments/library-assigned-testcases": {
       "get": {
         "tags": [
-          "Queue"
+          "TestCaseAssignments"
         ],
         "parameters": [
           {
-            "name": "queueId",
+            "name": "libraryName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/TestCaseAssignments/library-environment-assigned-testcases": {
+      "get": {
+        "tags": [
+          "TestCaseAssignments"
+        ],
+        "parameters": [
+          {
+            "name": "libraryName",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "queueStatus",
+            "name": "environment",
             "in": "query",
             "schema": {
               "type": "string"
@@ -426,69 +950,9 @@
             "description": "OK"
           }
         }
-      },
-      "post": {
-        "tags": [
-          "Queue"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueueInfo"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueueInfo"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueueInfo"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
       }
     },
-    "/api/Queue/queue-reports": {
-      "post": {
-        "tags": [
-          "Queue"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueueReportFilterRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueueReportFilterRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/QueueReportFilterRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/TestCaseAssignments/{userId}": {
+    "/api/TestCaseAssignments/assigned-to/{userId}": {
       "get": {
         "tags": [
           "TestCaseAssignments"
@@ -509,14 +973,56 @@
             "description": "OK"
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/api/TestCaseExecutionLogs": {
+      "post": {
         "tags": [
-          "TestCaseAssignments"
+          "TestCaseExecutionLogs"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestCaseExecutionLog"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestCaseExecutionLog"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestCaseExecutionLog"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/TestCaseExecutionLogs/assignments/{assignmentId}/testcases/{assignmentTestCaseId}/logs": {
+      "get": {
+        "tags": [
+          "TestCaseExecutionLogs"
         ],
         "parameters": [
           {
-            "name": "userId",
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "assignmentTestCaseId",
             "in": "path",
             "required": true,
             "schema": {
@@ -532,211 +1038,37 @@
         }
       }
     },
-    "/api/TestCaseAssignments/bulk-insert": {
-      "post": {
-        "tags": [
-          "TestCaseAssignments"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/TestCaseAssignment"
-                }
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/TestCaseAssignment"
-                }
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/TestCaseAssignment"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/TestCaseAssignments/bulk-insert-old": {
-      "post": {
-        "tags": [
-          "TestCaseAssignments"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/TestCaseAssignment"
-                }
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/TestCaseAssignment"
-                }
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/TestCaseAssignment"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/TestCaseAssignments/delete-assignments": {
-      "post": {
-        "tags": [
-          "TestCaseAssignments"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TestCaseAssignmentDeleteRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TestCaseAssignmentDeleteRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/TestCaseAssignmentDeleteRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/TestResults/search": {
-      "post": {
-        "tags": [
-          "TestResults"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TestResultPayload"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TestResultPayload"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/TestResultPayload"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TestResultPagedResult"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TestResultPagedResult"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TestResultPagedResult"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/TestResults/all": {
+    "/api/TestCaseExecutionLogs/assignments/{assignmentId}/logs": {
       "get": {
         "tags": [
-          "TestResults"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TestResult"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TestResult"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TestResult"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/TestResults/{queueId}": {
-      "get": {
-        "tags": [
-          "TestResults"
+          "TestCaseExecutionLogs"
         ],
         "parameters": [
           {
-            "name": "queueId",
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/TestCaseExecutionLogs/releases/{releaseName}/logs": {
+      "get": {
+        "tags": [
+          "TestCaseExecutionLogs"
+        ],
+        "parameters": [
+          {
+            "name": "releaseName",
             "in": "path",
             "required": true,
             "schema": {
@@ -746,108 +1078,124 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TestResult"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TestResult"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TestResult"
-                  }
-                }
-              }
-            }
+            "description": "OK"
           }
         }
       }
     },
-    "/api/TestResults": {
+    "/api/TestCaseExecutionQueue/single-run": {
       "post": {
         "tags": [
-          "TestResults"
+          "TestCaseExecutionQueue"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TestResult"
+                "$ref": "#/components/schemas/SingleRunNowRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/TestResult"
+                "$ref": "#/components/schemas/SingleRunNowRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/TestResult"
+                "$ref": "#/components/schemas/SingleRunNowRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
+            "description": "OK"
           }
         }
       }
     },
-    "/api/TestRunner/run-test": {
+    "/api/TestCaseExecutionQueue/bulk-run": {
       "post": {
         "tags": [
-          "TestRunner"
+          "TestCaseExecutionQueue"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueueInfo"
+                "$ref": "#/components/schemas/BulkRunNowRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/QueueInfo"
+                "$ref": "#/components/schemas/BulkRunNowRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/QueueInfo"
+                "$ref": "#/components/schemas/BulkRunNowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/TestCaseExecutionQueue/single-schedule": {
+      "post": {
+        "tags": [
+          "TestCaseExecutionQueue"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SingleScheduleRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SingleScheduleRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SingleScheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/TestCaseExecutionQueue/bulk-schedule": {
+      "post": {
+        "tags": [
+          "TestCaseExecutionQueue"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkScheduleRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkScheduleRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkScheduleRequest"
               }
             }
           }
@@ -937,17 +1285,11 @@
         ],
         "parameters": [
           {
-            "name": "queueId",
+            "name": "assignmentTestCaseId",
             "in": "query",
             "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "methodName",
-            "in": "query",
-            "schema": {
-              "type": "string"
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -993,7 +1335,7 @@
         }
       }
     },
-    "/api/TestSuites/GetAllTestCases": {
+    "/api/TestSuites/GetAllTestCasesByLibrary": {
       "get": {
         "tags": [
           "TestSuites"
@@ -1004,13 +1346,6 @@
             "in": "query",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "assigned",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
             }
           }
         ],
@@ -1135,7 +1470,7 @@
         }
       }
     },
-    "/api/Users/validate": {
+    "/api/Users/Filters": {
       "post": {
         "tags": [
           "Users"
@@ -1144,17 +1479,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginModel"
+                "$ref": "#/components/schemas/UserFilter"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginModel"
+                "$ref": "#/components/schemas/UserFilter"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginModel"
+                "$ref": "#/components/schemas/UserFilter"
               }
             }
           }
@@ -1240,6 +1575,42 @@
         }
       }
     },
+    "/api/Users/status": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Users/timezones": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Users/priorities": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/WeatherForecast": {
       "get": {
         "tags": [
@@ -1282,6 +1653,39 @@
   },
   "components": {
     "schemas": {
+      "AssignmentCreateUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "assignedUser": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assignmentStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "releaseName": {
+            "type": "string",
+            "nullable": true
+          },
+          "environment": {
+            "type": "string",
+            "nullable": true
+          },
+          "assignedBy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "testCases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestCaseRequestModel"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "AutomationDataRequest": {
         "type": "object",
         "properties": {
@@ -1325,6 +1729,54 @@
         },
         "additionalProperties": false
       },
+      "BulkRunNowRequest": {
+        "type": "object",
+        "properties": {
+          "assignmentId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assignmentTestCaseIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "browser": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "BulkScheduleRequest": {
+        "type": "object",
+        "properties": {
+          "assignmentId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assignmentTestCaseIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "scheduleDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "browser": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ChangePasswordRequest": {
         "type": "object",
         "properties": {
@@ -1343,10 +1795,71 @@
         },
         "additionalProperties": false
       },
-      "LoginModel": {
+      "EnvironmentRequestDto": {
+        "required": [
+          "createdBy",
+          "environmentName"
+        ],
+        "type": "object",
+        "properties": {
+          "environmentId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "environmentName": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 255,
+            "type": "string",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExecutionStatus": {
+        "enum": [
+          "Running",
+          "Passed",
+          "Failed"
+        ],
+        "type": "string"
+      },
+      "ForgotPasswordRequest": {
         "type": "object",
         "properties": {
           "email": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ForgotUsernameRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginModel": {
+        "type": "object",
+        "properties": {
+          "username": {
             "type": "string",
             "nullable": true
           },
@@ -1357,135 +1870,110 @@
         },
         "additionalProperties": false
       },
-      "QueueInfo": {
+      "RegistrationModel": {
         "type": "object",
         "properties": {
-          "queueId": {
+          "username": {
             "type": "string",
             "nullable": true
           },
-          "tagName": {
+          "email": {
             "type": "string",
             "nullable": true
           },
-          "empId": {
+          "password": {
             "type": "string",
             "nullable": true
           },
-          "queueName": {
-            "type": "string",
-            "nullable": true
-          },
-          "queueDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "productLine": {
-            "type": "string",
-            "nullable": true
-          },
-          "queueStatus": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "libraryName": {
-            "type": "string",
-            "nullable": true
-          },
-          "className": {
-            "type": "string",
-            "nullable": true
-          },
-          "methodName": {
-            "type": "string",
-            "nullable": true
-          },
-          "userId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "userName": {
-            "type": "string",
-            "nullable": true
-          },
-          "browser": {
+          "confirmPassword": {
             "type": "string",
             "nullable": true
           }
         },
         "additionalProperties": false
       },
-      "QueueReportFilterRequest": {
+      "ReleaseActivateRequestDto": {
         "type": "object",
         "properties": {
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sortColumn": {
+          "activatedBy": {
             "type": "string",
-            "nullable": true
-          },
-          "sortDirection": {
-            "type": "string",
-            "nullable": true
-          },
-          "userId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
-          },
-          "fromDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "toDate": {
-            "type": "string",
-            "format": "date-time",
             "nullable": true
           }
         },
         "additionalProperties": false
       },
-      "QueueSearchPayload": {
+      "ReleaseRequestDto": {
         "type": "object",
         "properties": {
-          "page": {
+          "releaseId": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "nullable": true
           },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sortColumn": {
+          "releaseName": {
             "type": "string",
             "nullable": true
           },
-          "sortDirection": {
+          "version": {
             "type": "string",
             "nullable": true
           },
-          "userId": {
+          "environmentId": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "releaseLifecycle": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "modifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReleaseSignOffRequestDto": {
+        "type": "object",
+        "properties": {
+          "signOffStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "signOffBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "comments": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "newPassword": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1503,150 +1991,140 @@
         },
         "additionalProperties": false
       },
-      "TestCaseAssignment": {
+      "SingleRunNowRequest": {
         "type": "object",
         "properties": {
           "assignmentId": {
             "type": "integer",
             "format": "int32"
           },
-          "userId": {
+          "assignmentTestCaseId": {
             "type": "integer",
             "format": "int32"
           },
-          "libraryName": {
+          "browser": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SingleScheduleRequest": {
+        "type": "object",
+        "properties": {
+          "assignmentId": {
+            "type": "integer",
+            "format": "int32"
           },
-          "className": {
-            "type": "string",
-            "nullable": true
+          "assignmentTestCaseId": {
+            "type": "integer",
+            "format": "int32"
           },
-          "methodName": {
-            "type": "string",
-            "nullable": true
-          },
-          "assignedOn": {
+          "scheduleDate": {
             "type": "string",
             "format": "date-time"
           },
-          "assignedBy": {
-            "type": "integer",
-            "format": "int32",
+          "browser": {
+            "type": "string",
             "nullable": true
           }
         },
         "additionalProperties": false
       },
-      "TestCaseAssignmentDeleteRequest": {
+      "TestCaseExecutionLog": {
         "type": "object",
         "properties": {
-          "userIds": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int32"
-            },
+          "logId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "assignmentId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assignmentTestCaseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "testCaseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "testCaseDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "stepName": {
+            "type": "string",
+            "nullable": true
+          },
+          "logMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "logLevel": {
+            "$ref": "#/components/schemas/TestCaseLogLevel"
+          },
+          "executionStatus": {
+            "$ref": "#/components/schemas/ExecutionStatus"
+          },
+          "screenshotId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "errorStackTrace": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TestCaseLogLevel": {
+        "enum": [
+          "Info",
+          "Pass",
+          "Warning",
+          "Fail"
+        ],
+        "type": "string"
+      },
+      "TestCaseRequestModel": {
+        "type": "object",
+        "properties": {
+          "testCaseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "testCaseDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "testCaseStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "className": {
+            "type": "string",
             "nullable": true
           },
           "libraryName": {
             "type": "string",
             "nullable": true
           },
-          "className": {
-            "type": "string",
-            "nullable": true
-          },
           "methodName": {
             "type": "string",
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "TestResult": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
           },
-          "name": {
+          "priority": {
             "type": "string",
             "nullable": true
-          },
-          "resultStatus": {
-            "type": "string",
-            "nullable": true
-          },
-          "duration": {
-            "type": "string",
-            "nullable": true
-          },
-          "startTime": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "endTime": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "message": {
-            "type": "string",
-            "nullable": true
-          },
-          "className": {
-            "type": "string",
-            "nullable": true
-          },
-          "queueId": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "TestResultPagedResult": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TestResult"
-            },
-            "nullable": true
-          },
-          "totalCount": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "TestResultPayload": {
-        "type": "object",
-        "properties": {
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sortColumn": {
-            "type": "string",
-            "nullable": true
-          },
-          "sortDirection": {
-            "type": "string",
-            "nullable": true
-          },
-          "userId": {
-            "type": "integer",
-            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -1658,17 +2136,9 @@
             "type": "integer",
             "format": "int32"
           },
-          "queueId": {
-            "type": "string",
-            "nullable": true
-          },
-          "className": {
-            "type": "string",
-            "nullable": true
-          },
-          "methodName": {
-            "type": "string",
-            "nullable": true
+          "assignmentTestCaseId": {
+            "type": "integer",
+            "format": "int32"
           },
           "caption": {
             "type": "string",
@@ -1728,6 +2198,79 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "priorityId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "priorityName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastLogin": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "timeZone": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "timeZoneName": {
+            "type": "string",
+            "nullable": true
+          },
+          "teams": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "statusName": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "twoFactor": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "passwordHash": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserFilter": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "role": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         },
         "additionalProperties": false

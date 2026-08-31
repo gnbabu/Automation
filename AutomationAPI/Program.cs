@@ -51,6 +51,8 @@ builder.Services.AddScoped<ITestCaseAssignmentRepository, TestCaseAssignmentRepo
 builder.Services.AddScoped<ITestCaseExecutionQueueRepository, TestCaseExecutionQueueRepository>();
 builder.Services.AddScoped<ITestCaseExecutionLogRepository, TestCaseExecutionLogRepository>();
 builder.Services.AddScoped<IReleaseRepository, ReleaseRepository>();
+builder.Services.AddScoped<IReleaseFileService, ReleaseFileService>();
+builder.Services.AddScoped<IReleaseReadinessService, ReleaseReadinessService>();
 builder.Services.AddScoped<IEnvironmentRepository, EnvironmentRepository>();
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));

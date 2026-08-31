@@ -162,7 +162,6 @@ D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\staticwebassets\msbuild.build
 D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.AutomationAPI.props
 D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.AutomationAPI.props
 D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\staticwebassets.pack.json
-D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\Automati.AC7040F5.Up2Date
 D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\AutomationAPI.dll
 D:\OHPNM-Automation\AutomationAPI\obj\Debug\net8.0\refint\AutomationAPI.dll
@@ -174,3 +173,8 @@ D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\nunit.engine.api.dll
 D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\nunit.engine.core.dll
 D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\nunit.engine.dll
 D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\testcentric.engine.metadata.dll
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\Newtonsoft.Json.dll
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\SendGrid.dll
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\StarkbankEcdsa.dll
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\libman.json
+D:\OHPNM-Automation\AutomationAPI\bin\Debug\net8.0\BCrypt.Net-Next.dll

@@ -82,6 +82,30 @@ export const routes: Routes = [
         canActivate: [authGuard],
       },
       {
+        path: 'release-management/new',
+        loadComponent: () =>
+          import('./pages/release-management/release-form/release-form.component').then(
+            (m) => m.ReleaseFormComponent,
+          ),
+        canActivate: [authGuard],
+      },
+      {
+        path: 'release-management/edit/:id',
+        loadComponent: () =>
+          import('./pages/release-management/release-form/release-form.component').then(
+            (m) => m.ReleaseFormComponent,
+          ),
+        canActivate: [authGuard],
+      },
+      {
+        path: 'release-management/:id',
+        loadComponent: () =>
+          import('./pages/release-management/release-details/release-details.component').then(
+            (m) => m.ReleaseDetailsComponent,
+          ),
+        canActivate: [authGuard],
+      },
+      {
         path: 'environment-management',
         loadComponent: () =>
           import('./pages/environment-management/environment-management.component').then(

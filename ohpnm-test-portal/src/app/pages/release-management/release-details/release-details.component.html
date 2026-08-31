@@ -1,0 +1,210 @@
+<div class="environment-management-container" *ngIf="release as r">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="page-title mb-1">{{ r.releaseName }}</h1>
+      <small class="text-muted">Version {{ r.version }} · {{ r.environmentName }}</small>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" (click)="back()">
+        <i class="fas fa-arrow-left me-1"></i> Back
+      </button>
+      <a class="btn btn-outline-primary" [routerLink]="['/release-management/edit', r.releaseId]">
+        <i class="fas fa-pen me-1"></i> Edit
+      </a>
+    </div>
+  </div>
+
+  <div class="brand-header-underline mb-4"></div>
+
+  <div class="row g-4">
+    <!-- A. Release Information -->
+    <div class="col-12 col-lg-6">
+      <div class="card section-card h-100">
+        <div class="card-header section-head">Release Information</div>
+        <div class="card-body">
+          <p><strong>Status:</strong>
+            <span class="badge bg-info text-dark ms-1">{{ r.releaseLifecycle }}</span>
+          </p>
+          <p><strong>Description:</strong> {{ r.description || "—" }}</p>
+          <p><strong>Release Folder:</strong> <code>{{ r.releaseFolderPath || "—" }}</code></p>
+          <p><strong>Created By:</strong> {{ r.createdBy || "—" }}
+            ({{ r.createdOn | date: "dd-MMM-yyyy HH:mm" }})</p>
+          <p *ngIf="r.activatedBy"><strong>Activated By:</strong> {{ r.activatedBy }}
+            ({{ r.activatedOn | date: "dd-MMM-yyyy HH:mm" }})</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- B. Release Readiness -->
+    <div class="col-12 col-lg-6">
+      <div class="card section-card h-100">
+        <div class="card-header section-head d-flex justify-content-between align-items-center">
+          <span>Release Readiness</span>
+          <button
+            class="btn btn-light btn-sm"
+            [disabled]="refreshingReadiness"
+            (click)="refreshReadiness()"
+          >
+            <i class="fas fa-sync-alt me-1"></i> Refresh
+          </button>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-2">
+            DLLs are placed into the release folder by the existing build/deployment
+            process. This checks whether usable test content is available.
+          </p>
+
+          <div *ngIf="readiness">
+            <div class="mb-2" *ngIf="readiness.isReady">
+              <i class="fas fa-check-circle text-success me-1"></i>
+              DLLs available ({{ readiness.usableDllCount }} usable of {{ readiness.dllFiles.length }} file(s))
+            </div>
+            <div class="mb-2" *ngIf="!readiness.isReady">
+              <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+              {{ readiness.message }}
+            </div>
+
+            <div class="small text-muted mb-2" *ngIf="readiness.dllFiles.length">
+              Files: {{ readiness.dllFiles.join(', ') }}
+            </div>
+
+            <span class="badge" [ngClass]="readiness.isReady ? 'bg-success' : 'bg-secondary'">
+              {{ readiness.isReady ? "READY FOR ACTIVATION" : "WAITING FOR DLLs" }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C. Test Summary -->
+    <div class="col-12 col-lg-6">
+      <div class="card section-card h-100">
+        <div class="card-header section-head">Test Summary</div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-3">
+            <div class="stat"><span class="num">{{ r.totalTests }}</span> Total</div>
+            <div class="stat"><span class="num text-success">{{ r.passedTests }}</span> Passed</div>
+            <div class="stat"><span class="num text-danger">{{ r.failedTests }}</span> Failed</div>
+            <div class="stat"><span class="num text-muted">{{ r.skippedTests }}</span> Skipped</div>
+            <div class="stat"><span class="num text-warning">{{ r.runningTests }}</span> Running</div>
+          </div>
+          <div class="mt-3">
+            <span class="badge" [ngClass]="testingComplete ? 'bg-success' : 'bg-secondary'">
+              {{ r.totalTests > 0 ? (testingComplete ? "TESTING COMPLETED" : "TESTING IN PROGRESS") : "NO TESTS YET" }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- D + E. Lifecycle actions / Sign-off -->
+    <div class="col-12 col-lg-6">
+      <div class="card section-card h-100">
+        <div class="card-header section-head">Lifecycle &amp; Sign-Off</div>
+        <div class="card-body">
+          <!-- Activation -->
+          <div class="mb-3">
+            <button
+              class="btn btn-success"
+              [disabled]="!canActivate || activating"
+              (click)="activate()"
+            >
+              <i class="fas fa-rocket me-1"></i>
+              {{ activating ? "Activating..." : "Activate Release" }}
+            </button>
+            <div class="small text-muted mt-1" *ngIf="!canActivate">
+              Activation requires usable test DLLs to be available in the release folder.
+            </div>
+          </div>
+
+          <hr />
+
+          <!-- Sign-off -->
+          <p class="mb-1"><strong>Sign-off Status:</strong>
+            <span class="badge bg-secondary ms-1">{{ r.signOffStatus || "Pending" }}</span>
+          </p>
+
+          <div *ngIf="!canSignOff" class="small text-muted mb-2">
+            Sign-off becomes available after activation and once all assigned tests are complete.
+          </div>
+
+          <div *ngIf="canSignOff">
+            <textarea
+              class="form-control mb-2"
+              rows="2"
+              placeholder="Comments (required for rejection)"
+              [(ngModel)]="signOffComments"
+            ></textarea>
+            <div class="d-flex gap-2">
+              <button
+                class="btn btn-outline-danger"
+                [disabled]="signingOff"
+                (click)="signOff('Rejected')"
+              >
+                Reject
+              </button>
+              <button
+                class="btn btn-primary"
+                [disabled]="signingOff"
+                (click)="signOff('Approved')"
+              >
+                Approve / Sign Off
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign-off history -->
+  <div class="card section-card mt-4" *ngIf="signOffHistory.length">
+    <div class="card-header section-head">Sign-Off History</div>
+    <div class="card-body p-0">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>By</th>
+            <th>On</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let h of signOffHistory">
+            <td>{{ h.signOffStatus }}</td>
+            <td>{{ h.signOffBy }}</td>
+            <td>{{ h.signOffOn | date: "dd-MMM-yyyy HH:mm" }}</td>
+            <td>{{ h.comments }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div class="card section-card mt-4" *ngIf="notifications.length">
+    <div class="card-header section-head">Notifications</div>
+    <div class="card-body p-0">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Recipient</th>
+            <th>Status</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let n of notifications">
+            <td>{{ n.notificationType }}</td>
+            <td>{{ n.recipientEmail }}</td>
+            <td>{{ n.status }}</td>
+            <td>{{ n.createdOn | date: "dd-MMM-yyyy HH:mm" }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

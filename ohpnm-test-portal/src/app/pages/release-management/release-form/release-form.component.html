@@ -1,0 +1,95 @@
+<div class="container my-5 p-4 shadow-sm bg-white rounded-4 user-form-wrapper">
+  <h4 class="headerTitle">{{ isEdit ? "Edit Release" : "Create Release" }}</h4>
+  <div class="brand-underline"></div>
+
+  <div class="alert alert-warning py-2 small" *ngIf="isEdit && !canEditIdentity">
+    <i class="fas fa-lock me-1"></i>
+    This release is no longer in Draft, so Release Name, Version and Environment are
+    locked. Only the Description can be updated.
+  </div>
+
+  <form #relForm="ngForm" (ngSubmit)="save()">
+    <div class="row">
+      <!-- Left Column -->
+      <div class="col-md-6">
+        <div class="mb-3">
+          <label class="form-label">Release Name *</label>
+          <input
+            name="releaseName"
+            class="form-control"
+            [(ngModel)]="model.releaseName"
+            required
+            maxlength="100"
+            [disabled]="!canEditIdentity"
+            #relName="ngModel"
+            placeholder="e.g. OHPNM Release"
+          />
+          <div class="text-danger small" *ngIf="relName.touched && relName.invalid">
+            Release Name is required.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Version *</label>
+          <input
+            name="version"
+            class="form-control"
+            [(ngModel)]="model.version"
+            required
+            maxlength="50"
+            [disabled]="!canEditIdentity"
+            #ver="ngModel"
+            placeholder="e.g. 2.5.0"
+          />
+          <div class="text-danger small" *ngIf="ver.touched && ver.invalid">
+            Version is required.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="col-md-6">
+        <div class="mb-3">
+          <label class="form-label">Environment *</label>
+          <select
+            name="environmentId"
+            class="form-select"
+            [(ngModel)]="model.environmentId"
+            required
+            [disabled]="!canEditIdentity"
+            #env="ngModel"
+          >
+            <option [ngValue]="undefined" disabled>Select an environment</option>
+            <option *ngFor="let e of selectableEnvironments" [ngValue]="e.environmentId">
+              {{ e.environmentName }}{{ !e.isActive ? " (inactive)" : "" }}
+            </option>
+          </select>
+          <div class="text-danger small" *ngIf="env.touched && env.invalid">
+            Environment is required.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <textarea
+            rows="4"
+            name="description"
+            class="form-control"
+            [(ngModel)]="model.description"
+            maxlength="255"
+            placeholder="Describe the release"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4 gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="cancel()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-purple" [disabled]="!relForm.valid || isSaving">
+        {{ isEdit ? "Update Release" : "Create Release" }}
+      </button>
+    </div>
+  </form>
+</div>

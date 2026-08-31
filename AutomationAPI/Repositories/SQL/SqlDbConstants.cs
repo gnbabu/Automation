@@ -77,7 +77,16 @@
         public const string UpdateRelease = "[aut].[usp_UpdateRelease]";
         public const string GetAllReleases = "[aut].[usp_GetAllRelease]";
         public const string GetReleaseById = "[aut].[usp_GetReleaseById]";
+        public const string ActivateRelease = "[aut].[usp_ActivateRelease]";
         public const string SignOffRelease = "[aut].[usp_ReleaseSignOff]";
+        public const string GetReleaseSignOffHistory = "[aut].[usp_ReleaseSignOff_GetByRelease]";
+        public const string ReleaseSetFolderPath = "[aut].[usp_Release_SetFolderPath]";
+        public const string DeleteRelease = "[aut].[usp_DeleteRelease]";
+
+        // Release Notification
+        public const string ReleaseNotificationAdd = "[aut].[usp_ReleaseNotification_Add]";
+        public const string ReleaseNotificationGetByRelease = "[aut].[usp_ReleaseNotification_GetByRelease]";
+        public const string ReleaseNotificationMarkSent = "[aut].[usp_ReleaseNotification_MarkSent]";
 
 
         // Environment Management
