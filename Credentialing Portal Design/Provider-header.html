@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Outside Curve Replica</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+body{
+    background:#f3f3f7;
+    padding:40px;
+}
+
+/* Wrapper so curve can sit outside */
+.header-outer{
+    position:relative;
+}
+
+/* Purple outside curve */
+.header-outer::after{
+   content: "";
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 50px;
+    height: 30px;
+    background: #6f42c1;
+    border-bottom-left-radius: 30px;
+    z-index: 0;
+}
+
+/* Main container */
+.header-wrapper{
+      position: relative;
+    background: #f7f7fa;
+    border: 1px solid #e3e3ea;
+    border-top-right-radius: 30px;
+    padding: 12px 15px;
+    z-index: 1;
+}
+
+/* Left purple card */
+.individual-card{
+    background:#6f42c1;
+    color:#fff;
+    width:120px;
+    height:68px;
+    border-radius:6px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    font-size:13px;
+    font-weight:500;
+}
+
+.individual-card i{
+    font-size:20px;
+    margin-bottom:4px;
+}
+
+/* Tabs */
+.filter-tab{
+    background:#ffffff;
+    border:1px solid #dcdce5;
+    border-radius:8px;
+    padding:6px 18px;
+    font-size:13px;
+    color:#444;
+    white-space:nowrap;
+}
+
+.filter-tab.active{
+    font-weight:500;
+    box-shadow:0 1px 2px rgba(0,0,0,0.04);
+}
+
+.filter-tab:hover{
+    background:#f1f1f6;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header-outer">
+
+        <div class="header-wrapper d-flex align-items-center gap-3">
+
+            <div class="individual-card">
+                <i class="bi bi-person"></i>
+                Individual
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+                <div class="filter-tab active">Name</div>
+                <div class="filter-tab">NPI</div>
+                <div class="filter-tab">Provider Type</div>
+                <div class="filter-tab">Primary Specialty</div>
+                <div class="filter-tab">Medicaid ID</div>
+                <div class="filter-tab">Taxonomy</div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
