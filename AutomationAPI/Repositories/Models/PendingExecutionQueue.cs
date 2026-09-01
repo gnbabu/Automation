@@ -4,6 +4,7 @@
     {
         public Guid QueueId { get; set; }
         public int AssignmentTestCaseId { get; set; }
+        public int? ReleaseId { get; set; }
         public string? LibraryName { get; set; }
         public string? ClassName { get; set; }
         public string? MethodName { get; set; }

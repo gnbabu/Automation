@@ -158,6 +158,7 @@ export interface IAssignmentCreateUpdateRequest {
   assignmentStatus: string;
   releaseName: string;
   environment: string;
+  releaseId: number;
   assignedBy: number;
   testCases: ITestCaseRequestModel[];
 }
@@ -178,6 +179,8 @@ export interface ITestCaseAssignmentEntity {
   assignedUser: number;
   releaseName: string;
   environment: string;
+  releaseId?: number;
+  environmentId?: number;
   assignedDate: string; // ISO string from API
   assignedBy: number;
   lastUpdatedDate: string; // ISO string from API

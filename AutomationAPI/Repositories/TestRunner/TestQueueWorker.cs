@@ -20,16 +20,33 @@ namespace AutomationAPI.Repositories.TestRunner
                 using var scope = _serviceProvider.CreateScope();
                 var queueRepo = scope.ServiceProvider.GetRequiredService<ITestCaseExecutionQueueRepository>();
                 var resultsRepo = scope.ServiceProvider.GetRequiredService<ITestCaseAssignmentRepository>();
+                var releaseRepo = scope.ServiceProvider.GetRequiredService<IReleaseRepository>();
 
                 var pendingItems = await queueRepo.GetPendingExecutionQueuesAsync();
 
                 foreach (var queue in pendingItems)
                 {
+                    // Resolve the Release folder to execute from. If it can't be resolved
+                    // (release deleted, not yet linked, or folder not set), skip this item
+                    // for now and retry on the next cycle rather than failing it outright.
+                    string releaseFolderPath = null;
+                    if (queue.ReleaseId.HasValue)
+                    {
+                        var release = await releaseRepo.GetByIdAsync(queue.ReleaseId.Value);
+                        releaseFolderPath = release?.ReleaseFolderPath;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(releaseFolderPath))
+                    {
+                        Console.WriteLine($"Skipping queue item {queue.QueueId}: unable to resolve release folder for ReleaseId {queue.ReleaseId}. Will retry.");
+                        continue;
+                    }
+
                     try
                     {
                         var runner = scope.ServiceProvider.GetRequiredService<ITestRunner>();
 
-                        var results = await runner.RunAsync(queue.LibraryName, queue.ClassName, queue.MethodName);
+                        var results = await runner.RunAsync(releaseFolderPath, queue.LibraryName, queue.ClassName, queue.MethodName);
 
                         foreach (var result in results)
                         {

@@ -33,6 +33,8 @@ namespace AutomationAPI.Repositories
                     AssignedUser = reader.GetNullableInt("AssignedUser") ?? 0,
                     ReleaseName = reader.GetNullableString("ReleaseName") ?? string.Empty,
                     Environment = reader.GetNullableString("Environment") ?? string.Empty,
+                    ReleaseId = reader.GetNullableInt("ReleaseId"),
+                    EnvironmentId = reader.GetNullableInt("EnvironmentId"),
                     AssignedDate = reader.GetNullableDateTime("AssignedDate") ?? DateTime.MinValue,
                     AssignedBy = reader.GetNullableInt("AssignedBy") ?? 0,
                     LastUpdatedDate = reader.GetNullableDateTime("LastUpdatedDate") ?? DateTime.MinValue,
@@ -88,6 +90,38 @@ namespace AutomationAPI.Repositories
 
             return await _sqlDataAccessHelper.ExecuteReaderAsync(
                 SqlDbConstants.GetAssignedTestCasesForLibraryAndEnvironment,
+                parameters,
+                reader => new AssignedTestCase
+                {
+                    AssignmentTestCaseId = reader.GetNullableInt("AssignmentTestCaseId") ?? 0,
+                    AssignmentId = reader.GetNullableInt("AssignmentId") ?? 0,
+                    TestCaseId = reader.GetNullableString("TestCaseId") ?? string.Empty,
+                    TestCaseDescription = reader.GetNullableString("TestCaseDescription") ?? string.Empty,
+                    TestCaseStatus = reader.GetNullableString("TestCaseStatus") ?? string.Empty,
+                    ClassName = reader.GetNullableString("ClassName") ?? string.Empty,
+                    LibraryName = reader.GetNullableString("LibraryName") ?? string.Empty,
+                    MethodName = reader.GetNullableString("MethodName") ?? string.Empty,
+                    Priority = reader.GetNullableString("Priority") ?? string.Empty,
+                    StartTime = reader.GetNullableDateTime("StartTime"),
+                    EndTime = reader.GetNullableDateTime("EndTime"),
+                    Duration = reader.GetNullableDouble("Duration"),
+                    ErrorMessage = reader.GetNullableString("ErrorMessage"),
+                    AssignedUserId = reader.GetNullableInt("AssignedUserId") ?? 0,
+                    AssignedUserName = reader.GetNullableString("AssignedUserName") ?? string.Empty,
+                    Environment = reader.GetNullableString("Environment") ?? string.Empty
+                });
+        }
+
+        public async Task<IEnumerable<AssignedTestCase>> GetAssignedTestCasesForLibraryAndReleaseAsync(string libraryName, int releaseId)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@LibraryName", SqlDbType.NVarChar, 255) { Value = libraryName },
+                new SqlParameter("@ReleaseId", SqlDbType.Int) { Value = releaseId }
+            };
+
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(
+                SqlDbConstants.GetAssignedTestCasesForLibraryAndRelease,
                 parameters,
                 reader => new AssignedTestCase
                 {
@@ -187,6 +221,7 @@ namespace AutomationAPI.Repositories
                 new SqlParameter("@AssignedDate", DateTime.Now),
                 new SqlParameter("@AssignedBy", request.AssignedBy),
                 new SqlParameter("@LastUpdatedDate", DateTime.Now),
+                new SqlParameter("@ReleaseId", SqlDbType.Int) { Value = request.ReleaseId > 0 ? request.ReleaseId : (object)DBNull.Value },
                 testCaseParam
             };
 

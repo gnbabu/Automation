@@ -8,6 +8,8 @@
         public int AssignedUser { get; set; }
         public string ReleaseName { get; set; }
         public string Environment { get; set; }
+        public int? ReleaseId { get; set; }
+        public int? EnvironmentId { get; set; }
         public DateTime AssignedDate { get; set; }
         public int AssignedBy { get; set; }
         public DateTime LastUpdatedDate { get; set; }
@@ -46,6 +48,7 @@
         public string AssignmentStatus { get; set; }
         public string ReleaseName { get; set; }
         public string Environment { get; set; }
+        public int ReleaseId { get; set; }
         public int AssignedBy { get; set; }
         public IEnumerable<TestCaseRequestModel> TestCases { get; set; }
     }

@@ -10,9 +10,9 @@ import { Mappers } from '@mappers';
 export class TestSuitesService {
   constructor(private httpService: HttpService) {}
 
-  getLibraries(): Observable<LibraryInfo[]> {
+  getLibraries(releaseId: number): Observable<LibraryInfo[]> {
     return this.httpService.get<any[]>(
-      'TestSuites/libraries',
+      `TestSuites/libraries?releaseId=${releaseId}`,
       {},
       (res: any[]) => res.map(Mappers.LibraryInfoMapper.fromApi)
     );
@@ -37,9 +37,10 @@ export class TestSuitesService {
   }
 
   getAllTestCasesByLibraryName(
+    releaseId: number,
     libraryName: string
   ): Observable<ITestCaseModel[]> {
-    let url = `TestSuites/GetAllTestCasesByLibrary?libraryName=${encodeURIComponent(
+    let url = `TestSuites/GetAllTestCasesByLibrary?releaseId=${releaseId}&libraryName=${encodeURIComponent(
       libraryName
     )}`;
 

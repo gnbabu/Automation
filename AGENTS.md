@@ -4,7 +4,9 @@
 - `AutomationAPI/` — ASP.NET Core (.NET 8) Web API (controllers + repositories + SQL stored procedures).
 - `ohpnm-test-portal/` — Angular frontend.
 - `Database/` — SQL scripts (schema + stored procedures + migrations).
-- `TestLibs/` — global folder of test DLLs used by the reflection-based discovery/execution.
+- `TestLibs/` — legacy global folder of test DLLs. No longer used by discovery/execution
+  (both are now scoped per-Release, see "Test Case Assignment — Release-aware" below);
+  kept only because `TestSettings:TestLibsPath` is still present, unreferenced, in config.
 
 ## Database
 - Server: `DESKTOP-BNTHM9S\SQLEXPRESS`, DB: `MES_AUT_AI`, schema `aut`.
@@ -57,6 +59,19 @@ uploads, or version-validates DLLs. There is no `ReleaseDLL` upload UI/API.
   (used for list/detail badges) is a cheap file-count-only check with no reflection.
 - Notifications on activation go to active **Manager + Admin** users via `IEmailService`
   (SendGrid); failures are recorded (`aut.ReleaseNotification`) and do NOT fail activation.
+- `IReleaseNotificationService` (`ReleaseNotificationService`) — extracted, shared
+  Manager/Admin recipient-resolution + send/record logic, used by BOTH
+  `ReleaseController.Activate` (`notificationType = "ActivatedForTesting"`) and
+  `ReleaseDllsReadyNotificationWorker` (`notificationType = "DllsReadyForActivation"`),
+  so this logic lives in exactly one place.
+- `ReleaseDllsReadyNotificationWorker` (`Repositories/Workers/`, hosted `BackgroundService`,
+  mirrors `TestQueueWorker`'s shape) — every 30s, scans Draft releases with a folder set,
+  runs `IReleaseReadinessService.CheckReadiness()`, and sends **exactly one**
+  `DllsReadyForActivation` notification the first time a release becomes ready
+  (deduplicated by checking `GetNotificationsAsync` for an existing notification of that
+  type before sending). **Never auto-activates** — activation stays a deliberate human
+  action; the worker only proactively notifies so an Admin/Manager doesn't have to keep
+  checking the page.
 
 ### API endpoints
 - `GET  /api/Release` — all releases (test summary counts + cheap `dllFileCount`/`folderReady`)
@@ -114,15 +129,70 @@ Mirrors Environment Management's soft/hard delete split:
 ### Release Management UI
 - Service: `ReleaseService` (no DLL upload service — none needed).
 - Pages under `src/app/pages/release-management/`:
-  - `release-management.component` — card list (search, environment/status filters, refresh, create); 3/2/1 per row; shows `REL-{id}`, folder name, and a simple "DLLs available / Waiting for DLLs" badge from `dllFileCount`/`folderReady`.
+  - `release-management.component` — card list (search, environment/status filters, refresh, create); 3/2/1 per row; shows `REL-{id}`, folder name, and a simple "DLLs available / Waiting for DLLs" badge from `dllFileCount`/`folderReady`. **Auto-refreshes every 10s** (`startAutoRefresh`/`stopAutoRefresh`, paused while `isUserPerformingAction` during toggle/delete) so badges/test summaries update without a manual click.
   - `release-form/` — create AND edit (same component, `isEdit` flag driven by an `:id` route param, mirroring `EnvironmentFormComponent`). Release Name, Version, Environment dropdown, Description. No Build/Type/Branch/Tags fields (not proven required). Name/Version/Environment inputs are `[disabled]` once the release is no longer Draft (`canEditIdentity`), with an inline warning banner.
-  - `release-details/` — info, **Release Readiness** card (Refresh button → `GET .../readiness`, lists DLL files found, Ready/Waiting badge), test summary, activate button (gated on `readiness.isReady`), sign-off (approve/reject, gated on testing complete), sign-off history, notifications, Edit button.
+  - `release-details/` — info, **Release Readiness** card (Refresh button → `GET .../readiness`, lists DLL files found, Ready/Waiting badge), test summary, activate button (gated on `readiness.isReady`), sign-off (approve/reject, gated on testing complete), sign-off history, notifications, Edit button. **Auto-refreshes every 10s**: release data always refreshes; the reflection-heavy readiness check only re-runs while still `Draft` (stops once Active/Completed/Rejected). Paused during `activate()`/`signOff()` via `isUserPerformingAction`.
 - Routes: `/release-management`, `/release-management/new`, `/release-management/edit/:id`, `/release-management/:id`.
   Sidebar link is admin-gated (`isAdmin`).
+- Auto-refresh pattern (`refreshInterval`/`refreshSeconds`/`isUserPerformingAction`/`OnDestroy`)
+  mirrors the existing convention in `test-case-execution-panel.component.ts` for consistency.
 
 ### Still TODO (future)
-- Wire the existing assignment/execution UI to pass `ReleaseId` (SPs already accept it;
-  legacy assignments keep working via retained text columns), and drive the
-  execution-summary release selection by ReleaseId (ReleaseName/Version/Environment shown
-  for display, ReleaseId used internally).
+- Wire the execution-summary release selection by ReleaseId (ReleaseName/Version/Environment
+  shown for display, ReleaseId used internally) — `usp_GetReleaseExecutionLogs` is still
+  name-based (`@ReleaseName`); Test Case Assignment itself is done (see below).
 - Finer role gating beyond `isAdmin` (Manager/Tester/Viewer) if required.
+- Dashboard's library filter/summary (`dashboard.component.ts`) is hidden behind
+  `libraryDiscoveryAvailable = false` since it has no Release selector — re-enable once a
+  Release dropdown is added there too.
+- Known pre-existing bug (not fixed, out of scope): `SqlReaderExtensions.GetNullable<T>`
+  returns `default(T)` (e.g. `0` for `int`) instead of `null` for DB NULLs on value types.
+  Harmless for `ReleaseId` (0 never resolves to a real release, so the TestQueueWorker's
+  skip/retry logic still behaves correctly), but worth fixing centrally if it matters
+  elsewhere.
+
+## Test Case Assignment — Release-aware (Library + Discovery + Execution)
+
+### Release replaces "Library-as-Release" + hardcoded Environment
+The Assignment screen (`test-case-assignment-user.component`) now has a **Select Release**
+dropdown (Active/Completed releases only) **before** the Test Suite (Library) dropdown.
+The old "Select Environment" dropdown is gone — Environment is read-only, derived from the
+selected Release (`selectedRelease.environmentName`).
+
+- `AssignmentCreateUpdateRequest`/`ITestCaseAssignmentEntity` carry `ReleaseId`
+  (`EnvironmentId` resolved server-side from the text `Environment` if not supplied).
+- `TestCaseAssignmentsController.CreateOrUpdateAssignmentWithTestCasesAsync` validates the
+  Release exists and `ReleaseLifecycle` is `Active` or `Completed` (400 otherwise) before
+  calling the repository.
+- **AssignmentName** keeps its exact original formula
+  (`{Tester}-{Library}-{Environment}`) and, only when `@ReleaseId` is supplied, appends the
+  real Release Name as a 4th segment (e.g. `vishnu-OnboardingTests-QA-Release_Sept`) — fully
+  backward compatible; legacy rows with `ReleaseId = NULL` are untouched.
+- Duplicate-assignment check ("is this test case already assigned to anyone") is now
+  **Library + ReleaseId** scoped (`usp_GetAssignedTestCasesForLibraryAndRelease`,
+  `GET /api/TestCaseAssignments/library-release-assigned-testcases`), replacing the old
+  Library + Environment-text check for this screen (the old SP/endpoint is left in place,
+  unused, in case anything else still calls it).
+
+### Test discovery and execution moved from the global TestLibs folder to per-Release folders
+Both DLL discovery and actual test execution are now scoped to **each Release's own**
+`ReleaseFolderPath` instead of one global `TestSettings:TestLibsPath` folder (that config
+key is left in `appsettings.json`, just unreferenced by these code paths):
+- `TestSuitesController` (`GET libraries`, `GET GetAllTestCasesByLibrary`) now requires a
+  `releaseId` query param, resolves the Release via `IReleaseRepository`, and scans
+  `release.ReleaseFolderPath` (404 if the release doesn't exist, 400 if no folder path set).
+- `ITestRunner.RunAsync(string libsPath, ...)` takes the folder to execute from as a
+  parameter instead of reading a fixed path at construction.
+- `usp_GetPendingExecutionQueues` now also returns `TCA.ReleaseId`; `TestQueueWorker`
+  resolves `IReleaseRepository.GetByIdAsync(queue.ReleaseId)` per queue item to get the
+  folder to execute from. If it can't be resolved (no ReleaseId, release deleted, or no
+  folder path), the item is **left `Queued`** and retried on the next cycle (never marked
+  `Failed` for this reason) — logged as `"Skipping queue item {id}: unable to resolve
+  release folder for ReleaseId {id}. Will retry."`.
+- All of this was smoke-tested end-to-end against the real `REL-10_Release_Sept_v1.0.0`
+  folder: discovery returned only that release's own DLL's test cases, an assignment
+  created against it produced the expected 4-segment AssignmentName, a queued execution
+  correctly loaded/ran `OnboardingTests.dll` from that folder (failing first on a genuinely
+  missing dependency DLL, then passing once it was added — proving the folder scoping
+  works, not the global one), and a legacy `ReleaseId = NULL` assignment's queued item
+  correctly stayed `Queued`/retried instead of failing.

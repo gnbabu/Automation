@@ -5,17 +5,10 @@ namespace AutomationAPI.Repositories.TestRunner
 {
     public class ReflectionTestRunner : ITestRunner
     {
-        public string _libsPath = string.Empty;
-        public ReflectionTestRunner(IConfiguration configuration)
-        {
-            _libsPath = configuration["TestSettings:TestLibsPath"];
-        }
-
-
-        public async Task<List<TestExecutionResult>> RunAsyncWorking(string? library, string? className, string? methodName)
+        public async Task<List<TestExecutionResult>> RunAsyncWorking(string libsPath, string? library, string? className, string? methodName)
         {
             var results = new List<TestExecutionResult>();
-            var dllFiles = Directory.GetFiles(_libsPath, "*.dll");
+            var dllFiles = Directory.GetFiles(libsPath, "*.dll");
 
             foreach (var dllPath in dllFiles.Where(d => d.Contains("OnboardingTests")))
             {
@@ -119,10 +112,10 @@ namespace AutomationAPI.Repositories.TestRunner
 
 
 
-        public async Task<List<TestExecutionResult>> RunAsync(string? library, string? className, string? methodName)
+        public async Task<List<TestExecutionResult>> RunAsync(string libsPath, string? library, string? className, string? methodName)
         {
             var results = new List<TestExecutionResult>();
-            var dllFiles = Directory.GetFiles(_libsPath, "*.dll");
+            var dllFiles = Directory.GetFiles(libsPath, "*.dll");
 
             foreach (var dllPath in dllFiles)
             {

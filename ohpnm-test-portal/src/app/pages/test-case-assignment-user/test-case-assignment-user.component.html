@@ -10,7 +10,25 @@
   <div
     class="filter-card d-flex flex-wrap align-items-center justify-content-between"
   >
-    <div class="d-flex flex-wrap gap-3 align-items-center">
+    <div class="filter-fields d-flex flex-wrap gap-3 align-items-center">
+      <div>
+        <label for="releaseSelect" class="form-label">Select Release</label>
+        <app-dropdown
+          id="releaseSelect"
+          [options]="releases"
+          valueAccessor="releaseId"
+          textAccessor="releaseName"
+          placeholder="Select Release"
+          [(selected)]="selectedRelease"
+          (selectionChange)="onReleaseChange($event)"
+        ></app-dropdown>
+      </div>
+      <div *ngIf="selectedRelease">
+        <label class="form-label">Environment</label>
+        <div class="form-control-plaintext fw-semibold">
+          {{ selectedRelease.environmentName }}
+        </div>
+      </div>
       <div>
         <label for="librarySelect" class="form-label">Test Suite</label>
         <app-dropdown
@@ -34,18 +52,6 @@
           placeholder="Select User"
           [(selected)]="selectedUser"
           (selectionChange)="onUserChange($event)"
-        ></app-dropdown>
-      </div>
-      <div>
-        <label for="envSelect" class="form-label">Select Environment</label>
-        <app-dropdown
-          id="envSelect"
-          [options]="environments"
-          valueAccessor="environmentName"
-          textAccessor="environmentName"
-          placeholder="Select Environment"
-          [(selected)]="selectedEnvironment"
-          (selectionChange)="onEnvironmentChange($event)"
         ></app-dropdown>
       </div>
 

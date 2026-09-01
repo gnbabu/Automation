@@ -95,23 +95,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private executionLogsService: TestCaseExecutionLogsService
   ) {}
 
+  // Library discovery is now scoped per-Release (each Release has its own DLL folder)
+  // instead of one global TestLibs folder. This dashboard has no Release selector yet,
+  // so the library-based test case summary below is deferred until a future pass adds
+  // one; the flag below hides that (now non-functional) section rather than showing a
+  // broken/erroring dropdown.
+  libraryDiscoveryAvailable = false;
+
   ngOnInit(): void {
-    this.loadTestSuites();
     this.setupColumns();
-  }
-
-  loadTestSuites() {
-    this.testSuitesService.getLibraries().subscribe({
-      next: (response) => {
-        this.libraries = response || [];
-
-        if (this.libraries.length > 0) {
-          this.selectedLibrary = this.libraries[0];
-          this.onLibraryChange(this.selectedLibrary); // Auto-load data
-        }
-      },
-      error: () => (this.libraries = []),
-    });
   }
 
   setupColumns() {
@@ -165,6 +157,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onLibraryChange(library: LibraryInfo | null) {
+    // Deferred: library discovery is now Release-scoped; this dashboard has no
+    // Release selector yet, so this handler is inert (kept for future re-wiring).
+    if (!this.libraryDiscoveryAvailable) return;
+
     this.selectedLibrary = library;
 
     if (!library) return;
@@ -205,8 +201,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.assignedCount = 0;
     this.unassignedCount = 0;
 
-    const allCases$ =
-      this.testSuitesService.getAllTestCasesByLibraryName(libraryName);
+    // Not currently reachable (see libraryDiscoveryAvailable); releaseId placeholder
+    // kept only to satisfy the (now Release-scoped) service signature.
+    const allCases$ = this.testSuitesService.getAllTestCasesByLibraryName(
+      0,
+      libraryName
+    );
 
     const assignedCases$ =
       this.testCaseAssignmentService.getAllAssignedTestCasesInLibrary(

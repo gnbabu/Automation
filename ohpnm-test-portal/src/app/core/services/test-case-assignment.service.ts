@@ -57,4 +57,15 @@ export class TestCaseAssignmentService {
       )}&environment=${encodeURIComponent(environment)}`
     );
   }
+
+  getAssignedTestCasesForLibraryAndRelease(
+    libraryName: string,
+    releaseId: number
+  ): Observable<IAssignedTestCase[]> {
+    return this.httpService.get<IAssignedTestCase[]>(
+      `TestCaseAssignments/library-release-assigned-testcases?libraryName=${encodeURIComponent(
+        libraryName
+      )}&releaseId=${releaseId}`
+    );
+  }
 }

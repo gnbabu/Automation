@@ -10,12 +10,17 @@ namespace AutomationAPI.Controllers
     public class TestCaseAssignmentsController : ControllerBase
     {
         private readonly ITestCaseAssignmentRepository _repository;
+        private readonly IReleaseRepository _releaseRepository;
         private readonly ILogger<TestCaseAssignmentsController> _logger;
 
+        private static readonly string[] AssignableReleaseLifecycles = { "Active", "Completed" };
+
         public TestCaseAssignmentsController(ITestCaseAssignmentRepository repository,
+                                            IReleaseRepository releaseRepository,
                                             ILogger<TestCaseAssignmentsController> logger)
         {
             _repository = repository;
+            _releaseRepository = releaseRepository;
             _logger = logger;
         }
 
@@ -45,6 +50,16 @@ namespace AutomationAPI.Controllers
             {
                 if (request == null)
                     return BadRequest("Invalid request: Assignment is missing.");
+
+                if (request.ReleaseId <= 0)
+                    return BadRequest("ReleaseId is required.");
+
+                var release = await _releaseRepository.GetByIdAsync(request.ReleaseId);
+                if (release == null)
+                    return BadRequest($"Release {request.ReleaseId} not found.");
+
+                if (!AssignableReleaseLifecycles.Contains(release.ReleaseLifecycle, StringComparer.OrdinalIgnoreCase))
+                    return BadRequest("Test cases can only be assigned against an Active or Completed release.");
 
                 // Test cases can be optional now — no validation needed
                 // request.TestCases can be null → backend handles it
@@ -100,6 +115,28 @@ namespace AutomationAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while fetching assigned test cases for library");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("library-release-assigned-testcases")]
+        public async Task<IActionResult> GetAssignedTestCasesForLibraryAndReleaseAsync(string libraryName, int releaseId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(libraryName))
+                    return BadRequest("LibraryName is required.");
+
+                if (releaseId <= 0)
+                    return BadRequest("ReleaseId is required.");
+
+                var testCases = await _repository.GetAssignedTestCasesForLibraryAndReleaseAsync(libraryName, releaseId);
+
+                return Ok(testCases);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while fetching assigned test cases for library and release");
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }

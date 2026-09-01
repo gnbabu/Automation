@@ -730,10 +730,20 @@ BEGIN
 
     BEGIN TRANSACTION;
 
+    DECLARE @RealReleaseName NVARCHAR(255) = NULL;
+
     BEGIN TRY
         SELECT @TesterName = UserName FROM aut.[User] WHERE UserID = @AssignedUser;
 
-        SET @AssignmentName = @TesterName + '-' + @ReleaseName + '-' + @Environment;
+        IF @ReleaseId IS NOT NULL
+            SELECT @RealReleaseName = ReleaseName FROM aut.Release WHERE ReleaseId = @ReleaseId;
+
+        -- AssignmentName formula is unchanged; when a real Release is linked (@ReleaseId
+        -- provided), its actual name is appended as an extra segment so assignments stay
+        -- distinct per Release even when Library/Environment match. When @ReleaseId is
+        -- NULL, output is byte-for-byte identical to the pre-Release-Management behavior.
+        SET @AssignmentName = @TesterName + '-' + @ReleaseName + '-' + @Environment
+            + CASE WHEN @RealReleaseName IS NOT NULL THEN '-' + @RealReleaseName ELSE '' END;
 
         -- Resolve EnvironmentId from text if not supplied
         IF @ResolvedEnvironmentId IS NULL AND @Environment IS NOT NULL
@@ -888,6 +898,85 @@ BEGIN
     JOIN aut.AssignedTestCases tc ON l.AssignmentTestCaseId = tc.AssignmentTestCaseId
     WHERE a.ReleaseName = @ReleaseName
     ORDER BY l.CreatedAt;
+END
+GO
+
+-- 7.11 usp_GetAssignedTestCasesForLibraryAndRelease  (NEW - duplicate-assignment check
+--      scoped by Library + Release instead of Library + Environment text, so the same
+--      test case can be assigned in two different Releases that share an Environment,
+--      but not twice within the same Release)
+CREATE OR ALTER PROCEDURE aut.usp_GetAssignedTestCasesForLibraryAndRelease
+(
+    @LibraryName NVARCHAR(255),
+    @ReleaseId   INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        TC.AssignmentTestCaseId,
+        TC.AssignmentId,
+        TC.TestCaseId,
+        TC.TestCaseDescription,
+        TC.TestCaseStatus,
+        TC.ClassName,
+        TC.LibraryName,
+        TC.MethodName,
+        TC.Priority,
+        TC.StartTime,
+        TC.EndTime,
+        TC.Duration,
+        TC.ErrorMessage,
+        U.UserID AS AssignedUserId,
+        U.UserName AS AssignedUserName,
+        A.AssignmentName,
+        A.Environment
+    FROM aut.AssignedTestCases TC
+    INNER JOIN aut.TestCaseAssignment A
+        ON TC.AssignmentId = A.AssignmentId
+    INNER JOIN aut.[User] U
+        ON A.AssignedUser = U.UserID
+    WHERE
+        TC.LibraryName = @LibraryName
+        AND A.ReleaseId = @ReleaseId
+    ORDER BY
+        TC.Priority,
+        TC.TestCaseId;
+END
+GO
+
+-- 7.12 usp_GetPendingExecutionQueues  (add ReleaseId so the worker can resolve which
+--      Release folder to load DLLs from at execution time, instead of a global path)
+CREATE OR ALTER PROCEDURE aut.usp_GetPendingExecutionQueues
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        Q.QueueId,
+        Q.AssignmentTestCaseId,
+        ATC.LibraryName,
+        ATC.ClassName,
+        ATC.MethodName,
+        TCA.Environment,
+        TCA.ReleaseId,
+        Q.Browser,
+        Q.QueueStatus,
+        Q.ExecutionDateTime
+
+    FROM aut.TestCaseExecutionQueue Q
+    INNER JOIN aut.AssignedTestCases ATC
+        ON Q.AssignmentTestCaseId = ATC.AssignmentTestCaseId
+    INNER JOIN aut.TestCaseAssignment TCA
+        ON ATC.AssignmentId = TCA.AssignmentId
+
+    WHERE
+        Q.QueueStatus = 'Queued'
+        OR (Q.QueueStatus = 'Scheduled' AND Q.ExecutionDateTime <= GETDATE())
+
+    ORDER BY
+        Q.CreatedDate ASC;
 END
 GO
 

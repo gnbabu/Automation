@@ -10,27 +10,24 @@ namespace AutomationAPI.Repositories
 {
     public class TestSuitesRepository : ITestSuitesRepository
     {
-        public string _libsPath = string.Empty;
         private readonly ITestCaseAssignmentRepository _testCaseAssignmentRepository;
-        public TestSuitesRepository(IConfiguration configuration, ITestCaseAssignmentRepository testCaseAssignmentRepository)
+        public TestSuitesRepository(ITestCaseAssignmentRepository testCaseAssignmentRepository)
         {
-            _libsPath = configuration["TestSettings:TestLibsPath"];
             _testCaseAssignmentRepository = testCaseAssignmentRepository;
         }
 
-        public async Task<IEnumerable<LibraryInfo>> GetLibrariesAsync()
+        public async Task<IEnumerable<LibraryInfo>> GetLibrariesAsync(string releaseFolderPath)
         {
-            List<LibraryMethodInfo> libraryMethodInfos = GetMethodAttributes();
+            List<LibraryMethodInfo> libraryMethodInfos = GetMethodAttributes(releaseFolderPath);
 
-            //string libsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestLibs");
             var libraries = new List<LibraryInfo>();
 
             return await Task.Run(() =>
             {
-                if (!Directory.Exists(_libsPath))
+                if (!Directory.Exists(releaseFolderPath))
                     return Enumerable.Empty<LibraryInfo>();
 
-                var dllFiles = Directory.GetFiles(_libsPath, "*.dll");
+                var dllFiles = Directory.GetFiles(releaseFolderPath, "*.dll");
 
                 foreach (var dllPath in dllFiles)
                 {
@@ -97,9 +94,9 @@ namespace AutomationAPI.Repositories
             });
         }
 
-        public async Task<IEnumerable<TestCaseModel>> GetAllTestCasesByLibrary(string libraryName)
+        public async Task<IEnumerable<TestCaseModel>> GetAllTestCasesByLibrary(string releaseFolderPath, string libraryName)
         {
-            var libraries = await GetLibrariesAsync();
+            var libraries = await GetLibrariesAsync(releaseFolderPath);
 
             // Filter by library name if provided
             if (!string.IsNullOrEmpty(libraryName))
@@ -125,14 +122,14 @@ namespace AutomationAPI.Repositories
             return testCases;
         }
 
-        public List<LibraryMethodInfo> GetMethodAttributes()
+        public List<LibraryMethodInfo> GetMethodAttributes(string releaseFolderPath)
         {
             var results = new List<LibraryMethodInfo>();
 
-            if (!Directory.Exists(_libsPath))
+            if (!Directory.Exists(releaseFolderPath))
                 return null;
 
-            var dllFiles = Directory.GetFiles(_libsPath, "*.dll");
+            var dllFiles = Directory.GetFiles(releaseFolderPath, "*.dll");
 
             Type[] types;
             try

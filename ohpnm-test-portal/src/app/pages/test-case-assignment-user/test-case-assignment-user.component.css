@@ -137,7 +137,34 @@
   color: #198754;
   font-weight: 600;
 }
+/* This screen now has 5 filters (Release, Environment, Test Suite, User, Status) —
+   narrower than the page-wide 350px default so they all fit on one line. */
 :host ::ng-deep select.form-select {
-  width: 350px !important;
+  width: 190px !important;
   height: 44px !important;
+}
+
+.filter-card {
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+}
+
+.filter-card > div {
+  flex-shrink: 0;
+}
+
+.filter-fields {
+  flex-wrap: nowrap !important;
+}
+
+.filter-fields > div {
+  flex-shrink: 0;
+}
+
+.filter-card .form-control-plaintext {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+  white-space: nowrap;
 }

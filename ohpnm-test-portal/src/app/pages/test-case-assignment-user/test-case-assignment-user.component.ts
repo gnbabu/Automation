@@ -5,6 +5,7 @@ import {
   GridColumn,
   IAssignedTestCase,
   IAssignmentCreateUpdateRequest,
+  IReleaseModel,
   ITestCaseModel,
   IUser,
   LibraryInfo,
@@ -12,6 +13,7 @@ import {
 import {
   AuthService,
   CommonToasterService,
+  ReleaseService,
   TestCaseAssignmentService,
   TestSuitesService,
   UsersService,
@@ -40,15 +42,15 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   @ViewChild('assignTesterTemplate', { static: true })
   assignTesterTemplate!: TemplateRef<any>;
 
+  releases: IReleaseModel[] = [];
+  selectedRelease: IReleaseModel | null = null;
+
   libraries: LibraryInfo[] = [];
   assignmentStatuses: any[] = [];
   selectedLibrary: LibraryInfo | null = null;
   selectedAssignmentStatus: any = null;
   users: IUser[] = [];
   selectedUser: IUser | null = null;
-
-  environments: any[] = [];
-  selectedEnvironment: any = null;
 
   testCases: ITestCaseModel[] = [];
   assignedTestCases: IAssignedTestCase[] = [];
@@ -65,14 +67,14 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     private authService: AuthService,
     private toaster: CommonToasterService,
     private userService: UsersService,
-    private testCaseAssignmentService: TestCaseAssignmentService
+    private testCaseAssignmentService: TestCaseAssignmentService,
+    private releaseService: ReleaseService
   ) {}
 
   ngOnInit(): void {
-    this.loadTestSuites();
+    this.loadReleases();
     this.loadAssignmentStatuses();
     this.loadUsers();
-    this.loadEnvironments();
     this.setupColumns();
   }
 
@@ -103,11 +105,34 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       },
     ];
   }
+  onReleaseChange(release: IReleaseModel | null) {
+    this.selectedRelease = release;
+
+    this.selectedLibrary = null;
+    this.selectedUser = null;
+    this.selectedAssignmentStatus = null;
+
+    this.libraries = [];
+    this.testCases = [];
+    this.selectedMethods = [];
+
+    this.showGrid = false;
+
+    this.totalCases = 0;
+    this.assignedCount = 0;
+    this.unassignedCount = 0;
+
+    // Do NOT call API if no release is selected
+    if (!release || !release.releaseId) {
+      return;
+    }
+    this.loadTestSuites(release.releaseId);
+  }
+
   onLibraryChange(library: LibraryInfo | null) {
     this.selectedLibrary = library;
 
     this.selectedUser = null;
-    this.selectedEnvironment = null;
     this.selectedAssignmentStatus = null;
 
     this.testCases = [];
@@ -120,7 +145,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     this.unassignedCount = 0;
 
     // Do NOT call API if no library is selected
-    if (!library || !library.libraryName) {
+    if (!library || !library.libraryName || !this.selectedRelease) {
       return;
     }
     this.loadLibraryTestCaseCounts(this.selectedLibrary?.libraryName ?? '');
@@ -129,7 +154,6 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   onUserChange(user: IUser | null) {
     this.selectedUser = user;
 
-    this.selectedEnvironment = null;
     this.selectedAssignmentStatus = null;
 
     this.testCases = [];
@@ -142,8 +166,19 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     this.selectedAssignmentStatus = status;
   }
 
-  loadTestSuites() {
-    this.testSuitesService.getLibraries().subscribe({
+  loadReleases() {
+    this.releaseService.getAll().subscribe({
+      next: (response) => {
+        this.releases = (response || []).filter((r) =>
+          ['Active', 'Completed'].includes(r.releaseLifecycle)
+        );
+      },
+      error: () => (this.releases = []),
+    });
+  }
+
+  loadTestSuites(releaseId: number) {
+    this.testSuitesService.getLibraries(releaseId).subscribe({
       next: (response) => (this.libraries = response || []),
       error: () => (this.libraries = []),
     });
@@ -164,31 +199,11 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     });
   }
 
-  loadEnvironments() {
-    this.environments = [
-      { environmentName: 'DEV' },
-      { environmentName: 'QA' },
-      { environmentName: 'UAT' },
-      { environmentName: 'PROD' },
-    ];
-  }
-
-  onEnvironmentChange(env: any) {
-    this.selectedEnvironment = env;
-
-    this.selectedAssignmentStatus = null;
-
-    this.testCases = [];
-    this.selectedMethods = [];
-
-    this.tryLoadTestCases();
-  }
-
   tryLoadTestCases() {
     if (
+      !this.selectedRelease ||
       !this.selectedLibrary ||
-      !this.selectedUser ||
-      !this.selectedEnvironment
+      !this.selectedUser
     ) {
       this.testCases = [];
       this.selectedMethods = [];
@@ -199,11 +214,15 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     const assignmentName =
       `${this.selectedUser.userName}-` +
       `${this.selectedLibrary.libraryName}-` +
-      `${this.selectedEnvironment.environmentName}`;
+      `${this.selectedRelease.environmentName}-` +
+      `${this.selectedRelease.releaseName}`;
 
-    // STEP 1: Get ALL test cases for selected Library
+    // STEP 1: Get ALL test cases for selected Library (scoped to the Release's own folder)
     this.testSuitesService
-      .getAllTestCasesByLibraryName(this.selectedLibrary.libraryName)
+      .getAllTestCasesByLibraryName(
+        this.selectedRelease.releaseId,
+        this.selectedLibrary.libraryName
+      )
       .subscribe({
         next: (libraryCases) => {
           this.testCases = libraryCases.map((tc) => ({
@@ -211,11 +230,11 @@ export class TestCaseAssignmentUserComponent implements OnInit {
             selected: false,
           }));
 
-          // STEP 2: Load ALL assigned testcases (for ALL users)
+          // STEP 2: Load ALL assigned testcases (for ALL users) scoped to this Release
           this.testCaseAssignmentService
-            .getAssignedTestCasesForLibraryAndEnvironment(
+            .getAssignedTestCasesForLibraryAndRelease(
               this.selectedLibrary?.libraryName ?? '',
-              this.selectedEnvironment.environmentName
+              this.selectedRelease?.releaseId ?? 0
             )
             .subscribe({
               next: (allAssigned) => {
@@ -281,12 +300,8 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   }
 
   onSaveAssignments() {
-    if (
-      !this.selectedLibrary ||
-      !this.selectedUser ||
-      !this.selectedEnvironment
-    ) {
-      this.toaster.error('Please select User, Library, and Environment.');
+    if (!this.selectedRelease || !this.selectedLibrary || !this.selectedUser) {
+      this.toaster.error('Please select Release, Library, and User.');
       return;
     }
 
@@ -299,7 +314,8 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       assignedUser: this.selectedUser.userId ?? 0,
       assignmentStatus: 'New',
       releaseName: this.selectedLibrary.libraryName,
-      environment: this.selectedEnvironment.environmentName,
+      environment: this.selectedRelease.environmentName,
+      releaseId: this.selectedRelease.releaseId,
       assignedBy: this.authService.getLoggedInUserId(),
       testCases: this.selectedMethods.map((tc) => ({
         testCaseId: tc.testCaseId,
@@ -326,25 +342,17 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   }
 
   onResetAssignments() {
-    if (
-      !this.selectedLibrary ||
-      !this.selectedUser ||
-      !this.selectedEnvironment
-    ) {
-      this.toaster.error('Please select User, Library, and Environment.');
+    if (!this.selectedRelease || !this.selectedLibrary || !this.selectedUser) {
+      this.toaster.error('Please select Release, Library, and User.');
       return;
     }
-
-    const assignmentName =
-      `${this.selectedUser.userName}-` +
-      `${this.selectedLibrary.libraryName}-` +
-      `${this.selectedEnvironment.environmentName}`;
 
     const request: IAssignmentCreateUpdateRequest = {
       assignedUser: this.selectedUser.userId ?? 0,
       assignmentStatus: 'Removed',
       releaseName: this.selectedLibrary.libraryName,
-      environment: this.selectedEnvironment.environmentName,
+      environment: this.selectedRelease.environmentName,
+      releaseId: this.selectedRelease.releaseId,
       assignedBy: this.authService.getLoggedInUserId(),
       testCases: [], // EMPTY → Reset all
     };
@@ -386,8 +394,14 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     this.assignedCount = 0;
     this.unassignedCount = 0;
 
-    const allCases$ =
-      this.testSuitesService.getAllTestCasesByLibraryName(libraryName);
+    if (!this.selectedRelease) {
+      return;
+    }
+
+    const allCases$ = this.testSuitesService.getAllTestCasesByLibraryName(
+      this.selectedRelease.releaseId,
+      libraryName
+    );
     const assignedCases$ =
       this.testCaseAssignmentService.getAllAssignedTestCasesInLibrary(
         libraryName

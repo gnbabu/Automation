@@ -117,6 +117,7 @@ namespace AutomationAPI.Repositories
                 {
                     QueueId = reader.GetGuid("QueueId"),
                     AssignmentTestCaseId = reader.GetInt32("AssignmentTestCaseId"),
+                    ReleaseId = reader.GetNullableInt("ReleaseId"),
                     LibraryName = reader.GetNullableString("LibraryName"),
                     ClassName = reader.GetNullableString("ClassName"),
                     MethodName = reader.GetNullableString("MethodName"),
