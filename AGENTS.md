@@ -150,6 +150,9 @@ Mirrors Environment Management's soft/hard delete split:
   Harmless for `ReleaseId` (0 never resolves to a real release, so the TestQueueWorker's
   skip/retry logic still behaves correctly), but worth fixing centrally if it matters
   elsewhere.
+- `aut.TestCaseAssignment.ReleaseId` is now `NOT NULL` (see below) — the 3 legacy
+  (`ReleaseId = NULL`) assignments and their dependent rows were permanently deleted, so
+  there's no longer a "legacy/unlinked assignment" case anywhere in the app.
 
 ## Test Case Assignment — Release-aware (Library + Discovery + Execution)
 
@@ -195,4 +198,42 @@ key is left in `appsettings.json`, just unreferenced by these code paths):
   correctly loaded/ran `OnboardingTests.dll` from that folder (failing first on a genuinely
   missing dependency DLL, then passing once it was added — proving the folder scoping
   works, not the global one), and a legacy `ReleaseId = NULL` assignment's queued item
-  correctly stayed `Queued`/retried instead of failing.
+  correctly stayed `Queued`/retried instead of failing (this legacy row no longer exists —
+  see "Legacy assignment cleanup" below).
+
+## Legacy assignment cleanup + `ReleaseId` now required
+The 3 pre-Release-Management assignments (`ReleaseId = NULL`, library-as-release rows) and
+all their dependent data were permanently deleted from the live DB (`AssignmentId 22/23/24`;
+9 `AssignedTestCases`, 7 `TestCaseExecutionQueue`, 14 `TestCaseExecutionLogs`, 4
+`TestScreenshots` rows) since they were no longer needed. `aut.TestCaseAssignment.ReleaseId`
+was then altered to `NOT NULL` (dropping/recreating `IX_TestCaseAssignment_ReleaseId` around
+the `ALTER COLUMN`, since SQL Server won't alter a column an index depends on). This is
+captured in `Release_Management_Migration_Full.sql` as an idempotent, guarded section (only
+tightens the column if it's still nullable **and** no `NULL` rows remain — never fails or
+loses data if re-run) — the one-time DELETE itself is not part of the idempotent script
+(it was a manual, explicitly-confirmed one-off cleanup).
+
+## Test Case Execution Panel — Release-aware alignment
+`test-case-execution-panel.component` now mirrors the Assignment screen's Release-awareness:
+- A **Release filter** dropdown (scoped to releases the tester actually has assignments in,
+  derived from their own `assignments` list) narrows the existing Assignment dropdown;
+  selecting a release auto-selects its first matching assignment.
+- The "Selected Assignment Name" card was replaced with a clearer info row: **Test Suite**
+  (`assignment.releaseName` — historically named, actually the library), **Environment**
+  (`assignment.environment`), and **Release** (`{releaseName} v{version}` + a lifecycle
+  badge reusing `release-management.component.ts`'s `statusPillClass` color convention,
+  reimplemented locally as `releaseLifecycleBadgeClass`). The raw `assignmentName` stays
+  visible as a small muted subtitle for traceability.
+- **Execution guard**: Run Now / Schedule (single + bulk) are blocked once the assignment's
+  linked Release is no longer `Active` (e.g. `Completed`/`Rejected`) — enforced **server-side**
+  in `TestCaseExecutionQueueController` (new `usp_GetAssignmentReleaseLifecycle` +
+  `ITestCaseAssignmentRepository.GetReleaseLifecycleForAssignmentAsync`, returns `400 "This
+  release is {lifecycle} and no longer accepts new test executions."`) and mirrored
+  client-side (`isReleaseActive()`) for disabled buttons/rows and immediate toast feedback.
+  The guard only applies at **submission** time — items already `Queued`/`Scheduled` before
+  a release's lifecycle changes are **not** retroactively cancelled and still execute
+  normally via the existing `TestQueueWorker` (verified end-to-end: queued-while-Active item
+  completed successfully even after the release was later marked `Completed`).
+- `releases` (for the lifecycle badge/guard) refresh on every auto-refresh tick (every 10s,
+  alongside the existing test-case refresh), so a lifecycle change is reflected without a
+  page reload.

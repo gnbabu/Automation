@@ -271,6 +271,34 @@ BEGIN
 END
 GO
 
+-- 5.x TestCaseAssignment.ReleaseId -> NOT NULL. Legacy (pre-Release-Management) rows
+-- with ReleaseId = NULL have been removed from the live DB (one-time cleanup, not part
+-- of this idempotent script); every assignment going forward is required to carry a
+-- ReleaseId at the application layer. Only tighten the column if it's still nullable AND
+-- no NULL rows remain, so this stays safe to re-run and never fails/loses data.
+IF EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = 'aut' AND TABLE_NAME = 'TestCaseAssignment'
+      AND COLUMN_NAME = 'ReleaseId' AND IS_NULLABLE = 'YES'
+)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM aut.TestCaseAssignment WHERE ReleaseId IS NULL)
+    BEGIN
+        IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_TestCaseAssignment_ReleaseId' AND object_id = OBJECT_ID('aut.TestCaseAssignment'))
+            DROP INDEX [IX_TestCaseAssignment_ReleaseId] ON aut.[TestCaseAssignment];
+
+        ALTER TABLE aut.[TestCaseAssignment] ALTER COLUMN [ReleaseId] INT NOT NULL;
+
+        CREATE NONCLUSTERED INDEX [IX_TestCaseAssignment_ReleaseId]
+            ON aut.[TestCaseAssignment] ([ReleaseId]);
+
+        PRINT 'TestCaseAssignment.ReleaseId altered to NOT NULL';
+    END
+    ELSE
+        PRINT 'Skipped ReleaseId NOT NULL: NULL rows still present';
+END
+GO
+
 /*============================================================================
   6. DATA MIGRATION (non-destructive back-fill)
 ============================================================================*/
@@ -977,6 +1005,21 @@ BEGIN
 
     ORDER BY
         Q.CreatedDate ASC;
+END
+GO
+
+-- 7.13 usp_GetAssignmentReleaseLifecycle  (NEW - lets the execution queue endpoints
+--      block Run Now/Schedule once the assignment's linked Release is no longer Active)
+CREATE OR ALTER PROCEDURE aut.usp_GetAssignmentReleaseLifecycle
+    @AssignmentId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT R.ReleaseLifecycle
+    FROM aut.TestCaseAssignment TCA
+    JOIN aut.Release R ON TCA.ReleaseId = R.ReleaseId
+    WHERE TCA.AssignmentId = @AssignmentId;
 END
 GO
 

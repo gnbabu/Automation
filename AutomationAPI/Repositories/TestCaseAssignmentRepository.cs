@@ -228,6 +228,18 @@ namespace AutomationAPI.Repositories
             await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.CreateOrUpdateAssignmentWithTestCases, sqlParams);
         }
 
+        public async Task<string?> GetReleaseLifecycleForAssignmentAsync(int assignmentId)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@AssignmentId", SqlDbType.Int) { Value = assignmentId }
+            };
+
+            return await _sqlDataAccessHelper.ExecuteScalarAsync<string>(
+                SqlDbConstants.GetAssignmentReleaseLifecycle,
+                parameters);
+        }
+
         public async Task<bool> UpdateAssignedTestCaseStatusAsync(AssignedTestCaseStatusUpdate request)
         {
             var parameters = new[]

@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import {
   GridColumn,
   IAssignedTestCase,
+  IReleaseModel,
   ITestCaseAssignmentEntity,
   ITestScreenshot,
 } from '@interfaces';
@@ -17,6 +18,7 @@ import {
   AuthService,
   CommonToasterService,
   ConfirmService,
+  ReleaseService,
   ScreenshotService,
   TestCaseAssignmentService,
   TestCaseExecutionLogsService,
@@ -28,6 +30,7 @@ import { ConfirmDialogComponent } from 'app/core/modals/confirm-dialog/confirm-d
 import { ScheduleTestcasesDialogComponent } from './schedule-testcases-dialog/schedule-testcases-dialog.component';
 import { TestScreenshotGalleryComponent } from './test-screenshot-gallery/test-screenshot-gallery.component';
 import { ExecutionLogsDialogComponent } from 'app/common-modals/execution-logs-dialog/execution-logs-dialog.component';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-test-case-execution',
@@ -52,7 +55,8 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
     private confirmService: ConfirmService,
     private testCaseExecutionService: TestCaseExecutionService,
     private screenshotService: ScreenshotService,
-    private executionLogsService: TestCaseExecutionLogsService
+    private executionLogsService: TestCaseExecutionLogsService,
+    private releaseService: ReleaseService
   ) {}
 
   @ViewChild('testCaseIdTemplate', { static: true })
@@ -79,7 +83,13 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   executionLogsDialog!: ExecutionLogsDialogComponent;
 
   assignments: ITestCaseAssignmentEntity[] = [];
+  filteredAssignments: ITestCaseAssignmentEntity[] = [];
   selectedAssignment: ITestCaseAssignmentEntity | null = null;
+
+  releases: IReleaseModel[] = [];
+  releaseFilterOptions: IReleaseModel[] = [];
+  selectedReleaseFilter: IReleaseModel | null = null;
+  selectedAssignmentRelease: IReleaseModel | null = null;
 
   columns: GridColumn[] = [];
   testCases: IAssignedTestCase[] = [];
@@ -112,6 +122,9 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
       console.log('♻ Auto-refreshing test cases...');
       this.loadAssignedTestCases();
+      // Refresh Release lifecycles too, so the Active-only execution guard stays
+      // accurate without requiring a manual page reload.
+      this.loadReleases();
       this.lastUpdated = new Date(); // update timestamp
     }, this.refreshSeconds * 1000);
   }
@@ -131,28 +144,98 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.testCaseAssignmentService.getAssignmentsByUserId(userId).subscribe({
-      next: (res) => {
-        this.assignments = res;
+    forkJoin({
+      releases: this.releaseService.getAll(),
+      assignments: this.testCaseAssignmentService.getAssignmentsByUserId(userId),
+    }).subscribe({
+      next: ({ releases, assignments }) => {
+        this.releases = releases || [];
+        this.assignments = assignments || [];
+        this.buildReleaseFilterOptions();
+        this.filteredAssignments = this.assignments;
 
         // ✅ Select first assignment by default
-        if (this.assignments.length > 0) {
-          this.selectedAssignment = this.assignments[0];
-          this.onAssignmentChange(this.selectedAssignment); // Trigger selection event
+        if (this.filteredAssignments.length > 0) {
+          this.onAssignmentChange(this.filteredAssignments[0]); // Trigger selection event
         }
       },
       error: (err) => console.error('Failed to load assignments:', err),
     });
   }
 
+  loadReleases() {
+    this.releaseService.getAll().subscribe({
+      next: (res) => {
+        this.releases = res || [];
+        this.updateSelectedAssignmentRelease();
+      },
+      error: (err) => console.error('Failed to refresh releases:', err),
+    });
+  }
+
+  buildReleaseFilterOptions() {
+    const releaseIds = new Set(
+      this.assignments.map((a) => a.releaseId).filter((id) => !!id)
+    );
+    this.releaseFilterOptions = this.releases.filter((r) =>
+      releaseIds.has(r.releaseId)
+    );
+  }
+
+  updateSelectedAssignmentRelease() {
+    this.selectedAssignmentRelease = this.selectedAssignment
+      ? this.releases.find(
+          (r) => r.releaseId === this.selectedAssignment!.releaseId
+        ) ?? null
+      : null;
+  }
+
+  onReleaseFilterChange(release: IReleaseModel | null) {
+    this.selectedReleaseFilter = release;
+    this.filteredAssignments = release
+      ? this.assignments.filter((a) => a.releaseId === release.releaseId)
+      : this.assignments;
+
+    if (this.filteredAssignments.length > 0) {
+      this.onAssignmentChange(this.filteredAssignments[0]);
+    } else {
+      this.selectedAssignment = null;
+      this.selectedAssignmentRelease = null;
+      this.testCases = [];
+      this.resetStats();
+    }
+  }
+
   onAssignmentChange(assignment: ITestCaseAssignmentEntity) {
     this.selectedAssignment = assignment;
+    this.updateSelectedAssignmentRelease();
 
     this.stopAutoRefresh(); // clear old interval
     this.loadAssignedTestCases(); // load immediately
 
     this.startAutoRefresh(); // 🔥 start polling for this assignment
     console.log('Selected Assignment:', assignment);
+  }
+
+  isReleaseActive(): boolean {
+    return this.selectedAssignmentRelease?.releaseLifecycle === 'Active';
+  }
+
+  // Same convention as release-management.component.ts's statusPillClass, so the
+  // lifecycle badge here matches the color used everywhere else in the app.
+  releaseLifecycleBadgeClass(lifecycle?: string): string {
+    switch ((lifecycle || '').toLowerCase()) {
+      case 'active':
+        return 'bg-success';
+      case 'completed':
+        return 'bg-primary';
+      case 'rejected':
+        return 'bg-danger';
+      case 'draft':
+        return 'bg-secondary';
+      default:
+        return 'bg-info text-dark';
+    }
   }
 
   loadAssignedTestCases() {
@@ -272,6 +355,13 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   }
 
   async onRunNow(testCase: IAssignedTestCase) {
+    if (!this.isReleaseActive()) {
+      this.toaster.error(
+        `This release is ${this.selectedAssignmentRelease?.releaseLifecycle}. New executions are disabled.`
+      );
+      return;
+    }
+
     this.isUserPerformingAction = true;
 
     const confirmed = await this.confirmService.confirm(
@@ -331,6 +421,13 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   }
 
   onSchedule(testCase: IAssignedTestCase) {
+    if (!this.isReleaseActive()) {
+      this.toaster.error(
+        `This release is ${this.selectedAssignmentRelease?.releaseLifecycle}. New executions are disabled.`
+      );
+      return;
+    }
+
     this.isUserPerformingAction = true;
 
     this.scheduleDialog.open((data: any) => {
@@ -358,6 +455,13 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   }
 
   async onBulkRunNow() {
+    if (!this.isReleaseActive()) {
+      this.toaster.error(
+        `This release is ${this.selectedAssignmentRelease?.releaseLifecycle}. New executions are disabled.`
+      );
+      return;
+    }
+
     this.isUserPerformingAction = true;
 
     if (!this.selectedTestCases.length) {
@@ -401,6 +505,13 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   }
 
   onBulkSchedule() {
+    if (!this.isReleaseActive()) {
+      this.toaster.error(
+        `This release is ${this.selectedAssignmentRelease?.releaseLifecycle}. New executions are disabled.`
+      );
+      return;
+    }
+
     this.isUserPerformingAction = true;
 
     if (!this.selectedTestCases || this.selectedTestCases.length === 0) {
@@ -434,7 +545,10 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
     });
   }
 
-  isTestCaseSelectable(row: any): boolean {
+  // Arrow function (not a regular method) so `this` stays bound to the component
+  // instance even when DataGridComponent invokes it directly as a plain callback
+  // (via [rowSelectableFn]) without preserving the calling context.
+  isTestCaseSelectable = (row: any): boolean => {
     const disabledStatuses = [
       'Queued',
       'Scheduled',
@@ -444,8 +558,11 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
       'Cancelled',
     ];
 
-    return !disabledStatuses.includes(row.testCaseStatus ?? '');
-  }
+    return (
+      !disabledStatuses.includes(row.testCaseStatus ?? '') &&
+      this.isReleaseActive()
+    );
+  };
 
   ngOnDestroy(): void {
     this.stopAutoRefresh();

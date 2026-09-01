@@ -9,14 +9,29 @@ namespace AutomationAPI.Controllers
     public class TestCaseExecutionQueueController : ControllerBase
     {
         private readonly ITestCaseExecutionQueueRepository _repo;
+        private readonly ITestCaseAssignmentRepository _assignmentRepo;
         private readonly ILogger<TestCaseExecutionQueueController> _logger;
 
         public TestCaseExecutionQueueController(
             ITestCaseExecutionQueueRepository repo,
+            ITestCaseAssignmentRepository assignmentRepo,
             ILogger<TestCaseExecutionQueueController> logger)
         {
             _repo = repo;
+            _assignmentRepo = assignmentRepo;
             _logger = logger;
+        }
+
+        // Run Now / Schedule are only allowed while the assignment's linked Release is
+        // still Active. Already Queued/Scheduled items are unaffected (not re-checked by
+        // the worker at dequeue time) - this only stops new submissions.
+        private async Task<string?> GetBlockedReleaseLifecycleReasonAsync(int assignmentId)
+        {
+            var lifecycle = await _assignmentRepo.GetReleaseLifecycleForAssignmentAsync(assignmentId);
+            if (!string.IsNullOrWhiteSpace(lifecycle) && !lifecycle.Equals("Active", StringComparison.OrdinalIgnoreCase))
+                return $"This release is {lifecycle} and no longer accepts new test executions.";
+
+            return null;
         }
 
         [HttpPost("single-run")]
@@ -29,6 +44,10 @@ namespace AutomationAPI.Controllers
 
                 if (request.AssignmentId <= 0 || request.AssignmentTestCaseId <= 0)
                     return BadRequest("AssignmentId and AssignmentTestCaseId must be valid.");
+
+                var blockedReason = await GetBlockedReleaseLifecycleReasonAsync(request.AssignmentId);
+                if (blockedReason != null)
+                    return BadRequest(blockedReason);
 
                 var result = await _repo.SingleRunNowAsync(
                     request.AssignmentId,
@@ -66,6 +85,10 @@ namespace AutomationAPI.Controllers
                 if (request.AssignmentTestCaseIds == null || !request.AssignmentTestCaseIds.Any())
                     return BadRequest("At least one AssignmentTestCaseId is required.");
 
+                var blockedReason = await GetBlockedReleaseLifecycleReasonAsync(request.AssignmentId);
+                if (blockedReason != null)
+                    return BadRequest(blockedReason);
+
                 var success = await _repo.BulkRunNowAsync(
                     request.AssignmentId,
                     request.AssignmentTestCaseIds,
@@ -97,6 +120,10 @@ namespace AutomationAPI.Controllers
 
                 if (request.ScheduleDate == default)
                     return BadRequest("ScheduleDate is invalid.");
+
+                var blockedReason = await GetBlockedReleaseLifecycleReasonAsync(request.AssignmentId);
+                if (blockedReason != null)
+                    return BadRequest(blockedReason);
 
                 var result = await _repo.SingleScheduleAsync(
                     request.AssignmentId,
@@ -137,6 +164,10 @@ namespace AutomationAPI.Controllers
 
                 if (request.ScheduleDate == default)
                     return BadRequest("ScheduleDate is invalid.");
+
+                var blockedReason = await GetBlockedReleaseLifecycleReasonAsync(request.AssignmentId);
+                if (blockedReason != null)
+                    return BadRequest(blockedReason);
 
                 var success = await _repo.BulkScheduleAsync(
                     request.AssignmentId,
