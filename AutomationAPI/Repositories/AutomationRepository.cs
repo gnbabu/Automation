@@ -44,13 +44,14 @@ namespace AutomationAPI.Repositories
 
         }
 
-        public async Task<AutomationData> GetAutomationDataAsync(int sectionId, int userId)
+        public async Task<AutomationData> GetAutomationDataAsync(int sectionId, int userId, int environmentId)
         {
             AutomationData automationData = new AutomationData();
             var parameters = new[]
             {
                 new SqlParameter("@SectionID", sectionId),
-                new SqlParameter("@UserId", userId)
+                new SqlParameter("@UserId", userId),
+                new SqlParameter("@EnvironmentId", environmentId)
             };
 
             var data = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationData, parameters, reader => new AutomationData
@@ -59,6 +60,7 @@ namespace AutomationAPI.Repositories
                 SectionId = reader.GetNullableInt("SectionID") ?? 0,
                 TestContent = reader.GetNullableString("TestContent"),
                 UserId = reader.GetNullableInt("UserID") ?? 0,
+                EnvironmentId = reader.GetNullableInt("EnvironmentId"),
 
             });
 
@@ -89,7 +91,8 @@ namespace AutomationAPI.Repositories
             {
                 new SqlParameter("@SectionID", automationDataRequest.SectionId),
                 new SqlParameter("@TestContent", automationDataRequest.TestContent),
-                new SqlParameter("@UserID",automationDataRequest.UserId)
+                new SqlParameter("@UserID",automationDataRequest.UserId),
+                new SqlParameter("@EnvironmentId", automationDataRequest.EnvironmentId)
             };
 
             return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.InsertAutomationData, parameters);

@@ -111,6 +111,7 @@ export interface IAutomationDataRequest {
   sectionId?: number;
   testContent: string;
   userId?: number;
+  environmentId?: number;
 }
 
 export interface IAutomationData {
@@ -119,6 +120,7 @@ export interface IAutomationData {
   testContent: string;
   sectionName?: string;
   userId?: number;
+  environmentId?: number;
 }
 
 export interface TestResultPayload {

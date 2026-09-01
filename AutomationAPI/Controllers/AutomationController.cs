@@ -59,11 +59,14 @@ namespace AutomationAPI.Controllers
 
         //Get Automation Data by Section ID
         [HttpGet("sections/data")]
-        public async Task<IActionResult> GetAutomationDataAsync([FromQuery] int sectionId, [FromQuery] int userId)
+        public async Task<IActionResult> GetAutomationDataAsync([FromQuery] int sectionId, [FromQuery] int userId, [FromQuery] int environmentId)
         {
             try
             {
-                var data = await _automationRepository.GetAutomationDataAsync(sectionId, userId);
+                if (environmentId <= 0)
+                    return BadRequest("EnvironmentId is required.");
+
+                var data = await _automationRepository.GetAutomationDataAsync(sectionId, userId, environmentId);
                 return Ok(data);
             }
             catch (Exception ex)
@@ -96,6 +99,9 @@ namespace AutomationAPI.Controllers
         {
             try
             {
+                if (request.EnvironmentId is null || request.EnvironmentId <= 0)
+                    return BadRequest("EnvironmentId is required.");
+
                 _logger.LogInformation("Inserting automation data for SectionID: {SectionID}", request.SectionId);
                 var newId = await _automationRepository.InsertAutomationDataAsync(request);
                 return Ok(newId);

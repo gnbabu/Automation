@@ -266,11 +266,45 @@ after discovery moved off the global `TestLibs` folder; it's now revived, Releas
   and Test Case Assignment (sidebar link hidden via `*ngIf="isAdmin"` in
   `left-sidebar.component.html`) — this page surfaces **every** tester's results for a
   Release, not just the logged-in user's own (unlike the Execution Panel, which stays open
-  to everyone since it's scoped to "my assignments"). Note: like every other
-  `isAdmin`-gated page in this app, this is sidebar-link-only — there is no route-level or
-  API-level admin check anywhere yet (`/dashboard` is still reachable by direct URL, and its
-  backing endpoints aren't role-checked), so this is UI-level gating, not real security
-  enforcement. Tracked under "Finer role gating" below if stronger enforcement is wanted.
+  to everyone since it's scoped to "my assignments"). Also gated at the **route** level via
+  a new `adminGuard` (`core/guards/admin.guard.ts`, applied alongside `authGuard` to every
+  `isAdmin`-gated route: Dashboard, Users, Test Case Assignment, Release Management +
+  sub-routes, Environment Management + sub-routes) — a non-admin navigating directly to
+  `/dashboard` is redirected to `/test-case-execution-panel` instead of hitting a broken
+  page. At the **API** level, every controller now requires `[Authorize]` (login required) —
+  deliberately **not** role-specific (`Roles = "Admin"`), so a logged-in Tester with a valid
+  token could still call the Dashboard's backing endpoints directly; only the UI/route hides
+  them. This was an explicit choice (see git history) over per-endpoint role checks, partly
+  because some backing endpoints (e.g. `GET /api/Release`) are also legitimately used by
+  non-admin pages (the Execution Panel's release filter), so blanket role-restricting shared
+  endpoints isn't safe without splitting them. Tracked under "Finer role gating" below if
+  stronger, endpoint-specific enforcement is wanted later.
 - "Run Details & Timeline" card is untouched — still static/decorative, no real backing
   concept in this app (execution happens continuously per test case via the queue, not as a
   single "run").
+
+## Test Data Management — scoped by Environment (not Release)
+Unlike Assignment/Execution Panel/Dashboard, `aut.AutomationData` (per-user Flow/Section
+test input content, e.g. `NewProviderDTO` field values for the Registration flow) has **no
+relationship to Release/Library/TestCase** — its only new scoping dimension is Environment,
+per explicit decision (there's no Release/lifecycle concept that applies to raw test input
+data):
+- `aut.AutomationData` gained `EnvironmentId` (FK to `aut.Environment`, now `NOT NULL`).
+  The 27 pre-existing rows were backfilled to **QA** (`EnvironmentId = 8`) in a one-time,
+  explicitly-confirmed `UPDATE` — captured as an idempotent guarded migration in
+  `Database/AutomationData_Environment_Migration.sql` (only backfills/tightens if the
+  column is still nullable and no NULLs remain, so re-running is always a safe no-op).
+- `usp_GetAutomationData`/`usp_InsertAutomationData` now take `@EnvironmentId`.
+  `usp_UpdateAutomationData` is unchanged — Environment (like Section/User) is fixed at
+  creation, never edited afterward, matching the same "identity fields are immutable"
+  convention used for `TestCaseAssignment`.
+- `TestDataManagementComponent` gained a "Select Environment" dropdown (reusing
+  `EnvironmentService`, same pattern as other pages) alongside Flow/Section. Per explicit
+  decision, a Flow/Section/Environment combo with no saved data starts **empty** — no
+  cross-environment pre-fill, even if the same user already has content for that
+  Flow/Section under a different Environment. Saving creates an independent row per
+  Environment (verified directly via SQL: inserting a second environment's content for the
+  same Section+User left the first environment's row untouched).
+- `usp_GetAutomationDataByFlowName` was **not** touched — confirmed it has zero frontend
+  callers (dead code, pre-existing), so it wasn't worth updating for a dimension nothing
+  reads it through.

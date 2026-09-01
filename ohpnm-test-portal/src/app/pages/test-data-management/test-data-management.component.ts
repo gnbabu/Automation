@@ -7,11 +7,13 @@ import {
   IAutomationDataRequest,
   IAutomationDataSection,
   IAutomationFlow,
+  IEnvironmentModel,
 } from '@interfaces';
 import {
   AuthService,
   AutomationService,
   CommonToasterService,
+  EnvironmentService,
 } from '@services';
 @Component({
   selector: 'app-test-data-management',
@@ -22,20 +24,24 @@ import {
 export class TestDataManagementComponent implements OnInit {
   flows: IAutomationFlow[] = [];
   sections: IAutomationDataSection[] = [];
+  environments: IEnvironmentModel[] = [];
 
   selectedFlow?: IAutomationFlow;
   selectedSection?: IAutomationDataSection;
+  selectedEnvironment?: IEnvironmentModel;
   testContent: string = '';
   existingSectionData?: IAutomationData;
 
   constructor(
     private automationService: AutomationService,
     private toaster: CommonToasterService,
-    private authService: AuthService
+    private authService: AuthService,
+    private environmentService: EnvironmentService
   ) {}
 
   ngOnInit(): void {
     this.loadFlows();
+    this.loadEnvironments();
   }
 
   loadFlows() {
@@ -45,10 +51,18 @@ export class TestDataManagementComponent implements OnInit {
     });
   }
 
+  loadEnvironments() {
+    this.environmentService.getAll().subscribe({
+      next: (res) => (this.environments = (res || []).filter((e) => e.isActive)),
+      error: (err) => console.error('Error loading environments:', err),
+    });
+  }
+
   onFlowChange() {
     this.selectedSection = undefined;
     this.sections = [];
     this.testContent = '';
+    this.existingSectionData = undefined;
 
     if (this.selectedFlow) {
       this.automationService.getSections(this.selectedFlow.flowName).subscribe({
@@ -60,24 +74,43 @@ export class TestDataManagementComponent implements OnInit {
     }
   }
 
+  onEnvironmentChange() {
+    this.selectedFlow = undefined;
+    this.selectedSection = undefined;
+    this.sections = [];
+    this.testContent = '';
+    this.existingSectionData = undefined;
+  }
+
   onSectionChange() {
     this.testContent = '';
     this.existingSectionData = undefined;
 
-    if (this.selectedFlow && this.selectedSection) {
-      const userId = this.authService.getLoggedInUserId();
-      const sectionId = this.selectedSection.sectionId;
-      this.automationService.getAutomationData(sectionId, userId).subscribe({
+    this.tryLoadAutomationData();
+  }
+
+  private tryLoadAutomationData() {
+    if (!this.selectedFlow || !this.selectedSection || !this.selectedEnvironment) {
+      return;
+    }
+
+    const userId = this.authService.getLoggedInUserId();
+    const sectionId = this.selectedSection.sectionId;
+    const environmentId = this.selectedEnvironment.environmentId;
+
+    this.automationService
+      .getAutomationData(sectionId, userId, environmentId)
+      .subscribe({
         next: (res) => {
           this.existingSectionData = res;
           this.testContent = res.testContent;
         },
         error: (err) => console.error('Error loading sections:', err),
       });
-    }
   }
+
   onSubmit(form: NgForm): void {
-    if (!form.valid || !this.selectedSection) return;
+    if (!form.valid || !this.selectedSection || !this.selectedEnvironment) return;
 
     if (!this.validateTestContentFormat(this.testContent)) {
       this.toaster.info('Test content format is invalid!');
@@ -98,6 +131,7 @@ export class TestDataManagementComponent implements OnInit {
         sectionId: this.selectedSection.sectionId,
         testContent: this.testContent,
         userId: this.authService.getLoggedInUserId(),
+        environmentId: this.selectedEnvironment.environmentId,
       };
       request$ = this.automationService.createAutomationData(request);
     }

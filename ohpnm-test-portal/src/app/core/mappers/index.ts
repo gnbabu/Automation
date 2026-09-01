@@ -185,6 +185,7 @@ export const AutomationDataMapper = {
       sectionName: data.sectionName,
       testContent: data.testContent,
       userId: data.userId,
+      environmentId: data.environmentId,
     };
   },
 };

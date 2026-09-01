@@ -10,7 +10,28 @@
       <!-- Dropdown Section -->
       <div class="border p-3 rounded mb-3">
         <div class="row g-3">
-          <div class="col-md-6">
+          <div class="col-md-4">
+            <label for="environment" class="form-label fw-bold">Environment</label>
+            <select
+              id="environment"
+              name="environment"
+              class="form-select"
+              [(ngModel)]="selectedEnvironment"
+              (change)="onEnvironmentChange()"
+              required
+              [ngClass]="{
+                'is-invalid': testDataForm.submitted && !selectedEnvironment
+              }"
+            >
+              <option [ngValue]="undefined">Select Environment</option>
+              <option *ngFor="let env of environments" [ngValue]="env">
+                {{ env.environmentName }}
+              </option>
+            </select>
+            <div class="invalid-feedback">Environment is required.</div>
+          </div>
+
+          <div class="col-md-4">
             <label for="flowName" class="form-label fw-bold">Flow Name</label>
             <select
               id="flowName"
@@ -31,7 +52,7 @@
             <div class="invalid-feedback">Flow Name is required.</div>
           </div>
 
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="section" class="form-label fw-bold">Section</label>
             <select
               id="section"
@@ -76,7 +97,7 @@
         <button
           class="btn-purple"
           type="submit"
-          [disabled]="!testDataForm.valid || !testContent.trim()"
+          [disabled]="!testDataForm.valid || !testContent.trim() || !selectedEnvironment"
         >
           <i class="bi bi-save me-1"></i>
           {{ existingSectionData?.id ? "Update" : "Save" }}

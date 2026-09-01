@@ -7,7 +7,7 @@ namespace AutomationAPI.Repositories.Interfaces
 
         Task<IEnumerable<AutomationFlow>> GetAutomationFlowNamesAsync();
         Task<IEnumerable<AutomationDataSection>> GetAutomationDataSectionsAsync(string flowName = null);
-        Task<AutomationData> GetAutomationDataAsync(int sectionId, int userId);
+        Task<AutomationData> GetAutomationDataAsync(int sectionId, int userId, int environmentId);
         Task<IEnumerable<AutomationData>> GetAutomationDataByFlowNameAsync(string flowName);
         Task<int> InsertAutomationDataAsync(AutomationDataRequest automationDataRequest);
         Task UpdateAutomationDataAsync(AutomationDataRequest automationDataRequest);

@@ -31,10 +31,11 @@ export class AutomationService {
 
   getAutomationData(
     sectionId: number,
-    userId: number
+    userId: number,
+    environmentId: number
   ): Observable<IAutomationData> {
     return this.httpService.get<IAutomationData>(
-      `Automation/sections/data?sectionId=${sectionId}&userId=${userId}`,
+      `Automation/sections/data?sectionId=${sectionId}&userId=${userId}&environmentId=${environmentId}`,
       {},
       Mappers.AutomationDataMapper.fromApi
     );
