@@ -84,6 +84,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   recentLogs: ITestCaseExecutionLog[] = [];
   showFullLogs = false;
 
+  overallStartTime: Date | null = null;
+  overallEndTime: Date | null = null;
+  runStatusLabel: 'Not Started' | 'In Progress' | 'Completed' = 'Not Started';
+  executionDurationLabel = '—';
+  testersInvolvedCount = 0;
+  averageTestDurationLabel = '—';
+
   @ViewChild('logsDialog')
   executionLogsDialog!: ExecutionLogsDialogComponent;
 
@@ -110,6 +117,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.releases = (res || []).filter((r) =>
           ['Active', 'Completed'].includes(r.releaseLifecycle)
         );
+
+        // Auto-select the most recently created release (GET /api/Release is already
+        // sorted by CreatedOn DESC) so the page shows data immediately, matching the
+        // same "auto-select first item" convention used on the Assignment/Execution
+        // Panel screens instead of starting on an empty state.
+        if (this.releases.length > 0) {
+          this.onReleaseChange(this.releases[0]);
+        }
       },
       error: () => (this.releases = []),
     });
@@ -172,6 +187,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.executionLogs = [];
     this.recentLogs = [];
     this.resetSummaryCounts();
+    this.resetRunTimeline();
 
     if (!release) return;
 
@@ -207,6 +223,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         (tc) =>
           tc.testCaseStatus === 'Skipped' || tc.testCaseStatus === 'Cancelled'
       ).length;
+
+      this.computeRunTimeline(merged);
     });
 
     this.loadReleaseExecutionLogs(releaseId);
@@ -225,6 +243,78 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.failedCount = 0;
     this.runningCount = 0;
     this.skippedCount = 0;
+  }
+
+  resetRunTimeline() {
+    this.overallStartTime = null;
+    this.overallEndTime = null;
+    this.runStatusLabel = 'Not Started';
+    this.executionDurationLabel = '—';
+    this.testersInvolvedCount = 0;
+    this.averageTestDurationLabel = '—';
+  }
+
+  // Derives an overall "release execution window" (first test started -> last test
+  // finished) from the already-loaded, Release-scoped test cases - no fabricated data,
+  // just honest Not Started / In Progress / Completed states.
+  computeRunTimeline(testCases: IAssignedTestCase[]) {
+    const started = testCases.filter((tc) => !!tc.startTime);
+
+    if (started.length === 0) {
+      this.resetRunTimeline();
+      return;
+    }
+
+    this.overallStartTime = new Date(
+      Math.min(...started.map((tc) => new Date(tc.startTime!).getTime()))
+    );
+
+    const testerNames = new Set(
+      started.map((tc) => tc.assignedUserName).filter((name) => !!name)
+    );
+    this.testersInvolvedCount = testerNames.size;
+
+    const durations = testCases
+      .map((tc) => tc.duration)
+      .filter((d): d is number => d != null);
+    this.averageTestDurationLabel = durations.length
+      ? this.formatDuration(
+          (durations.reduce((sum, d) => sum + d, 0) / durations.length) * 1000
+        )
+      : '—';
+
+    const finished = started.filter((tc) => !!tc.endTime);
+
+    if (finished.length < started.length) {
+      this.overallEndTime = null;
+      this.runStatusLabel = 'In Progress';
+      this.executionDurationLabel = 'Running…';
+      return;
+    }
+
+    this.overallEndTime = new Date(
+      Math.max(...finished.map((tc) => new Date(tc.endTime!).getTime()))
+    );
+    this.runStatusLabel = 'Completed';
+    this.executionDurationLabel = this.formatDuration(
+      this.overallEndTime.getTime() - this.overallStartTime.getTime()
+    );
+  }
+
+  formatDuration(ms: number): string {
+    const safeMs = Math.max(0, ms);
+
+    // Sub-second durations (common for quick/API-driven test executions) would
+    // otherwise round down to "0m 0s", making a real, meaningful duration look like
+    // nothing happened - show decimal-second precision instead.
+    if (safeMs < 1000) {
+      return `${(safeMs / 1000).toFixed(2)}s`;
+    }
+
+    const totalSeconds = Math.round(safeMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
   }
 
   // Flattens every library discovered in the Release's own folder into the same flat

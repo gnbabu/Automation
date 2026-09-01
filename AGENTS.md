@@ -139,11 +139,23 @@ Mirrors Environment Management's soft/hard delete split:
 
 ### Still TODO (future)
 - Finer role gating beyond `isAdmin` (Manager/Tester/Viewer) if required.
-- Known pre-existing bug (not fixed, out of scope): `SqlReaderExtensions.GetNullable<T>`
-  returns `default(T)` (e.g. `0` for `int`) instead of `null` for DB NULLs on value types.
-  Harmless for `ReleaseId` (0 never resolves to a real release, so the TestQueueWorker's
-  skip/retry logic still behaves correctly), but worth fixing centrally if it matters
-  elsewhere.
+- **Fixed**: `SqlReaderExtensions.GetNullable<T>` used to return `default(T)` (e.g. `0` for
+  `int`, `DateTime.MinValue`/`"0001-01-01T00:00:00"` for `DateTime`) instead of a true
+  `null` for DB NULLs on value types. Long flagged as "harmless" (e.g. for `ReleaseId`,
+  since `0` never resolves to a real release) until the Dashboard's Run Details/Timeline
+  work actually broke on it: a never-started test case's `StartTime`/`EndTime` came back
+  as the sentinel `0001-01-01` instead of `null`, which is truthy in JS and silently
+  corrupted the min/max "release execution window" calculation. Fixed centrally —
+  `GetNullable<T>` is now `where T : struct` and returns a real `Nullable<T>`;
+  `GetNullableString` got its own direct (non-generic) implementation since `string` is a
+  reference type and can't satisfy that constraint. Confirmed only the three
+  `GetNullableInt`/`GetNullableDateTime`/`GetNullableString` wrappers call the generic
+  directly, so this was a safe, fully-contained fix (no other call sites to break). A few
+  fields (`TestCaseAssignmentEntity.AssignedDate`/`LastUpdatedDate`,
+  `TestScreenshotRepository`'s `TakenAt`) already explicitly coalesced to
+  `DateTime.MinValue` themselves in their own mapping code, so their behavior is
+  unaffected by this fix — only fields with no such explicit fallback (like `StartTime`/
+  `EndTime`) actually changed, correctly, to real nulls.
 - `aut.TestCaseAssignment.ReleaseId` is now `NOT NULL` (see below) — the 3 legacy
   (`ReleaseId = NULL`) assignments and their dependent rows were permanently deleted, so
   there's no longer a "legacy/unlinked assignment" case anywhere in the app.
@@ -236,7 +248,10 @@ loses data if re-run) — the one-time DELETE itself is not part of the idempote
 `dashboard.component` was fully dormant (hidden behind `libraryDiscoveryAvailable = false`)
 after discovery moved off the global `TestLibs` folder; it's now revived, Release-scoped:
 - A **Select Release** dropdown (Active/Completed only) replaces the old Library dropdown.
-  No auto-refresh timer — instead a manual **Refresh** button (backed by the same
+  Auto-selects the most recently created release (`GET /api/Release` is already sorted by
+  `CreatedOn DESC`) once the list loads, so the page shows data immediately instead of an
+  empty state — same "auto-select first item" convention as the Assignment/Execution Panel
+  screens. No auto-refresh timer — instead a manual **Refresh** button (backed by the same
   `refreshReleaseData()` used on selection) re-pulls the current Release's data on demand,
   since this page's load (discovery across every library in the release + the full assigned
   list + logs, all merged client-side) is heavier than the other two Release-aware screens.
@@ -279,9 +294,25 @@ after discovery moved off the global `TestLibs` folder; it's now revived, Releas
   non-admin pages (the Execution Panel's release filter), so blanket role-restricting shared
   endpoints isn't safe without splitting them. Tracked under "Finer role gating" below if
   stronger, endpoint-specific enforcement is wanted later.
-- "Run Details & Timeline" card is untouched — still static/decorative, no real backing
-  concept in this app (execution happens continuously per test case via the queue, not as a
-  single "run").
+- "Run Details & Timeline" card: **Start Time / End Time / Execution Duration are now real**
+  (`computeRunTimeline()` in `dashboard.component.ts`), derived from the min `StartTime` /
+  max `EndTime` across the currently-loaded, Release-scoped `testCases` — no fabricated
+  data. Three honest states: `Not Started` (nothing has a `StartTime` yet → `—`),
+  `In Progress` (some cases started but not all finished → shows the real start, "In
+  Progress" for end, "Running…" for duration), `Completed` (everything that started has
+  finished → real Start/End + formatted `Xm Ys` duration). Verified against real DB data
+  (Release 10: 2 `Passed` cases with real timestamps + 1 still `Assigned`/never-started,
+  correctly excluded from the window). **"Data Cleanup Status" was removed** (confirmed via
+  a full codebase/data-model search that no "cleanup" concept exists anywhere in this app;
+  building real tracking for it was explicitly decided against as out of scope) and
+  replaced with two more rows, both genuinely new information not already shown elsewhere
+  on the page: **Testers Involved** (distinct count of `assignedUserName` among test cases
+  that have started) and **Average Test Duration** (mean of individual `Duration` values).
+  `formatDuration()` shows decimal-second precision (`"0.29s"`) for sub-second durations
+  instead of rounding down to a misleading `"0m 0s"` — real, quick/API-driven test
+  executions are commonly well under a second. Verified against real DB data (Release 10:
+  testers `{Nareshg, saharshg}` = 2, correctly excluding the still-`Assigned`/never-started test
+  case from the tester count).
 
 ## Test Data Management — scoped by Environment (not Release)
 Unlike Assignment/Execution Panel/Dashboard, `aut.AutomationData` (per-user Flow/Section

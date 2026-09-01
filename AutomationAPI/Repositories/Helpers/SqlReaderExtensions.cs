@@ -4,15 +4,19 @@ namespace AutomationAPI.Repositories.Helpers
 {
     public static class SqlReaderExtensions
     {
-        public static T? GetNullable<T>(this SqlDataReader reader, string columnName)
+        // Constrained to value types: returns a true null (Nullable<T>) for DB NULLs
+        // instead of default(T) (e.g. DateTime.MinValue for DateTime, 0 for int), which
+        // was silently indistinguishable from a real value at every call site.
+        public static T? GetNullable<T>(this SqlDataReader reader, string columnName) where T : struct
         {
             int ordinal = reader.GetOrdinal(columnName);
-            return reader.IsDBNull(ordinal) ? default : reader.GetFieldValue<T>(ordinal);
+            return reader.IsDBNull(ordinal) ? (T?)null : reader.GetFieldValue<T>(ordinal);
         }
 
         public static string? GetNullableString(this SqlDataReader reader, string columnName)
         {
-            return reader.GetNullable<string>(columnName);
+            int ordinal = reader.GetOrdinal(columnName);
+            return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
         }
 
         public static int? GetNullableInt(this SqlDataReader reader, string columnName)

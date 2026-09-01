@@ -123,30 +123,50 @@
     </div>
   </div>
 
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-4" *ngIf="selectedRelease">
     <!-- RUN DETAILS -->
     <div class="col-md-6 d-flex">
-      <div class="run-details-card card-equal p-3 flex-fill">
-        <h6 class="fw-bold mb-3">Run Details & Timeline</h6>
+      <div class="run-details-card card-equal flex-fill">
+        <!-- Header (matches app-execution-logs-viewer's header style) -->
+        <div class="rd-header d-flex align-items-center justify-content-between">
+          <h6 class="mb-0 fw-bold">Run Details & Timeline</h6>
+        </div>
 
+        <div class="rd-body">
         <div class="rd-row">
           <span class="rd-label">Start Time:</span>
-          <span>09:00 AM, 2025-10-04</span>
+          <span>{{
+            overallStartTime
+              ? (overallStartTime | date : "hh:mm a, yyyy-MM-dd")
+              : "—"
+          }}</span>
         </div>
 
         <div class="rd-row">
           <span class="rd-label">End Time:</span>
-          <span>09:04 AM, 2025-10-04</span>
+          <span>{{
+            overallEndTime
+              ? (overallEndTime | date : "hh:mm a, yyyy-MM-dd")
+              : runStatusLabel === "In Progress"
+              ? "In Progress"
+              : "—"
+          }}</span>
         </div>
 
         <div class="rd-row">
           <span class="rd-label">Execution Duration:</span>
-          <span>4m 12s</span>
+          <span>{{ executionDurationLabel }}</span>
         </div>
 
         <div class="rd-row">
-          <span class="rd-label">Data Cleanup Status:</span>
-          <span class="badge bg-success px-3 py-2">Cleanup Successful</span>
+          <span class="rd-label">Testers Involved:</span>
+          <span>{{ testersInvolvedCount }}</span>
+        </div>
+
+        <div class="rd-row">
+          <span class="rd-label">Average Test Duration:</span>
+          <span>{{ averageTestDurationLabel }}</span>
+        </div>
         </div>
       </div>
     </div>
