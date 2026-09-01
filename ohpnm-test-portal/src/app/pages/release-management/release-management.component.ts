@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { IEnvironmentModel, IReleaseModel, IReleaseRequestDto } from '@interfaces';
@@ -16,7 +16,7 @@ import {
   templateUrl: './release-management.component.html',
   styleUrl: './release-management.component.css',
 })
-export class ReleaseManagementComponent implements OnInit {
+export class ReleaseManagementComponent implements OnInit, OnDestroy {
   releases: IReleaseModel[] = [];
   environments: IEnvironmentModel[] = [];
   themes = ['green', 'orange', 'blue', 'purple', 'teal'];
@@ -28,6 +28,14 @@ export class ReleaseManagementComponent implements OnInit {
 
   loading = false;
 
+  // Auto-refresh: keeps DLL readiness badges / test summaries live across all cards
+  // without requiring a manual "Refresh" click (mirrors test-case-execution-panel's
+  // pattern). dllFileCount/folderReady is a cheap, non-reflective file count, so no
+  // lifecycle-based pausing is needed here (unlike the Details page's readiness check).
+  private refreshInterval: any = null;
+  private readonly refreshSeconds = 10;
+  isUserPerformingAction = false;
+
   constructor(
     private releaseService: ReleaseService,
     private envService: EnvironmentService,
@@ -37,6 +45,27 @@ export class ReleaseManagementComponent implements OnInit {
   ngOnInit(): void {
     this.loadEnvironments();
     this.loadReleases();
+    this.startAutoRefresh();
+  }
+
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
+  }
+
+  startAutoRefresh(): void {
+    this.refreshInterval = setInterval(() => {
+      if (this.isUserPerformingAction) {
+        return;
+      }
+      this.loadReleases(true);
+    }, this.refreshSeconds * 1000);
+  }
+
+  stopAutoRefresh(): void {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
   }
 
   loadEnvironments(): void {
@@ -46,15 +75,21 @@ export class ReleaseManagementComponent implements OnInit {
     });
   }
 
-  loadReleases(): void {
-    this.loading = true;
+  // `silent` skips the loading spinner — used by the background auto-refresh tick so
+  // it doesn't flicker the list every 10s; the manual Refresh button still shows it.
+  loadReleases(silent = false): void {
+    if (!silent) {
+      this.loading = true;
+    }
     this.releaseService.getAll().subscribe({
       next: (res) => {
         this.releases = res || [];
         this.loading = false;
       },
       error: () => {
-        this.releases = [];
+        if (!silent) {
+          this.releases = [];
+        }
         this.loading = false;
       },
     });
@@ -68,6 +103,7 @@ export class ReleaseManagementComponent implements OnInit {
   // Soft delete / reactivate: toggles IsActive without touching Name/Version/Environment,
   // so it works regardless of lifecycle stage (unlike identity edits, which lock post-Draft).
   toggle(r: IReleaseModel): void {
+    this.isUserPerformingAction = true;
     const isDisabling = r.isActive;
     const dto: IReleaseRequestDto = {
       releaseId: r.releaseId,
@@ -81,9 +117,13 @@ export class ReleaseManagementComponent implements OnInit {
     this.releaseService.update(r.releaseId, dto).subscribe({
       next: () => {
         r.isActive = !r.isActive;
+        this.isUserPerformingAction = false;
         this.toaster.success(
           `Release ${isDisabling ? 'deactivated' : 'activated'} successfully`,
         );
+      },
+      error: () => {
+        this.isUserPerformingAction = false;
       },
     });
   }
@@ -94,10 +134,15 @@ export class ReleaseManagementComponent implements OnInit {
       return;
     }
 
+    this.isUserPerformingAction = true;
     this.releaseService.delete(r.releaseId).subscribe({
       next: () => {
+        this.isUserPerformingAction = false;
         this.toaster.success('Release deleted successfully');
         this.loadReleases();
+      },
+      error: () => {
+        this.isUserPerformingAction = false;
       },
     });
   }

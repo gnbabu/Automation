@@ -8,6 +8,7 @@ using AutomationAPI.Repositories.Helpers;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.TestRunner;
 using AutomationAPI.Repositories.Models;
+using AutomationAPI.Repositories.Workers;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,6 +54,7 @@ builder.Services.AddScoped<ITestCaseExecutionLogRepository, TestCaseExecutionLog
 builder.Services.AddScoped<IReleaseRepository, ReleaseRepository>();
 builder.Services.AddScoped<IReleaseFileService, ReleaseFileService>();
 builder.Services.AddScoped<IReleaseReadinessService, ReleaseReadinessService>();
+builder.Services.AddScoped<IReleaseNotificationService, ReleaseNotificationService>();
 builder.Services.AddScoped<IEnvironmentRepository, EnvironmentRepository>();
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
@@ -64,6 +66,7 @@ builder.Services.AddScoped<IEmailService, SendGridEmailService>();
 builder.Services.AddScoped<ITestRunner, ReflectionTestRunner>();
 
 builder.Services.AddHostedService<TestQueueWorker>();
+builder.Services.AddHostedService<ReleaseDllsReadyNotificationWorker>();
 
 
 // Authentication (JWT)

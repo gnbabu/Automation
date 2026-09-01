@@ -4,6 +4,9 @@
     <div>
       <h1 class="page-title mb-1">{{ r.releaseName }}</h1>
       <small class="text-muted">Version {{ r.version }} · {{ r.environmentName }}</small>
+      <div class="small text-muted" *ngIf="lastUpdated">
+        <i class="fas fa-sync-alt me-1"></i>Auto-refreshing · last updated {{ lastUpdated | date: "HH:mm:ss" }}
+      </div>
     </div>
     <div class="d-flex gap-2">
       <button class="btn btn-outline-secondary" (click)="back()">

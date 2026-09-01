@@ -13,8 +13,7 @@ namespace AutomationAPI.Controllers
         private readonly IEnvironmentRepository _envRepo;
         private readonly IReleaseFileService _fileService;
         private readonly IReleaseReadinessService _readinessService;
-        private readonly IUserRepository _userRepo;
-        private readonly IEmailService _emailService;
+        private readonly IReleaseNotificationService _notificationService;
         private readonly ILogger<ReleaseController> _logger;
 
         public ReleaseController(
@@ -22,16 +21,14 @@ namespace AutomationAPI.Controllers
             IEnvironmentRepository envRepo,
             IReleaseFileService fileService,
             IReleaseReadinessService readinessService,
-            IUserRepository userRepo,
-            IEmailService emailService,
+            IReleaseNotificationService notificationService,
             ILogger<ReleaseController> logger)
         {
             _repo = repo;
             _envRepo = envRepo;
             _fileService = fileService;
             _readinessService = readinessService;
-            _userRepo = userRepo;
-            _emailService = emailService;
+            _notificationService = notificationService;
             _logger = logger;
         }
 
@@ -251,7 +248,11 @@ namespace AutomationAPI.Controllers
             }
 
             // Notify Test Managers/Admins that the release is available for testing.
-            var notifyResult = await NotifyForTestingAsync(id, release);
+            var subject = $"Release available for testing: {release.ReleaseName} {release.Version}";
+            var body = $"<p>Release <strong>{release.ReleaseName}</strong> (Version {release.Version}, " +
+                       $"Environment {release.EnvironmentName}) has been activated and is now available for testing.</p>";
+            var notifyResult = await _notificationService.NotifyManagersAndAdminsAsync(
+                id, "ActivatedForTesting", subject, body);
 
             var updated = await _repo.GetByIdAsync(id);
             PopulateFolderInfo(updated);
@@ -315,53 +316,6 @@ namespace AutomationAPI.Controllers
             var count = _readinessService.GetDllFileCount(release.ReleaseFolderPath);
             release.DllFileCount = count;
             release.FolderReady = count > 0;
-        }
-
-        private async Task<object> NotifyForTestingAsync(int releaseId, ReleaseModel release)
-        {
-            int sent = 0, failed = 0, recipients = 0;
-            try
-            {
-                var users = await _userRepo.GetAllUsersAsync();
-                var managers = users.Where(u =>
-                    u.Active &&
-                    !string.IsNullOrWhiteSpace(u.Email) &&
-                    !string.IsNullOrWhiteSpace(u.RoleName) &&
-                    (u.RoleName.Equals("Manager", StringComparison.OrdinalIgnoreCase) ||
-                     u.RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase)));
-
-                var subject = $"Release available for testing: {release.ReleaseName} {release.Version}";
-                var body = $"<p>Release <strong>{release.ReleaseName}</strong> (Version {release.Version}, " +
-                           $"Environment {release.EnvironmentName}) has been activated and is now available for testing.</p>";
-
-                foreach (var u in managers)
-                {
-                    recipients++;
-                    var notificationId = await _repo.AddNotificationAsync(
-                        releaseId, "ActivatedForTesting", u.UserId, u.Email,
-                        $"Notify {u.UserName} that release is available for testing.");
-
-                    try
-                    {
-                        await _emailService.SendAsync(u.Email, subject, body);
-                        await _repo.MarkNotificationAsync(notificationId, "Sent");
-                        sent++;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to email release notification to {Email}", u.Email);
-                        await _repo.MarkNotificationAsync(notificationId, "Failed");
-                        failed++;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Notification failure must not fail activation.
-                _logger.LogError(ex, "Failed to dispatch release notifications for {ReleaseId}", releaseId);
-            }
-
-            return new { recipients, sent, failed };
         }
 
         private static string GetUserMessage(Exception ex, string fallback)
