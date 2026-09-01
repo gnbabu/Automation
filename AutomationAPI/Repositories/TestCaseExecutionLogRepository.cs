@@ -52,16 +52,17 @@ namespace AutomationAPI.Repositories
             return await _db.ExecuteReaderAsync(SqlDbConstants.GetAssignmentExecutionLogs, parameters, MapLog);
         }
 
-        public async Task<IEnumerable<ReleaseExecutionLogDto>> GetByReleaseAsync(string releaseName)
+        public async Task<IEnumerable<ReleaseExecutionLogDto>> GetByReleaseAsync(int releaseId)
         {
             var parameters = new[]
             {
-                new SqlParameter("@ReleaseName", releaseName)
+                new SqlParameter("@ReleaseId", releaseId)
             };
 
             return await _db.ExecuteReaderAsync(SqlDbConstants.GetReleaseExecutionLogs, parameters,
                 reader => new ReleaseExecutionLogDto
                 {
+                    LogId = reader.GetInt64(reader.GetOrdinal("LogId")),
                     ReleaseName = reader.GetString(reader.GetOrdinal("ReleaseName")),
                     AssignmentId = reader.GetInt32(reader.GetOrdinal("AssignmentId")),
                     AssignmentTestCaseId = reader.GetInt32(reader.GetOrdinal("AssignmentTestCaseId")),

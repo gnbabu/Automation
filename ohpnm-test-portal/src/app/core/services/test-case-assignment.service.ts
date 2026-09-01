@@ -68,4 +68,12 @@ export class TestCaseAssignmentService {
       )}&releaseId=${releaseId}`
     );
   }
+
+  getAllAssignedTestCasesForRelease(
+    releaseId: number
+  ): Observable<IAssignedTestCase[]> {
+    return this.httpService.get<IAssignedTestCase[]>(
+      `TestCaseAssignments/release-assigned-testcases?releaseId=${releaseId}`
+    );
+  }
 }

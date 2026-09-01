@@ -28,9 +28,9 @@ export class TestCaseExecutionLogsService {
     );
   }
 
-  getReleaseLogs(releaseName: string): Observable<ITestCaseExecutionLog[]> {
+  getReleaseLogs(releaseId: number): Observable<ITestCaseExecutionLog[]> {
     return this.httpService.get<any[]>(
-      `TestCaseExecutionLogs/releases/${encodeURIComponent(releaseName)}/logs`
+      `TestCaseExecutionLogs/releases/${releaseId}/logs`
     );
   }
 }

@@ -132,6 +132,9 @@ export const LibraryMethodInfoMapper = {
   fromApi(data: any): LibraryMethodInfo {
     return {
       methodName: data.methodName,
+      testCaseId: data.testCaseId,
+      description: data.description,
+      priority: data.priority,
     };
   },
 };

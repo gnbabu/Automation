@@ -1,5 +1,6 @@
 ﻿using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,6 +8,7 @@ namespace AutomationAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TestCaseAssignmentsController : ControllerBase
     {
         private readonly ITestCaseAssignmentRepository _repository;
@@ -93,6 +95,25 @@ namespace AutomationAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while fetching assigned test cases for library");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("release-assigned-testcases")]
+        public async Task<IActionResult> GetAllAssignedTestCasesForReleaseAsync(int releaseId)
+        {
+            try
+            {
+                if (releaseId <= 0)
+                    return BadRequest("ReleaseId is required.");
+
+                var testCases = await _repository.GetAllAssignedTestCasesForReleaseAsync(releaseId);
+
+                return Ok(testCases);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while fetching assigned test cases for release");
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }

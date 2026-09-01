@@ -10,13 +10,16 @@ import {
 import {
   GridColumn,
   IAssignedTestCase,
+  IReleaseModel,
   ITestCaseExecutionLog,
+  ITestCaseModel,
   ITestScreenshot,
   LibraryInfo,
 } from '@interfaces';
 import {
   AuthService,
   CommonToasterService,
+  ReleaseService,
   ScreenshotService,
   TestCaseAssignmentService,
   TestCaseExecutionLogsService,
@@ -63,8 +66,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   columns: GridColumn[] = [];
   pageSize = 10;
 
-  libraries: LibraryInfo[] = [];
-  selectedLibrary: LibraryInfo | null = null;
+  releases: IReleaseModel[] = [];
+  selectedRelease: IReleaseModel | null = null;
 
   screenshots: ITestScreenshot[] = [];
 
@@ -92,18 +95,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private userService: UsersService,
     private testCaseAssignmentService: TestCaseAssignmentService,
     private screenshotService: ScreenshotService,
-    private executionLogsService: TestCaseExecutionLogsService
+    private executionLogsService: TestCaseExecutionLogsService,
+    private releaseService: ReleaseService
   ) {}
 
-  // Library discovery is now scoped per-Release (each Release has its own DLL folder)
-  // instead of one global TestLibs folder. This dashboard has no Release selector yet,
-  // so the library-based test case summary below is deferred until a future pass adds
-  // one; the flag below hides that (now non-functional) section rather than showing a
-  // broken/erroring dropdown.
-  libraryDiscoveryAvailable = false;
-
   ngOnInit(): void {
+    this.loadReleases();
     this.setupColumns();
+  }
+
+  loadReleases() {
+    this.releaseService.getAll().subscribe({
+      next: (res) => {
+        this.releases = (res || []).filter((r) =>
+          ['Active', 'Completed'].includes(r.releaseLifecycle)
+        );
+      },
+      error: () => (this.releases = []),
+    });
   }
 
   setupColumns() {
@@ -156,21 +165,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ];
   }
 
-  onLibraryChange(library: LibraryInfo | null) {
-    // Deferred: library discovery is now Release-scoped; this dashboard has no
-    // Release selector yet, so this handler is inert (kept for future re-wiring).
-    if (!this.libraryDiscoveryAvailable) return;
+  onReleaseChange(release: IReleaseModel | null) {
+    this.selectedRelease = release;
 
-    this.selectedLibrary = library;
+    this.testCases = [];
+    this.executionLogs = [];
+    this.recentLogs = [];
+    this.resetSummaryCounts();
 
-    if (!library) return;
+    if (!release) return;
 
-    // Load merged test cases (assigned + unassigned)
-    this.mergeLibraryTestCases(library.libraryName).subscribe((merged) => {
+    this.refreshReleaseData();
+  }
+
+  // Backs both the initial load-on-select and the manual Refresh button, so either
+  // path re-pulls the same data for whichever Release is currently selected.
+  refreshReleaseData() {
+    if (!this.selectedRelease) return;
+
+    const releaseId = this.selectedRelease.releaseId;
+
+    this.mergeReleaseTestCases(releaseId).subscribe((merged) => {
       this.testCases = merged;
-
-      // 🔥 Load logs by library
-      this.loadLibraryExecutionLogs(library.libraryName);
 
       this.passedCount = merged.filter(
         (tc) => tc.testCaseStatus === 'Passed'
@@ -191,26 +207,59 @@ export class DashboardComponent implements OnInit, OnDestroy {
         (tc) =>
           tc.testCaseStatus === 'Skipped' || tc.testCaseStatus === 'Cancelled'
       ).length;
-      console.log('Merged Test Cases → ', merged);
-      // Bind to UI / table later
     });
+
+    this.loadReleaseExecutionLogs(releaseId);
   }
 
-  mergeLibraryTestCases(libraryName: string) {
+  onRefreshClick() {
+    if (!this.selectedRelease) return;
+    this.refreshReleaseData();
+  }
+
+  resetSummaryCounts() {
     this.totalCases = 0;
     this.assignedCount = 0;
     this.unassignedCount = 0;
+    this.passedCount = 0;
+    this.failedCount = 0;
+    this.runningCount = 0;
+    this.skippedCount = 0;
+  }
 
-    // Not currently reachable (see libraryDiscoveryAvailable); releaseId placeholder
-    // kept only to satisfy the (now Release-scoped) service signature.
-    const allCases$ = this.testSuitesService.getAllTestCasesByLibraryName(
-      0,
-      libraryName
-    );
+  // Flattens every library discovered in the Release's own folder into the same flat
+  // shape the backend's GetAllTestCasesByLibrary would return for a single library.
+  private flattenLibraries(libraries: LibraryInfo[]): ITestCaseModel[] {
+    const result: ITestCaseModel[] = [];
+    for (const lib of libraries || []) {
+      for (const cls of lib.classes || []) {
+        for (const method of cls.methods || []) {
+          result.push({
+            libraryName: lib.libraryName,
+            className: cls.className,
+            methodName: method.methodName,
+            description: method.description ?? '',
+            priority: method.priority ?? '',
+            testCaseId: method.testCaseId ?? '',
+            assignedUsers: [],
+            assignedUserName: '',
+          });
+        }
+      }
+    }
+    return result;
+  }
+
+  mergeReleaseTestCases(releaseId: number) {
+    this.resetSummaryCounts();
+
+    const allCases$ = this.testSuitesService
+      .getLibraries(releaseId)
+      .pipe(map((libraries) => this.flattenLibraries(libraries)));
 
     const assignedCases$ =
-      this.testCaseAssignmentService.getAllAssignedTestCasesInLibrary(
-        libraryName
+      this.testCaseAssignmentService.getAllAssignedTestCasesForRelease(
+        releaseId
       );
 
     return forkJoin([allCases$, assignedCases$]).pipe(
@@ -252,6 +301,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
     );
   }
 
+  // Same convention as release-management.component.ts's statusPillClass /
+  // test-case-execution-panel.component.ts's releaseLifecycleBadgeClass, so the
+  // lifecycle badge here matches the color used everywhere else in the app.
+  releaseLifecycleBadgeClass(lifecycle?: string): string {
+    switch ((lifecycle || '').toLowerCase()) {
+      case 'active':
+        return 'bg-success';
+      case 'completed':
+        return 'bg-primary';
+      case 'rejected':
+        return 'bg-danger';
+      case 'draft':
+        return 'bg-secondary';
+      default:
+        return 'bg-info text-dark';
+    }
+  }
+
   onViewScreenshots(testCase: any) {
     this.screenshotService
       .getScreenshotsByAssignmentTestCaseIdAsync(testCase.assignmentTestCaseId)
@@ -291,16 +358,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
       case 'Cancelled':
         return 'bg-dark text-white';
 
+      case 'Unassigned':
+        return 'bg-secondary text-white';
+
       default:
         return 'bg-light text-dark border';
     }
   }
   ngOnDestroy(): void {}
 
-  loadLibraryExecutionLogs(libraryName: string): void {
-    if (!libraryName) return;
+  loadReleaseExecutionLogs(releaseId: number): void {
+    if (!releaseId) return;
 
-    this.executionLogsService.getReleaseLogs(libraryName).subscribe({
+    this.executionLogsService.getReleaseLogs(releaseId).subscribe({
       next: (logs) => {
         this.executionLogs = logs;
 

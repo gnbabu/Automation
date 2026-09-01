@@ -2,6 +2,7 @@
 {
     public class ReleaseExecutionLogDto
     {
+        public long LogId { get; set; }
         public string ReleaseName { get; set; }
         public int AssignmentId { get; set; }
         public int AssignmentTestCaseId { get; set; }

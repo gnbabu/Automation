@@ -7,6 +7,6 @@ namespace AutomationAPI.Repositories.Interfaces
         Task AddAsync(TestCaseExecutionLog log);
         Task<IEnumerable<TestCaseExecutionLog>> GetByTestCaseAsync(int assignmentId, int assignmentTestCaseId);
         Task<IEnumerable<TestCaseExecutionLog>> GetByAssignmentAsync(int assignmentId);
-        Task<IEnumerable<ReleaseExecutionLogDto>> GetByReleaseAsync(string releaseName);
+        Task<IEnumerable<ReleaseExecutionLogDto>> GetByReleaseAsync(int releaseId);
     }
 }

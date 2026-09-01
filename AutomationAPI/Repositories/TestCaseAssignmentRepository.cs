@@ -177,6 +177,39 @@ namespace AutomationAPI.Repositories
                 });
         }
 
+        public async Task<IEnumerable<AssignedTestCase>> GetAllAssignedTestCasesForReleaseAsync(int releaseId)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@ReleaseId", SqlDbType.Int) { Value = releaseId }
+            };
+
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(
+                SqlDbConstants.GetAllAssignedTestCasesForRelease,
+                parameters,
+                reader => new AssignedTestCase
+                {
+                    AssignmentTestCaseId = reader.GetNullableInt("AssignmentTestCaseId") ?? 0,
+                    AssignmentId = reader.GetNullableInt("AssignmentId") ?? 0,
+                    TestCaseId = reader.GetNullableString("TestCaseId") ?? string.Empty,
+                    TestCaseDescription = reader.GetNullableString("TestCaseDescription") ?? string.Empty,
+                    TestCaseStatus = reader.GetNullableString("TestCaseStatus") ?? string.Empty,
+                    ClassName = reader.GetNullableString("ClassName") ?? string.Empty,
+                    LibraryName = reader.GetNullableString("LibraryName") ?? string.Empty,
+                    MethodName = reader.GetNullableString("MethodName") ?? string.Empty,
+                    Priority = reader.GetNullableString("Priority") ?? string.Empty,
+                    StartTime = reader.GetNullableDateTime("StartTime"),
+                    EndTime = reader.GetNullableDateTime("EndTime"),
+                    Duration = reader.GetNullableDouble("Duration"),
+                    ErrorMessage = reader.GetNullableString("ErrorMessage"),
+                    AssignedUserId = reader.GetNullableInt("AssignedUserId") ?? 0,
+                    AssignedUserName = reader.GetNullableString("AssignedUserName") ?? string.Empty,
+                    Environment = reader.GetNullableString("Environment") ?? string.Empty,
+                    HasScreenshots = reader.GetBoolean(reader.GetOrdinal("HasScreenshots")),
+                    HasLogs = reader.GetBoolean(reader.GetOrdinal("HasLogs"))
+                });
+        }
+
         public async Task CreateOrUpdateAssignmentWithTestCasesAsync(AssignmentCreateUpdateRequest request)
         {
             var testCases = request.TestCases ?? Enumerable.Empty<TestCaseRequestModel>();

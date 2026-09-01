@@ -138,13 +138,7 @@ Mirrors Environment Management's soft/hard delete split:
   mirrors the existing convention in `test-case-execution-panel.component.ts` for consistency.
 
 ### Still TODO (future)
-- Wire the execution-summary release selection by ReleaseId (ReleaseName/Version/Environment
-  shown for display, ReleaseId used internally) — `usp_GetReleaseExecutionLogs` is still
-  name-based (`@ReleaseName`); Test Case Assignment itself is done (see below).
 - Finer role gating beyond `isAdmin` (Manager/Tester/Viewer) if required.
-- Dashboard's library filter/summary (`dashboard.component.ts`) is hidden behind
-  `libraryDiscoveryAvailable = false` since it has no Release selector — re-enable once a
-  Release dropdown is added there too.
 - Known pre-existing bug (not fixed, out of scope): `SqlReaderExtensions.GetNullable<T>`
   returns `default(T)` (e.g. `0` for `int`) instead of `null` for DB NULLs on value types.
   Harmless for `ReleaseId` (0 never resolves to a real release, so the TestQueueWorker's
@@ -237,3 +231,46 @@ loses data if re-run) — the one-time DELETE itself is not part of the idempote
 - `releases` (for the lifecycle badge/guard) refresh on every auto-refresh tick (every 10s,
   alongside the existing test-case refresh), so a lifecycle change is reflected without a
   page reload.
+
+## Dashboard ("Test Case Execution Summary") — Release-aware
+`dashboard.component` was fully dormant (hidden behind `libraryDiscoveryAvailable = false`)
+after discovery moved off the global `TestLibs` folder; it's now revived, Release-scoped:
+- A **Select Release** dropdown (Active/Completed only) replaces the old Library dropdown.
+  No auto-refresh timer — instead a manual **Refresh** button (backed by the same
+  `refreshReleaseData()` used on selection) re-pulls the current Release's data on demand,
+  since this page's load (discovery across every library in the release + the full assigned
+  list + logs, all merged client-side) is heavier than the other two Release-aware screens.
+- The "Total Cases / Unassigned" discovery-vs-assigned comparison (and the 4-card
+  Total/Passed/Failed/Running+Skipped summary) is now computed **across every library** in
+  the Release's folder, not just one: `TestSuitesService.getLibraries(releaseId)` (already
+  Release-scoped) is flattened client-side into a flat test-case list and merged with a new
+  `usp_GetAllAssignedTestCasesForRelease(@ReleaseId)` (mirrors the existing per-Library SP,
+  minus the library filter) — same discovery-vs-assigned merge pattern used elsewhere, just
+  widened from one library to a whole release. Deliberately **not** using `IReleaseModel`'s
+  own `TotalTests`/`PassedTests`/etc. aggregates here, since those count only *assigned*
+  tests, whereas this page's "Total" has always meant *discoverable* tests (assigned +
+  unassigned) — using both on the same page would show two different "Total" numbers.
+- `usp_GetReleaseExecutionLogs` switched from name-based (`@ReleaseName`, which actually
+  matched the historically-misnamed Library-name text column) to `@ReleaseId` — safe since
+  this dashboard was its only caller and was unreachable. Also fixed a latent bug: `LogId`
+  was missing from the SELECT, which `execution-logs-viewer.component.ts`'s `trackBy`
+  silently depended on (`log.logId`); verified via a real log insert that `logId` now comes
+  through correctly.
+- Fixed `LibraryMethodInfoMapper.fromApi` (`core/mappers/index.ts`), which only mapped
+  `methodName` and silently dropped `testCaseId`/`description`/`priority` even though
+  `LibraryMethodInfo` already declared them — this made every "Unassigned" merged row on
+  this page show blank details, since the old single-Library flow used a different,
+  non-mapped endpoint that never hit this bug. Safe fix: this mapper is otherwise only used
+  to populate Library-name-only dropdowns elsewhere, so the extra fields don't affect them.
+- **Access**: gated `isAdmin`-only, same convention as Release/Environment/User Management
+  and Test Case Assignment (sidebar link hidden via `*ngIf="isAdmin"` in
+  `left-sidebar.component.html`) — this page surfaces **every** tester's results for a
+  Release, not just the logged-in user's own (unlike the Execution Panel, which stays open
+  to everyone since it's scoped to "my assignments"). Note: like every other
+  `isAdmin`-gated page in this app, this is sidebar-link-only — there is no route-level or
+  API-level admin check anywhere yet (`/dashboard` is still reachable by direct URL, and its
+  backing endpoints aren't role-checked), so this is UI-level gating, not real security
+  enforcement. Tracked under "Finer role gating" below if stronger enforcement is wanted.
+- "Run Details & Timeline" card is untouched — still static/decorative, no real backing
+  concept in this app (execution happens continuously per test case via the queue, not as a
+  single "run").

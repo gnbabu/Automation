@@ -8,9 +8,17 @@
 
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <p class="mt-1 mb-0 fw-semibold">
-        Release Name:
-        <span class="text-primary">#{{ selectedLibrary?.libraryName }}</span>
+      <p class="mt-1 mb-0 fw-semibold" *ngIf="selectedRelease">
+        Release:
+        <span class="text-primary"
+          >{{ selectedRelease.releaseName }} v{{ selectedRelease.version }}</span
+        >
+        <span
+          class="status-pill ms-2"
+          [ngClass]="releaseLifecycleBadgeClass(selectedRelease.releaseLifecycle)"
+        >
+          {{ selectedRelease.releaseLifecycle }}
+        </span>
       </p>
     </div>
 
@@ -24,23 +32,33 @@
     </div>
   </div>
 
-  <div class="filter-card p-3 mb-3" *ngIf="libraryDiscoveryAvailable">
+  <div class="filter-card p-3 mb-3">
     <div class="d-flex justify-content-between align-items-end flex-wrap">
-      <div>
-        <label for="librarySelect" class="form-label">Release Name</label>
-        <app-dropdown
-          id="librarySelect"
-          [options]="libraries"
-          valueAccessor="libraryName"
-          textAccessor="libraryName"
-          placeholder="All Suites"
-          [(selected)]="selectedLibrary"
-          (selectionChange)="onLibraryChange($event)"
-        ></app-dropdown>
+      <div class="d-flex gap-2 align-items-end">
+        <div>
+          <label for="releaseSelect" class="form-label">Select Release</label>
+          <app-dropdown
+            id="releaseSelect"
+            [options]="releases"
+            valueAccessor="releaseId"
+            textAccessor="releaseName"
+            placeholder="Select Release"
+            [(selected)]="selectedRelease"
+            (selectionChange)="onReleaseChange($event)"
+          ></app-dropdown>
+        </div>
+        <button
+          class="btn btn-outline-secondary"
+          [disabled]="!selectedRelease"
+          (click)="onRefreshClick()"
+          title="Refresh data for the selected release"
+        >
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
       </div>
 
       <!-- Stats aligned to right -->
-      <div class="d-flex gap-3 ms-auto">
+      <div class="d-flex gap-3 ms-auto" *ngIf="selectedRelease">
         <div class="stats-box">
           <div class="stats-number">{{ totalCases }}</div>
           <div class="stats-label">Total Cases</div>
@@ -55,7 +73,7 @@
   </div>
 
   <!-- 4 CARD SUMMARY -->
-  <div class="row g-3 mb-4" *ngIf="libraryDiscoveryAvailable">
+  <div class="row g-3 mb-4" *ngIf="selectedRelease">
     <!-- TOTAL TESTS -->
     <div class="col-md-3">
       <div class="summary-card bg-white shadow-sm border-total">
@@ -146,7 +164,7 @@
   </div>
 
   <!-- TABLE -->
-  <div class="table-card" *ngIf="libraryDiscoveryAvailable">
+  <div class="table-card" *ngIf="selectedRelease">
     <h5>Individual Test Case Results ( {{ totalCases }} Total)</h5>
 
     <div class="table-responsive">

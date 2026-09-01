@@ -900,14 +900,18 @@ BEGIN
 END
 GO
 
--- 7.10 usp_GetReleaseExecutionLogs  (also expose ReleaseId; keep ReleaseName filter)
+-- 7.10 usp_GetReleaseExecutionLogs  (ReleaseId-based now that ReleaseId is NOT NULL and
+--      reliable, replacing the old @ReleaseName filter which actually matched the
+--      historically-misnamed Library-name text column, not the real Release name.
+--      Also now selects LogId, previously missing.)
 CREATE OR ALTER PROCEDURE aut.usp_GetReleaseExecutionLogs
-    @ReleaseName NVARCHAR(255)
+    @ReleaseId INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
     SELECT
+        l.LogId,
         a.ReleaseName,
         a.ReleaseId,
         l.AssignmentId,
@@ -924,7 +928,7 @@ BEGIN
     FROM aut.TestCaseExecutionLogs l
     JOIN aut.TestCaseAssignment a ON l.AssignmentId = a.AssignmentId
     JOIN aut.AssignedTestCases tc ON l.AssignmentTestCaseId = tc.AssignmentTestCaseId
-    WHERE a.ReleaseName = @ReleaseName
+    WHERE a.ReleaseId = @ReleaseId
     ORDER BY l.CreatedAt;
 END
 GO
@@ -1008,7 +1012,68 @@ BEGIN
 END
 GO
 
--- 7.13 usp_GetAssignmentReleaseLifecycle  (NEW - lets the execution queue endpoints
+-- 7.13 usp_GetAllAssignedTestCasesForRelease  (NEW - same shape as
+--      usp_GetAllAssignedTestCasesInLibrary but spans every library tied to a Release,
+--      for the Dashboard's Release-level "Individual Test Case Results" grid)
+CREATE OR ALTER PROCEDURE aut.usp_GetAllAssignedTestCasesForRelease
+    @ReleaseId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        TC.AssignmentTestCaseId,
+        TC.AssignmentId,
+        TC.TestCaseId,
+        TC.TestCaseDescription,
+        TC.TestCaseStatus,
+        TC.ClassName,
+        TC.LibraryName,
+        TC.MethodName,
+        TC.Priority,
+        TC.StartTime,
+        TC.EndTime,
+        TC.Duration,
+        TC.ErrorMessage,
+        U.UserID AS AssignedUserId,
+        U.UserName AS AssignedUserName,
+        A.AssignmentName,
+        A.Environment,
+
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM aut.TestScreenshots TS
+                WHERE TS.AssignmentTestCaseId = TC.AssignmentTestCaseId
+            )
+            THEN CAST(1 AS BIT)
+            ELSE CAST(0 AS BIT)
+        END AS HasScreenshots,
+
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM aut.TestCaseExecutionLogs L
+                WHERE L.AssignmentTestCaseId = TC.AssignmentTestCaseId
+            )
+            THEN CAST(1 AS BIT)
+            ELSE CAST(0 AS BIT)
+        END AS HasLogs
+
+    FROM aut.AssignedTestCases TC
+    INNER JOIN aut.TestCaseAssignment A
+        ON TC.AssignmentId = A.AssignmentId
+    INNER JOIN aut.[User] U
+        ON A.AssignedUser = U.UserID
+    WHERE
+        A.ReleaseId = @ReleaseId
+    ORDER BY
+        TC.Priority,
+        TC.TestCaseId;
+END
+GO
+
+-- 7.14 usp_GetAssignmentReleaseLifecycle  (NEW - lets the execution queue endpoints
 --      block Run Now/Schedule once the assignment's linked Release is no longer Active)
 CREATE OR ALTER PROCEDURE aut.usp_GetAssignmentReleaseLifecycle
     @AssignmentId INT

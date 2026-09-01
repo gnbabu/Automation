@@ -6,7 +6,7 @@ namespace AutomationAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class TestSuitesController : ControllerBase
     {
         private readonly ITestSuitesRepository _testSuitesRepository;

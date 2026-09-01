@@ -1,11 +1,13 @@
 ﻿using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AutomationAPI.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]    
+    [ApiController]
+    [Authorize]
     public class TestCaseExecutionQueueController : ControllerBase
     {
         private readonly ITestCaseExecutionQueueRepository _repo;

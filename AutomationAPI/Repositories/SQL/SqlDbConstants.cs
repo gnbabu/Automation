@@ -50,6 +50,7 @@
         public const string GetAssignedTestCasesForLibraryAndEnvironment = "[aut].[usp_GetAssignedTestCasesForLibraryAndEnvironment]";
         public const string GetAssignedTestCasesForLibraryAndRelease = "[aut].[usp_GetAssignedTestCasesForLibraryAndRelease]";
         public const string GetAssignmentReleaseLifecycle = "[aut].[usp_GetAssignmentReleaseLifecycle]";
+        public const string GetAllAssignedTestCasesForRelease = "[aut].[usp_GetAllAssignedTestCasesForRelease]";
         public const string GetAllAssignedTestCasesInLibrary = "[aut].[usp_GetAllAssignedTestCasesInLibrary]";
         public const string GetTestCaseAssignmentsByUser = "[aut].[usp_GetTestCaseAssignmentsByUser]";
 

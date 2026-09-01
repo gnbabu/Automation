@@ -1,5 +1,6 @@
 ﻿using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +9,7 @@ namespace AutomationAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TestCaseExecutionLogsController : ControllerBase
     {
         private readonly ITestCaseExecutionLogRepository _repo;
@@ -47,10 +49,10 @@ namespace AutomationAPI.Controllers
             return Ok(logs);
         }
 
-        [HttpGet("releases/{releaseName}/logs")]
-        public async Task<IActionResult> GetReleaseLogs(string releaseName)
+        [HttpGet("releases/{releaseId}/logs")]
+        public async Task<IActionResult> GetReleaseLogs(int releaseId)
         {
-            var logs = await _repo.GetByReleaseAsync(releaseName);
+            var logs = await _repo.GetByReleaseAsync(releaseId);
             return Ok(logs);
         }
     }

@@ -12,6 +12,7 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<IEnumerable<AssignedTestCase>> GetAssignedTestCasesForLibraryAndEnvironmentAsync(string libraryName, string environment);
         Task<IEnumerable<AssignedTestCase>> GetAssignedTestCasesForLibraryAndReleaseAsync(string libraryName, int releaseId);
         Task<string?> GetReleaseLifecycleForAssignmentAsync(int assignmentId);
+        Task<IEnumerable<AssignedTestCase>> GetAllAssignedTestCasesForReleaseAsync(int releaseId);
         Task CreateOrUpdateAssignmentWithTestCasesAsync(AssignmentCreateUpdateRequest request);
 
         Task<bool> UpdateAssignedTestCaseStatusAsync(AssignedTestCaseStatusUpdate request);
