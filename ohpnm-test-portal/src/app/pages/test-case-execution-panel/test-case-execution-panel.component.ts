@@ -152,11 +152,20 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
         this.releases = releases || [];
         this.assignments = assignments || [];
         this.buildReleaseFilterOptions();
-        this.filteredAssignments = this.assignments;
 
-        // ✅ Select first assignment by default
-        if (this.filteredAssignments.length > 0) {
-          this.onAssignmentChange(this.filteredAssignments[0]); // Trigger selection event
+        // Auto-select the first Release filter option by default, same convention as
+        // Dashboard's "Select Release" dropdown (onReleaseChange(this.releases[0])) -
+        // previously this picked the first *assignment* while leaving the Release
+        // dropdown on its "All Releases" placeholder, so the dropdown didn't reflect
+        // what was actually being shown. Falls back to showing all assignments
+        // unfiltered only if the user genuinely has none scoped to any release.
+        if (this.releaseFilterOptions.length > 0) {
+          this.onReleaseFilterChange(this.releaseFilterOptions[0]);
+        } else {
+          this.filteredAssignments = this.assignments;
+          if (this.filteredAssignments.length > 0) {
+            this.onAssignmentChange(this.filteredAssignments[0]);
+          }
         }
       },
       error: (err) => console.error('Failed to load assignments:', err),
@@ -339,6 +348,12 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
       case 'Cancelled':
         return 'bg-dark text-white';
+
+      case 'Skipped':
+        return 'bg-secondary text-white';
+
+      case 'Inconclusive':
+        return 'bg-warning text-dark';
 
       default:
         return 'bg-light text-dark border';
@@ -559,6 +574,11 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
       'Passed',
       'Failed',
       'Cancelled',
+      // NUnit's own outcomes ([Ignore]/[Explicit] -> Skipped; an unresolved assertion ->
+      // Inconclusive), now that the runner reports these honestly instead of forcing
+      // everything into Pass/Fail - see AGENTS.md.
+      'Skipped',
+      'Inconclusive',
     ];
 
     return (

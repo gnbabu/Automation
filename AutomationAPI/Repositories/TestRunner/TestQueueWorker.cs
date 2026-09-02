@@ -46,7 +46,14 @@ namespace AutomationAPI.Repositories.TestRunner
                     {
                         var runner = scope.ServiceProvider.GetRequiredService<ITestRunner>();
 
-                        var results = await runner.RunAsync(releaseFolderPath, queue.LibraryName, queue.ClassName, queue.MethodName);
+                        var results = await runner.RunAsync(new TestRunRequest
+                        {
+                            LibsPath = releaseFolderPath,
+                            Library = queue.LibraryName,
+                            ClassName = queue.ClassName,
+                            MethodName = queue.MethodName,
+                            Browser = queue.Browser
+                        });
 
                         foreach (var result in results)
                         {
@@ -58,10 +65,21 @@ namespace AutomationAPI.Repositories.TestRunner
                                 durationSeconds = testDuration.TotalSeconds;   // <-- double
                             }
 
+                            if (!result.WasIsolated)
+                            {
+                                Console.WriteLine($"Warning: queue item {queue.QueueId} ran in-process (not isolated) - the Release folder is likely missing a full publish output. See AGENTS.md.");
+                            }
+
                             var tesrResult = new AssignedTestCaseStatusUpdate
                             {
                                 AssignmentTestCaseId = queue.AssignmentTestCaseId,
-                                TestCaseStatus = result.Passed ? "Passed" : "Failed",
+                                TestCaseStatus = result.Outcome switch
+                                {
+                                    TestOutcome.Passed => "Passed",
+                                    TestOutcome.Skipped => "Skipped",
+                                    TestOutcome.Inconclusive => "Skipped",
+                                    _ => "Failed"
+                                },
                                 Duration = durationSeconds,     
                                 StartTime = result.StartTime,
                                 EndTime = result.EndTime,

@@ -165,7 +165,9 @@
         'bg-warning text-dark': row.testCaseStatus === 'InProgress',
         'bg-info text-dark':
           row.testCaseStatus === 'Queued' || row.testCaseStatus === 'Scheduled',
-        'bg-dark': row.testCaseStatus === 'Cancelled'
+        'bg-dark': row.testCaseStatus === 'Cancelled',
+        'bg-secondary': row.testCaseStatus === 'Skipped',
+        'bg-warning text-dark ': row.testCaseStatus === 'Inconclusive'
       }"
     >
       {{ row.testCaseStatus }}

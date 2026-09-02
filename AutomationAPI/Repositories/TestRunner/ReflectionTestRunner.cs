@@ -55,7 +55,7 @@ namespace AutomationAPI.Repositories.TestRunner
                             {
                                 Name = method.Name,
                                 ClassName = type.Name,
-                                Passed = false,
+                                Outcome = TestOutcome.Failed,
                                 Message = $"Could not instantiate type {type.FullName}."
                             });
                             continue;
@@ -78,11 +78,11 @@ namespace AutomationAPI.Repositories.TestRunner
 
                             // Run the test method
                             method.Invoke(instance, null);
-                            result.Passed = true;
+                            result.Outcome = TestOutcome.Passed;
                         }
                         catch (Exception ex)
                         {
-                            result.Passed = false;
+                            result.Outcome = TestOutcome.Failed;
                             result.Message = ex.ToString();
                         }
                         finally
@@ -112,8 +112,18 @@ namespace AutomationAPI.Repositories.TestRunner
 
 
 
-        public async Task<List<TestExecutionResult>> RunAsync(string libsPath, string? library, string? className, string? methodName)
+        // Kept in the codebase (unregistered in Program.cs - superseded by
+        // NUnitEngineTestRunner) rather than deleted outright, until the new runner is
+        // proven in real use. Not process-isolated and has the known gaps documented in
+        // AGENTS.md (async methods never awaited, no OneTimeSetUp/TearDown, TestContext
+        // doesn't work, etc.) - do not re-register this without addressing those.
+        public async Task<List<TestExecutionResult>> RunAsync(TestRunRequest request)
         {
+            var libsPath = request.LibsPath;
+            var library = request.Library;
+            var className = request.ClassName;
+            var methodName = request.MethodName;
+
             var results = new List<TestExecutionResult>();
             var dllFiles = Directory.GetFiles(libsPath, "*.dll");
 
@@ -134,7 +144,7 @@ namespace AutomationAPI.Repositories.TestRunner
                     {
                         Name = "AssemblyLoad",
                         ClassName = fileName,
-                        Passed = false,
+                        Outcome = TestOutcome.Failed,
                         Message = ex.Message,
                         StartTime = DateTime.UtcNow,
                         EndTime = DateTime.UtcNow
@@ -220,11 +230,11 @@ namespace AutomationAPI.Repositories.TestRunner
                                 foreach (var tearDown in tearDownMethods)
                                     tearDown.Invoke(instance, null);
 
-                                result.Passed = true;
+                                result.Outcome = TestOutcome.Passed;
                             }
                             catch (Exception ex)
                             {
-                                result.Passed = false;
+                                result.Outcome = TestOutcome.Failed;
                                 result.Message = ex.InnerException?.Message ?? ex.Message;
                             }
 

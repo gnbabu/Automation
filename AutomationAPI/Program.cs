@@ -63,7 +63,7 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 builder.Services.AddScoped<IEmailService, SendGridEmailService>();
 
 
-builder.Services.AddScoped<ITestRunner, ReflectionTestRunner>();
+builder.Services.AddScoped<ITestRunner, NUnitEngineTestRunner>();
 
 builder.Services.AddHostedService<TestQueueWorker>();
 builder.Services.AddHostedService<ReleaseDllsReadyNotificationWorker>();

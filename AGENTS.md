@@ -7,6 +7,249 @@
 - `TestLibs/` — legacy global folder of test DLLs. No longer used by discovery/execution
   (both are now scoped per-Release, see "Test Case Assignment — Release-aware" below);
   kept only because `TestSettings:TestLibsPath` is still present, unreferenced, in config.
+- `AutomationTests/` — a **separate, standalone solution** (own `.sln`) of sample/demo NUnit
+  test projects (`OnboardingTests`, `PayrollTests`, `RecruitmentTests`, `SeleniumSmokeTests`,
+  `AutomationShared`) - NOT part of `AutomationAPI`'s build. These are what actually get
+  compiled and manually copied into a Release folder (see "Release Management" below) to
+  exercise the app; they exist purely as realistic input for AutomationAPI to discover/run,
+  not as tests *of* AutomationAPI itself. `AutomationTests/API/` is an early, superseded
+  discovery-only prototype (`AutomationTestController`) - unrelated to `AutomationAPI`,
+  kept only for history.
+
+## Test execution engine — NUnit.Engine (replaces hand-rolled reflection)
+`AutomationAPI/Repositories/TestRunner/NUnitEngineTestRunner.cs` (the registered
+`ITestRunner`, wired in `Program.cs`) runs test DLLs through NUnit's **real execution
+engine** (`NUnit.Engine` - was already referenced as a package but completely unused before
+this; the app used to hand-roll its own reflection-based invoker instead, `ReflectionTestRunner`,
+which is kept in the codebase, **unregistered**, for reference/rollback only). Discovery
+(`TestSuitesRepository`) similarly moved from hand-rolled reflection to NUnit's `Explore()`
+API via the shared `NUnitEngineHelper`/`ExploreXmlParser`.
+
+### Why this replaced the old reflection-based runner
+The old `ReflectionTestRunner` (`method.Invoke(instance, args)` on types found via
+`Assembly.LoadFrom` + attribute reflection) had several gaps that only really matter once
+real Selenium/enterprise-scale suites are involved (today's sample test projects are simple
+Moq unit tests, so these never surfaced before):
+1. **Async test methods were never awaited** - `method.Invoke` on an `async Task` method
+   returns a `Task` immediately; the old code never awaited it, so it always reported
+   `Passed` regardless of what actually happened inside, and any exception thrown inside
+   never reached the `catch` block.
+2. **No `[OneTimeSetUp]`/`[OneTimeTearDown]`** - only per-test `[SetUp]`/`[TearDown]` -
+   Selenium suites conventionally launch/quit the browser once per fixture in these.
+3. **`TestContext.CurrentContext`/`TestContext.Parameters` didn't work** - populated by
+   NUnit's real engine, not by a bare `MethodInfo.Invoke` call.
+4. **No `[Ignore]`/`[Explicit]` handling** - a deliberately-skipped test still ran and got
+   force-mapped into Pass/Fail; there was no "Skipped"/"Inconclusive" concept at all.
+5. **`[Values]`/`[Range]`/`[Combinatorial]`/`[TestFixtureSource]`-generated test cases were
+   invisible** to both discovery and execution - only `[Test]`/`[TestCase]`/
+   `[TestCaseSource]` were recognized at the method level, never expanded.
+6. **No per-test timeout, no crash/hang isolation** - everything ran inside
+   `TestQueueWorker`'s single background-service loop; one hung Selenium wait or a crashed
+   driver could block the whole queue indefinitely, or take the whole API process down, for
+   every user/Release.
+7. **Assemblies were never unloaded** - `Assembly.LoadFrom` loads into the default
+   `AssemblyLoadContext` for the process lifetime; two Releases with the same assembly
+   identity could silently reuse the *first*-loaded copy.
+8. **The `Browser` field was captured end-to-end from the UI into the queue table but never
+   actually used** - traced the whole call chain and confirmed `TestQueueWorker` never read
+   it or passed it into `ITestRunner`.
+
+`NUnit.Engine` is NUnit's own real runtime, so switching to it fixes 1-5 for free (it's not
+an approximation of NUnit's semantics, it *is* NUnit). Process isolation (below) addresses
+6-7. Browser wiring (below) addresses 8.
+
+### Process isolation (`ProcessModel=Separate`) - and why it's not a hard blocker
+`NUnitEngineTestRunner` runs every test package in an isolated **child process**
+(`package.AddSetting(EnginePackageSettings.ProcessModel, "Separate")`) by default, so a
+hung/crashed Selenium test can't freeze `TestQueueWorker`'s shared queue for every
+user/Release (a deliberate choice for enterprise-scale Selenium suites over staying
+in-process - see chat history for the reasoning). This was initially expected to require
+the Release folder to have a **full publish output** (`.deps.json` + all dependencies)
+alongside the test DLL, since a genuinely separate child process can't benefit from
+whatever's already loaded in the host API process the way the old in-process reflection
+approach could. **Confirmed by direct testing this is only partially true**:
+- A bare test DLL (today's real Release-folder convention - confirmed by inspecting
+  `D:\Releases\QA\REL-10_...\` directly: just the DLL + one hand-copied dependency, no
+  `.deps.json`, no `NUnit.Framework.dll`) **does** fail under `ProcessModel=Separate` if the
+  *only* thing referencing a given assembly is the test project itself - e.g. if
+  `AutomationAPI` doesn't also reference it somewhere.
+- **But** `AutomationAPI` now explicitly references `NUnit`, `Microsoft.TestPlatform.ObjectModel`,
+  and `Selenium.WebDriver` specifically so that a bare Release-folder DLL using just those
+  (i.e. a normal NUnit/Moq unit test suite, or a Selenium suite built on `Selenium.WebDriver`)
+  **can** run fully isolated (`ProcessModel=Separate`) with **zero changes to the external
+  deploy pipeline** - confirmed end-to-end: created a real Release (`REL-14_SeleniumPoC`),
+  copied *only* `SeleniumSmokeTests.dll` into its folder (no other files), assigned/queued
+  `TC_SEL_001` (a real `async Task` test that launches Chrome via `[OneTimeSetUp]`, submits a
+  form, and asserts on the result page), and watched `TestQueueWorker` pick it up and mark it
+  `Passed` in the DB - fully isolated, fully real, no manual DLL staging beyond the one file.
+- This is a **partial, pragmatic mitigation**, not the general answer - it only covers the
+  specific extra dependencies `AutomationAPI` itself chooses to reference. A test suite using
+  something else entirely (Appium, RestSharp, a custom internal library, etc.) still needs
+  either that dependency added to `AutomationAPI` too, or - the fully general, correct fix -
+  the Release folder should get a full publish output for its own specific dependencies
+  (`AutomationAPI`'s own baseline references only need to cover the common denominator).
+- **Automatic fallback**: if `ProcessModel=Separate` still can't load a dependency,
+  `NUnitEngineTestRunner` automatically retries once with `ProcessModel=InProcess` (same
+  reliability profile as the old reflection runner) rather than hard-failing the whole run.
+  `TestExecutionResult.WasIsolated` records which happened, and `TestQueueWorker` logs a
+  warning when a run fell back to in-process, so this is visible/discoverable rather than a
+  silent reliability regression. Confirmed (by direct testing) the missing-dependency
+  failure shows up in **two different shapes** depending on exactly what's missing - either
+  `NUnit.Engine` throws `NUnitEngineException` synchronously, or it doesn't throw at all and
+  instead returns a normal-looking result XML with the assembly-level `<test-suite>` marked
+  `runstate="NotRunnable"`/`result="Failed" label="Invalid"` - both are detected
+  (`NUnitEngineHelper.IsMissingFrameworkDependency`/`IsUnrunnableResult`).
+
+### Filtering by class/method name - NUnit `id`s are NOT stable across runner instances
+`TestQueueWorker` calls `ITestRunner.RunAsync` with a specific `ClassName`/`MethodName` per
+queue item (matching one assigned test case). Building an NUnit `TestFilter` for this
+requires knowing which concrete test(s) match those (historically simple, non-namespaced)
+names. **Confirmed by direct testing**: NUnit's numeric test-case `id` attributes (e.g.
+`"0-1001"`, from an `Explore()` XML) are only valid within the exact `TestPackage`/
+`ITestRunner` instance that produced them - reusing an id captured from one `Explore()` call
+against a *different* `TestPackage`/runner instance (e.g. a fresh package built for the
+actual `Run()` call) silently matches nothing (returns zero results, no error). Fixed by
+building filters from **class+method name pairs** instead
+(`<filter><or><and><class>...</class><method>...</method></and>...</or></filter>`,
+`NUnitEngineHelper.BuildFilter`/`FindMatchingTestCases`) - NUnit matches these by literal
+string comparison at filter-evaluation time, so they're safely reusable across a fresh
+package/runner instance built later for the actual execution.
+
+### Discovery caching + Windows file-locking caveat
+`NUnitEngineHelper.Explore()` (used by `TestSuitesRepository` for the Assignment
+screen/Dashboard) is cached in-memory keyed by `(dllPath, LastWriteTimeUtc)`, so a "huge"
+suite's DLLs aren't fully re-scanned from scratch on every page load - a Release's DLL being
+rebuilt/republished automatically invalidates the cache (this also mitigates the stale-
+assembly risk for discovery specifically; execution itself doesn't need this, since isolated
+runs always load fresh into a brand-new process). **Caveat confirmed by direct testing**:
+`Explore()` always runs in-process (`ProcessModel=InProcess` - it's read-only/cheap, no
+isolation benefit worth the overhead), and on Windows this **locks the DLL file** for as
+long as the API process is running, until the assembly is GC'd/unloaded (which .NET Core's
+default `AssemblyLoadContext` doesn't reliably do promptly) - attempting to overwrite a
+Release's DLL (e.g. redeploying a new build) while the API is running and has explored it at
+least once can fail with a file-in-use error. Restarting the API releases the lock. Not
+addressed further in this pass (would need a collectible, per-explore `AssemblyLoadContext`
+that's explicitly unloaded after each `Explore()` call) - flagged as a known follow-up.
+
+### Reading Browser in a test
+`TestQueueWorker` passes the queue item's `Browser` (already captured end-to-end from the
+Run Now/Schedule dialogs, previously just stored and never used) into
+`TestRunRequest.Browser`. `NUnitEngineTestRunner` sets it as an NUnit engine `TestParameters`/
+`TestParametersDictionary` package setting (both the legacy string form and the modern
+dictionary form, matching what NUnit's own console runner does, for compatibility across
+framework versions) - test code reads it via `TestContext.Parameters["Browser"]`
+(`SeleniumSmokeTests.SmokeUiTests.LaunchBrowser()` does exactly this, defaulting to Chrome if
+absent). `AutomationShared.CustomTestContext` (a same-process-only static dictionary some
+older sample test code reads from, e.g. `OnboardingServiceTests.RegisterEmployee_
+ValidDocuments_ReturnsTrue`'s `CustomTestContext.Get("queueId")`) is superseded by this -
+left in place, unused, rather than removed, since it doesn't work across the process
+boundary that `ProcessModel=Separate` introduces (a parent-process static field is invisible
+to an isolated child process).
+
+### `TestExecutionResult` - real outcomes instead of binary Pass/Fail
+Gained a `TestOutcome` enum (`Passed`/`Failed`/`Skipped`/`Inconclusive`, from the engine's
+real `result`/`label` XML attributes) and `WasIsolated`, replacing the old binary
+`bool Passed`(kept as a computed property for compatibility). `TestQueueWorker` maps
+`Skipped`/`Inconclusive` to a new `"Skipped"` `TestCaseStatus` (previously impossible - an
+`[Ignore]`d test used to be silently force-mapped into Pass or Fail). Frontend status
+lists that treat a status as "locked"/terminal
+(`test-case-assignment-user.component.ts`'s `LOCKED_STATUSES`,
+`test-case-execution-panel.component.ts`'s `disabledStatuses`/`getBadgeClass`) were extended
+to include `'Skipped'`/`'Inconclusive'` alongside the existing statuses, with matching badge
+colors.
+
+### `SeleniumSmokeTests` - proof-of-concept, not a sample/demo only
+Added because there was **no Selenium test anywhere in this codebase** before this refactor
+(confirmed by reading all of `AutomationTests`' existing projects - `OnboardingTests`/
+`PayrollTests`/`RecruitmentTests` are all pure Moq unit tests) - this is what actually
+*proves* the gaps above are fixed, not just an argument that they should be.
+`AutomationTests/SeleniumSmokeTests/SmokeUiTests.cs` covers, deliberately, one test per gap:
+- `SubmitWebForm_TextInput_ShowsSubmittedValue` - `async Task`, with a real `await
+  Task.Delay(...)` plus real Selenium actions, submitting
+  `https://www.selenium.dev/selenium/web/web-form.html` (Selenium's own official, stable
+  test fixture page - chosen specifically so this suite needs no app/credentials of its own)
+  and asserting on the resulting URL - proves async is genuinely awaited end-to-end.
+- `[OneTimeSetUp]`/`[OneTimeTearDown]` (`LaunchBrowser`/`QuitBrowser`) - launches/quits a
+  real Chrome (or Edge) via Selenium + `WebDriverManager` (auto-resolves a matching
+  chromedriver/msedgedriver locally - avoids needing to pin/ship a specific driver version).
+  Uses `WebDriverManager`'s resolved driver path explicitly via `ChromeDriverService`/
+  `EdgeDriverService`, rather than Selenium's own bundled "Selenium Manager" default -
+  confirmed by direct testing that Selenium Manager looks for a `selenium-manager/`
+  subfolder next to the running assembly, which only exists in a full `dotnet build`/publish
+  output, not a bare deployed test DLL.
+- `TextInput_AcceptsValue("Alpha"/"Beta"/"Gamma")` - `[TestCase]` with multiple rows,
+  proving parameterized-test discovery/execution (each row shows up as its own test case in
+  both `Explore()` and `Run()` output - confirmed via `GET .../libraries?releaseId=...`
+  returning all 3 rows individually, something the old reflection scan couldn't do at all).
+- `BrowserParameter_IsReadable` - reads `TestContext.Parameters["Browser"]` directly, proving
+  the Browser-wiring path end-to-end.
+- `DeliberatelySkipped_ShouldReportAsSkipped` - `[Ignore(...)]`, proving it's honored
+  (reports `Skipped`, confirmed via a real queued run) instead of running/being force-mapped
+  into Pass or Fail.
+All 6 tests were run for real (both via plain `dotnet test` locally and through the actual
+`NUnitEngineTestRunner`/`TestQueueWorker`/DB pipeline against `REL-14_SeleniumPoC_v1.0.0`) -
+5 passed, 1 correctly reported Skipped.
+
+### Fixed: `[Property(...)]` missing for parameterized ([TestCase]/etc.) methods
+`ExploreXmlParser.GetProperty` originally only checked a `<test-case>` node's own direct
+`<properties>` children. Confirmed by direct testing (`Explore()` on `TextInput_
+AcceptsValue`, which has 3 `[TestCase("Alpha"/"Beta"/"Gamma")]` rows) that NUnit attaches a
+**method-level** `[Property(...)]` (`Description`/`Priority`/`TestCaseId`) to the
+intermediate `<test-suite type="ParameterizedMethod">` wrapper node instead - each
+individual `<test-case>` row has no `<properties>` of its own at all in that case. Only a
+plain `[Test]` method (one `<test-case>` directly under the `TestFixture`, no wrapper) has
+the property directly on itself. Fixed by walking up through ancestor `<test-suite>` nodes
+(bounded to stop once a node has no `classname` attribute, i.e. once we'd leave the test
+class itself) until a matching property is found - so a plain `[Test]` and a parameterized
+method's rows both resolve correctly, and every row of one parameterized method correctly
+shares that method's property values (matching NUnit's own semantics - the property really
+is declared once per method, not per generated row). Verified directly: all 3
+`TextInput_AcceptsValue` rows now correctly report `TestCaseId=TC_SEL_002`,
+`Priority=Medium`, and the real `Description` (previously all three came back empty).
+
+### Fixed (found via the Assignment screen after the above fix): parameterized rows sharing one TestCaseId
+Once the fix above correctly surfaced the method-level `[Property(...)]` for all 3
+`TextInput_AcceptsValue` rows, a **new**, real problem became visible in the Assignment
+screen: all 3 rows showed the identical `TestCaseId=TC_SEL_002`. This app treats
+`TestCaseId` as the unique key for assignment/execution tracking (e.g.
+`aut.AssignedTestCases.TestCaseId`), so 3 distinct executable tests sharing one ID is
+ambiguous - assigning/tracking "TC_SEL_002" can't say which of the 3 real variants
+(Alpha/Beta/Gamma) it refers to. Root cause: a plain `[TestCase(...)]` + method-level
+`[Property(...)]` fundamentally can't express a *different* property value per generated
+row - the property is declared once, for the whole method. Fixed in the **test source**
+(`SeleniumSmokeTests/SmokeUiTests.cs`), not the discovery code (which was correctly
+reporting what was actually declared) - switched `TextInput_AcceptsValue` from
+`[TestCase("Alpha"/"Beta"/"Gamma")]` to `[TestCaseSource(nameof(TextInputValues))]` backed
+by a static `IEnumerable<TestCaseData>` using `TestCaseData.SetProperty(...)` per row, which
+NUnit attaches directly to that row's own `<test-case>` rather than the shared
+`ParameterizedMethod` wrapper. Now reports 3 distinct ids (`TC_SEL_002A`/`TC_SEL_002B`/
+`TC_SEL_002C`), each with its own `Description`, verified directly. **Guidance for future
+enterprise test authors**: any parameterized method whose rows need independent
+assignment/tracking in this app must use `TestCaseData.SetProperty("TestCaseId", ...)` (or
+equivalent per-row property assignment) rather than `[TestCase(...)]` + a shared
+method-level `[Property("TestCaseId", ...)]`, since the two are not the same thing.
+Also filled in the previously-intentionally-missing `Description`/`Priority` on
+`DeliberatelySkipped_ShouldReportAsSkipped` (`TC_SEL_004`) for consistency - it wasn't a
+bug (that test genuinely never declared them), just incomplete authoring.
+
+### Fixed: `Assert.Pass(...)` shows a confusing "exception" in tools like Test Explorer
+`BrowserParameter_IsReadable` (`TC_SEL_003`) used to end with `Assert.Pass($"...")`.
+`Assert.Pass` has always worked by throwing `NUnit.Framework.SuccessException` internally
+as its own control-flow signal to end the test immediately and mark it Passed - not a real
+error, and it doesn't affect the reported outcome (confirmed: it correctly showed up as
+`Passed` through `NUnitEngineTestRunner` both times). But tools that surface "any exception
+this test's execution touched" (e.g. Visual Studio's Test Explorer detail/exception view)
+show this prominently, which reads as an alarming failure even though the test genuinely
+passed - purely a presentation/noise issue, not a functional bug. Checked the rest of the
+suite for the same pattern - it's the only place using `Assert.Pass`/`Assert.Ignore`/
+`Assert.Inconclusive` at runtime (`DeliberatelySkipped_ShouldReportAsSkipped` uses the
+`[Ignore(...)]` **attribute**, which is handled entirely by the engine before the method
+body ever runs, so its body's `Assert.Fail` never actually executes and never throws).
+Fixed by removing the `Assert.Pass(...)` call - a test that simply completes its method
+body normally needs no explicit "I'm done, mark me Passed" signal at all. Replaced with a
+real (conditional) assertion: if the Browser parameter is present, assert it's non-empty;
+if absent, the test still completes normally (no assertion needed, nothing to check).
+Verified: `dotnet test` now shows it passing in ~1ms with no exception trace at all.
 
 ## Database
 - Server: `DESKTOP-BNTHM9S\SQLEXPRESS`, DB: `MES_AUT_AI`, schema `aut`.
@@ -364,11 +607,39 @@ tightens the column if it's still nullable **and** no `NULL` rows remain — nev
 loses data if re-run) — the one-time DELETE itself is not part of the idempotent script
 (it was a manual, explicitly-confirmed one-off cleanup).
 
+## Fixed: `ModalService` couldn't close a dialog after leaving and returning to its page
+`ModalService` (`core/services/modal.service.ts`) is `providedIn: 'root'` - a singleton
+that lives for the whole SPA session - but `register(id, element)` only ever created a
+`bootstrap.Modal` **the first time** a given id was seen (`if (!this.modals[id])`).
+Reported as "Not able to close [the] Schedule Test Case Execution popup" - root cause:
+`test-case-execution-panel` (which hosts `ScheduleTestcasesDialogComponent`) is a lazily-
+loaded **routed** component (`app.routes.ts`), so navigating away from and back to that
+page destroys and recreates the dialog and its modal `<div>` element every time. After the
+*first* visit, every later `register()` call for `'scheduleTestcasesModal'` was silently
+skipped - the freshly-rendered element from the new visit was never wired to any
+`bootstrap.Modal` controller at all, while `open()`/`close()` kept calling `.show()`/
+`.hide()` on the *previous* visit's now-detached instance. Same latent bug applies to every
+other `ModalService`-based dialog (`forgotPasswordModal`, `forgotUsernameModal`, tips
+modals, etc.) if their host component is ever destroyed/recreated, not just this one.
+**Fixed**: `register()` now always disposes any previous instance for that id and creates a
+fresh `bootstrap.Modal` bound to the current element, instead of skipping registration when
+an (possibly stale) entry already exists.
+
 ## Test Case Execution Panel — Release-aware alignment
 `test-case-execution-panel.component` now mirrors the Assignment screen's Release-awareness:
 - A **Release filter** dropdown (scoped to releases the tester actually has assignments in,
   derived from their own `assignments` list) narrows the existing Assignment dropdown;
   selecting a release auto-selects its first matching assignment.
+- **Fixed**: on load, this dropdown used to stay on its "All Releases" placeholder even
+  though an assignment (and therefore a specific release's data) was already auto-selected
+  and shown - it picked the first *assignment* directly rather than going through the
+  Release filter, so the dropdown didn't reflect what was actually on screen. Now mirrors
+  Dashboard's `loadReleases()`/`onReleaseChange(this.releases[0])` convention: `loadAssignments()`
+  auto-selects the first `releaseFilterOptions` entry via `onReleaseFilterChange(...)` (which
+  itself then auto-selects that release's first assignment), so the Release dropdown shows a
+  real, concrete value immediately, same as Dashboard - falling back to the old
+  show-everything-unfiltered behavior only if the tester genuinely has zero assignments
+  scoped to any release.
 - The "Selected Assignment Name" card was replaced with a clearer info row: **Test Suite**
   (`assignment.releaseName` — historically named, actually the library), **Environment**
   (`assignment.environment`), and **Release** (`{releaseName} v{version}` + a lifecycle

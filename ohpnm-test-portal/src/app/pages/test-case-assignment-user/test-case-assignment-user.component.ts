@@ -187,6 +187,10 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     'Passed',
     'Failed',
     'Cancelled',
+    // NUnit's own outcomes ([Ignore]/[Explicit] -> Skipped; unresolved assertion ->
+    // Inconclusive), now that the runner reports these honestly - see AGENTS.md.
+    'Skipped',
+    'Inconclusive',
   ]);
 
   private isLocked(status?: string): boolean {

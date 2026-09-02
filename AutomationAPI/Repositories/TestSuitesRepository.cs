@@ -1,10 +1,6 @@
-﻿using System.Collections;
-using System.ComponentModel;
-using System.Reflection;
-using AutomationAPI.Repositories.Interfaces;
+﻿using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
-using Castle.Core.Internal;
-using NUnit.Framework;
+using AutomationAPI.Repositories.TestRunner;
 
 namespace AutomationAPI.Repositories
 {
@@ -16,14 +12,23 @@ namespace AutomationAPI.Repositories
             _testCaseAssignmentRepository = testCaseAssignmentRepository;
         }
 
+        // Discovery via NUnit.Engine's Explore() instead of hand-rolled reflection - this
+        // correctly expands [TestCase]/[TestCaseSource]/[Values]/[Range]/[Combinatorial]/
+        // [TestFixtureSource]-generated test cases into concrete entries (the old reflection
+        // scan only ever saw [Test]/[TestCase]/[TestCaseSource] at the method level, and
+        // couldn't expand parameterized-by-attribute tests at all), and reads TestCaseId/
+        // Priority/Description directly from NUnit's own [Property(...)] attribute via the
+        // explore XML's <properties> element instead of the old fragile "find a 2-arg
+        // attribute whose first arg string-matches a key name" convention in
+        // AttributeInfoManager (confirmed via the real AutomationTests test projects that
+        // they already use real [Property("TestCaseId", ...)] etc., so no test-project
+        // changes are needed for this).
         public async Task<IEnumerable<LibraryInfo>> GetLibrariesAsync(string releaseFolderPath)
         {
-            List<LibraryMethodInfo> libraryMethodInfos = GetMethodAttributes(releaseFolderPath);
-
-            var libraries = new List<LibraryInfo>();
-
             return await Task.Run(() =>
             {
+                var libraries = new List<LibraryInfo>();
+
                 if (!Directory.Exists(releaseFolderPath))
                     return Enumerable.Empty<LibraryInfo>();
 
@@ -33,60 +38,23 @@ namespace AutomationAPI.Repositories
                 {
                     try
                     {
-                        var assembly = Assembly.LoadFrom(dllPath);
+                        var exploreXml = NUnitEngineHelper.Explore(dllPath);
+                        var classes = ExploreXmlParser.ParseClasses(exploreXml);
 
-                        var testClasses = assembly.GetTypes()
-                            .Where(t => t.IsClass && t.IsPublic &&
-                                t.GetCustomAttributes(typeof(NUnit.Framework.TestFixtureAttribute), false).Any())
-                            .Select(t => new ClassInfo
-                            {
-                                ClassName = t.Name,
-                                Methods = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                                    .Where(m =>
-                                        m.GetCustomAttributes(typeof(NUnit.Framework.TestAttribute), false).Any() ||
-                                        m.GetCustomAttributes(typeof(NUnit.Framework.TestCaseAttribute), false).Any() ||
-                                        m.GetCustomAttributes(typeof(NUnit.Framework.TestCaseSourceAttribute), false).Any())
-                                    .Select(m => new LibraryMethodInfo
-                                    {
-                                        MethodName = m.Name
-                                    }).ToList()
-                            })
-                            .Where(c => c.Methods.Any())
-                            .ToList();
-
-                        if (testClasses.Any())
+                        if (classes.Any())
                         {
                             libraries.Add(new LibraryInfo
                             {
                                 LibraryName = Path.GetFileNameWithoutExtension(dllPath),
-                                Classes = testClasses
+                                Classes = classes
                             });
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        // Log the error if needed; skip the faulty assembly
+                        // Not a test assembly, or failed to load (e.g. missing dependency) -
+                        // skip it and keep scanning the rest of the folder, same as before.
                         continue;
-                    }
-                }
-
-                if (libraryMethodInfos != null && libraryMethodInfos.Count() > 0)
-                {
-                    foreach (var lib in libraries)
-                    {
-                        foreach (var cls in lib.Classes)
-                        {
-                            foreach (var method in cls.Methods)
-                            {
-                                var matchedMethod = libraryMethodInfos.FirstOrDefault(m => m.MethodName == method.MethodName);
-                                if (matchedMethod != null)
-                                {
-                                    method.TestCaseId = matchedMethod.TestCaseId;
-                                    method.Priority = matchedMethod.Priority;
-                                    method.Description = matchedMethod.Description;
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -98,7 +66,6 @@ namespace AutomationAPI.Repositories
         {
             var libraries = await GetLibrariesAsync(releaseFolderPath);
 
-            // Filter by library name if provided
             if (!string.IsNullOrEmpty(libraryName))
             {
                 libraries = libraries
@@ -121,94 +88,5 @@ namespace AutomationAPI.Repositories
 
             return testCases;
         }
-
-        public List<LibraryMethodInfo> GetMethodAttributes(string releaseFolderPath)
-        {
-            var results = new List<LibraryMethodInfo>();
-
-            if (!Directory.Exists(releaseFolderPath))
-                return null;
-
-            var dllFiles = Directory.GetFiles(releaseFolderPath, "*.dll");
-
-            Type[] types;
-            try
-            {
-                foreach (var dllPath in dllFiles)
-                {
-                    var assembly = Assembly.LoadFrom(dllPath);
-
-                    var classesWithMethods = assembly.GetTypes()
-                            .Where(t => t.IsClass && t.IsPublic &&
-                                        t.GetCustomAttributes(typeof(NUnit.Framework.TestFixtureAttribute), inherit: false).Any())
-                            .Select(t => new
-                            {
-                                Type = t,
-                                Methods = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                                            .Where(m =>
-                                                m.GetCustomAttributes(typeof(NUnit.Framework.TestAttribute), false).Any() ||
-                                                m.GetCustomAttributes(typeof(NUnit.Framework.TestCaseAttribute), false).Any() ||
-                                                m.GetCustomAttributes(typeof(NUnit.Framework.TestCaseSourceAttribute), false).Any())
-                                            .ToArray() // <-- MethodInfo[]
-                            })
-                            .Where(x => x.Methods.Length > 0)
-                            .ToList();
-
-
-                    foreach (var cls in classesWithMethods)
-                    {
-                        foreach (var methodInfo in cls.Methods)
-                        {
-                            LibraryMethodInfo libraryMethodInfo = new LibraryMethodInfo();
-
-                            var libMethod = AttributeInfo.BuildLibraryMethodInfo(methodInfo);
-                            foreach (var attr in libMethod.Attributes)
-                            {
-                                libraryMethodInfo.MethodName = libMethod.MethodName;
-
-                                // If the attribute stores key-value pairs in NamedArguments dictionary:
-                                foreach (var kvp in attr.NamedArguments)
-                                {
-                                    string key = kvp.Key;
-                                    object? value = kvp.Value;
-                                    Console.WriteLine($"Attribute: {attr.AttributeTypeShortName}, Key: {key}, Value: {value}");
-                                }
-                                if (attr.ConstructorArguments != null && attr.ConstructorArguments.Length == 2)
-                                {
-                                    var key = attr.ConstructorArguments[0];
-                                    var value = attr.ConstructorArguments[1];
-
-                                    if (key != null && value != null)
-                                    {
-                                        if (key.Equals("TestCaseId"))
-                                        {
-                                            libraryMethodInfo.TestCaseId = value.ToString() ?? string.Empty;
-                                        }
-                                        if (key.Equals("Priority"))
-                                        {
-                                            libraryMethodInfo.Priority = value.ToString() ?? string.Empty;
-                                        }
-                                        if (key.Equals("Description"))
-                                        {
-                                            libraryMethodInfo.Description = value.ToString() ?? string.Empty;
-                                        }
-                                    }
-                                }
-                            }
-                            results.Add(libraryMethodInfo);
-                        }
-                    }
-
-                }
-            }
-            catch (ReflectionTypeLoadException rtlex)
-            {
-                types = rtlex.Types.Where(t => t != null).ToArray()!;
-            }
-
-
-            return results;
-        }
-
     }
 }
