@@ -289,6 +289,44 @@ selected Release (`selectedRelease.environmentName`).
   `AssignmentId` is created - there's no lingering `'Removed'` row. Creating a brand-new
   assignment with zero test cases is unchanged (still just no-ops/rolls back - nothing to
   create or delete either way).
+- **Added** (per explicit request, and this time done correctly - see the "tried and
+  reverted" note above for why the first attempt broke things): once a test case's
+  assignment moves past `'Assigned'` (`Queued`/`Scheduled`/`InProgress`/`Passed`/`Failed`/
+  `Cancelled` - i.e. it's entered the execution pipeline at all, not just finished), it's
+  now **locked** against further changes. Enforced primarily at the **DB level** in
+  `usp_CreateOrUpdateAssignmentWithTestCases`
+  (`Database/TestCaseAssignment_Lock_Executed_Migration.sql`, idempotent `CREATE OR ALTER`,
+  applied to the live DB and verified with self-contained create/save/reset tests) -
+  deliberately the actual source of truth, not just a frontend affordance, so a stale or
+  buggy client can't silently corrupt an executed result:
+  - `MERGE`'s `WHEN MATCHED` only fires `AND Target.TestCaseStatus = 'Assigned'` - resending
+    a locked test case (e.g. because it's still checked in a Save that also included a new,
+    unrelated selection) no longer touches it at all.
+  - The "delete removed test cases" step only ever deletes rows still `'Assigned'` - a
+    locked test case omitted from a resend is never silently dropped.
+  - **Reset** no longer unconditionally wipes everything: it only removes still-`'Assigned'`
+    test cases (and their Queue/Screenshot/Log rows). Locked ones - and consequently the
+    `TestCaseAssignment` row itself, since it's not empty - are left in place. Verified: a
+    self-contained assignment with one `'Assigned'` and one `Failed`/one already-`Passed`
+    (real) test case, reset, left exactly the two locked ones + the assignment row intact,
+    removed only the unlocked one. If *nothing* is locked, Reset still does the full
+    permanent delete from the prior fix.
+  - The proc now returns (`SELECT @LockedCount`) how many test cases it left untouched
+    because they were locked, read via `ExecuteScalarAsync<int>`
+    (`ITestCaseAssignmentRepository.CreateOrUpdateAssignmentWithTestCasesAsync` now returns
+    `Task<int>` instead of `Task`). `TestCaseAssignmentsController`'s response includes
+    `LockedCount` + an adjusted message, so Save/Reset isn't a silent no-op when something
+    was skipped.
+  - Frontend: `tryLoadTestCases()` tracks each visible row's `testCaseStatus` again (safe
+    this time - Step 4's filter guarantees a visible row is only ever unassigned or the
+    *current* tester's own, never another tester's, so there's no repeat of the earlier
+    wrong-tester bug). `isTestCaseSelectable`/`[rowSelectableFn]` disables the checkbox for
+    any locked status; the "Current Status" column shows a color-coded status badge
+    alongside the tester badge. `onSaveAssignments()` sends the real current status
+    (`tc.testCaseStatus || 'Assigned'`) instead of always hardcoding `'Assigned'`. Both
+    `onSaveAssignments()`/`onResetAssignments()` read the response's `lockedCount` and show
+    an info toast (*"N test case(s) could not be changed because they have already been
+    executed"*) instead of a generic success toast when something was skipped.
 
 ### Test discovery and execution moved from the global TestLibs folder to per-Release folders
 Both DLL discovery and actual test execution are now scoped to **each Release's own**

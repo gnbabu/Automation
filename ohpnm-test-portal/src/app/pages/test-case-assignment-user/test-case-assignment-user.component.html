@@ -94,6 +94,7 @@
         [pagingEnabled]="true"
         [pageSize]="10"
         [sortingMode]="'client'"
+        [rowSelectableFn]="isTestCaseSelectable"
         (selectedRowsChange)="onSelectionChanged($event)"
       ></app-data-grid>
       <div class="footer-note">
@@ -152,5 +153,22 @@
     <ng-template #unassigned>
       <span class="badge bg-secondary user-badge">Unassigned</span>
     </ng-template>
+
+    <!-- Execution status - anything past 'Assigned' is what isTestCaseSelectable()/
+         [rowSelectableFn] locks the checkbox for, so this explains why. -->
+    <span
+      *ngIf="row?.testCaseStatus && row.testCaseStatus !== 'Assigned'"
+      class="badge user-badge"
+      [ngClass]="{
+        'bg-success': row.testCaseStatus === 'Passed',
+        'bg-danger': row.testCaseStatus === 'Failed',
+        'bg-warning text-dark': row.testCaseStatus === 'InProgress',
+        'bg-info text-dark':
+          row.testCaseStatus === 'Queued' || row.testCaseStatus === 'Scheduled',
+        'bg-dark': row.testCaseStatus === 'Cancelled'
+      }"
+    >
+      {{ row.testCaseStatus }}
+    </span>
   </div>
 </ng-template>

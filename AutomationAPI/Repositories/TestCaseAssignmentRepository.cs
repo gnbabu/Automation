@@ -210,7 +210,7 @@ namespace AutomationAPI.Repositories
                 });
         }
 
-        public async Task CreateOrUpdateAssignmentWithTestCasesAsync(AssignmentCreateUpdateRequest request)
+        public async Task<int> CreateOrUpdateAssignmentWithTestCasesAsync(AssignmentCreateUpdateRequest request)
         {
             var testCases = request.TestCases ?? Enumerable.Empty<TestCaseRequestModel>();
 
@@ -258,7 +258,11 @@ namespace AutomationAPI.Repositories
                 testCaseParam
             };
 
-            await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.CreateOrUpdateAssignmentWithTestCases, sqlParams);
+            // Returns the count of test cases that were already locked (past 'Assigned' -
+            // Queued/Scheduled/InProgress/Passed/Failed/Cancelled) and therefore left
+            // untouched by this call, so the caller can tell the user something was
+            // skipped instead of silently no-oping on it.
+            return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.CreateOrUpdateAssignmentWithTestCases, sqlParams);
         }
 
         public async Task<string?> GetReleaseLifecycleForAssignmentAsync(int assignmentId)

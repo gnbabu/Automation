@@ -175,6 +175,34 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     this.selectedAssignmentStatus = status;
   }
 
+  // Anything past 'Assigned' means it's entered the execution pipeline at all (not just
+  // finished) - Queued/Scheduled/InProgress/Passed/Failed/Cancelled all lock it. Mirrors
+  // the DB-side enforcement in usp_CreateOrUpdateAssignmentWithTestCases (the actual
+  // source of truth); this is purely so the UI shows *why* a row can't be touched instead
+  // of letting the user interact with something the server will silently ignore.
+  private static readonly LOCKED_STATUSES = new Set([
+    'Queued',
+    'Scheduled',
+    'InProgress',
+    'Passed',
+    'Failed',
+    'Cancelled',
+  ]);
+
+  private isLocked(status?: string): boolean {
+    return !!status && TestCaseAssignmentUserComponent.LOCKED_STATUSES.has(status);
+  }
+
+  // Arrow function (not a regular method) so `this` stays bound to the component
+  // instance even when DataGridComponent invokes it directly as a plain callback (via
+  // [rowSelectableFn]) without preserving the calling context - same convention as
+  // test-case-execution-panel.component.ts's isTestCaseSelectable. Safe to key off
+  // row.testCaseStatus directly (no wrong-tester ambiguity) since Step 4's filter means a
+  // visible row is only ever unassigned or assigned to the currently selected tester.
+  isTestCaseSelectable = (row: ITestCaseModel): boolean => {
+    return !this.isLocked(row.testCaseStatus);
+  };
+
   loadReleases() {
     this.releaseService.getAll().subscribe({
       next: (response) => {
@@ -289,7 +317,12 @@ export class TestCaseAssignmentUserComponent implements OnInit {
                           myAssignedIds.has(tc.testCaseId)
                       );
 
-                      // STEP 5: Assign correct assignedUserName for ALL test cases
+                      // STEP 5: Assign correct assignedUserName/testCaseStatus for ALL
+                      // test cases. Unambiguous here (unlike an earlier, reverted
+                      // attempt) because Step 4 already guarantees a visible row is only
+                      // ever unassigned or assigned to the current tester - never someone
+                      // else's - so `assignedEntry` (from allAssigned) is never a
+                      // different tester's data by the time we get here.
                       filteredTestCases.forEach((tc) => {
                         const assignedEntry = allAssigned.find(
                           (a) => a.testCaseId === tc.testCaseId
@@ -299,9 +332,11 @@ export class TestCaseAssignmentUserComponent implements OnInit {
                           // 🟦 Test case is assigned → show the correct user name
                           tc.assignedUserName =
                             assignedEntry.assignedUserName || '';
+                          tc.testCaseStatus = assignedEntry.testCaseStatus || '';
                         } else {
                           // 🟪 Not assigned → show Unassigned
                           tc.assignedUserName = '';
+                          tc.testCaseStatus = '';
                         }
 
                         // Mark selected only if assigned to THIS user
@@ -352,7 +387,12 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       testCases: this.selectedMethods.map((tc) => ({
         testCaseId: tc.testCaseId,
         testCaseDescription: tc.description,
-        testCaseStatus: 'Assigned',
+        // Preserve the real status for anything already assigned (the server ignores
+        // this anyway once a test case is locked, but sending the real value - instead
+        // of always hardcoding 'Assigned' - keeps the request honest and avoids relying
+        // solely on the server-side guard). Brand-new selections have no status yet, so
+        // they still default to 'Assigned'.
+        testCaseStatus: tc.testCaseStatus || 'Assigned',
         className: tc.className,
         libraryName: tc.libraryName,
         methodName: tc.methodName,
@@ -361,8 +401,8 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     };
 
     this.testCaseAssignmentService.saveAssignment(request).subscribe({
-      next: () => {
-        this.toaster.success('Assignments saved successfully.');
+      next: (res: any) => {
+        this.showSaveResultToast(res, 'Assignments saved successfully.');
         this.tryLoadTestCases(); // Refresh grid
         this.loadLibraryTestCaseCounts(this.selectedLibrary?.libraryName ?? '');
       },
@@ -371,6 +411,21 @@ export class TestCaseAssignmentUserComponent implements OnInit {
         this.toaster.error('Failed to save assignments.');
       },
     });
+  }
+
+  // Server-side lock enforcement (usp_CreateOrUpdateAssignmentWithTestCases) reports back
+  // how many test cases it left untouched because they'd already entered the execution
+  // pipeline - surfaced here so a Save/Reset that silently skipped something isn't a
+  // silent no-op from the user's point of view.
+  private showSaveResultToast(res: any, defaultMessage: string): void {
+    const lockedCount = res?.lockedCount ?? 0;
+    if (lockedCount > 0) {
+      this.toaster.info(
+        `${lockedCount} test case(s) could not be changed because they have already been executed.`
+      );
+    } else {
+      this.toaster.success(defaultMessage);
+    }
   }
 
   onResetAssignments() {
@@ -390,8 +445,8 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     };
 
     this.testCaseAssignmentService.saveAssignment(request).subscribe({
-      next: () => {
-        this.toaster.success('All assignments reset.');
+      next: (res: any) => {
+        this.showSaveResultToast(res, 'All assignments reset.');
         this.selectedMethods = [];
         this.tryLoadTestCases(); // reload
         this.loadLibraryTestCaseCounts(this.selectedLibrary?.libraryName ?? '');

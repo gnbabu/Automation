@@ -161,6 +161,11 @@ export interface ITestCaseModel {
   assignedUsers: any[];
   assignedUserName: string;
   selected?: boolean;
+  // Current execution status for the currently selected tester's own assignment of this
+  // test case (undefined/empty if unassigned). Safe to be unambiguous here because the
+  // grid only ever shows a test case if it's unassigned or assigned to the current
+  // tester (see tryLoadTestCases()'s Step 4 filter) - never another tester's.
+  testCaseStatus?: string;
 }
 
 export interface IAssignmentCreateUpdateRequest {

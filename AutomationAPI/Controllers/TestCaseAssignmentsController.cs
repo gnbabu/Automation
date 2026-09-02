@@ -66,11 +66,16 @@ namespace AutomationAPI.Controllers
                 // Test cases can be optional now — no validation needed
                 // request.TestCases can be null → backend handles it
 
-                await _repository.CreateOrUpdateAssignmentWithTestCasesAsync(request);
+                var lockedCount = await _repository.CreateOrUpdateAssignmentWithTestCasesAsync(request);
+
+                var message = lockedCount > 0
+                    ? $"Assignment and test cases synced successfully. {lockedCount} test case(s) could not be changed because they have already been executed."
+                    : "Assignment and test cases synced successfully.";
 
                 return Ok(new
                 {
-                    Message = "Assignment and test cases synced successfully."
+                    Message = message,
+                    LockedCount = lockedCount
                 });
             }
             catch (Exception ex)
