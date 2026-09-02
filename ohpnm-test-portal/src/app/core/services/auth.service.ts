@@ -117,6 +117,41 @@ export class AuthService {
       return false;
     }
   }
+
+  isManager(): boolean {
+    const loggedInUser = localStorage.getItem('currentUser');
+
+    if (!loggedInUser) return false;
+
+    try {
+      const user: IUser = JSON.parse(loggedInUser);
+      return user.roleName.toLowerCase() == 'manager';
+    } catch (e) {
+      console.error('Error parsing currentUser from localStorage', e);
+      return false;
+    }
+  }
+
+  // Release Management, Dashboard, and Test Case Assignment are shared between Admin
+  // and Manager (Managers already receive Release activation/DLLs-ready notifications
+  // and are the natural approver role); Users/Environment Management stay Admin-only.
+  canAccessManagerFeatures(): boolean {
+    return this.isAdmin() || this.isManager();
+  }
+
+  isViewer(): boolean {
+    const loggedInUser = localStorage.getItem('currentUser');
+
+    if (!loggedInUser) return false;
+
+    try {
+      const user: IUser = JSON.parse(loggedInUser);
+      return user.roleName.toLowerCase() == 'viewer';
+    } catch (e) {
+      console.error('Error parsing currentUser from localStorage', e);
+      return false;
+    }
+  }
   startAutoLogout(token?: string): void {
     const jwt = token ?? this.getToken();
     if (!jwt) return;

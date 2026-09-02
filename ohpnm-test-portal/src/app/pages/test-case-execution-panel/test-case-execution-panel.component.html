@@ -87,7 +87,10 @@
     <div class="px-2 mt-1">
       <small class="text-muted">{{ selectedAssignment.assignmentName }}</small>
     </div>
-    <div class="alert alert-warning mt-2 mb-0 py-2" *ngIf="!isReleaseActive()">
+    <div class="alert alert-warning mt-2 mb-0 py-2" *ngIf="isViewer()">
+      You have Viewer (read-only) access. Running or scheduling test executions is disabled.
+    </div>
+    <div class="alert alert-warning mt-2 mb-0 py-2" *ngIf="!isViewer() && !isReleaseActive()">
       This release is {{ selectedAssignmentRelease?.releaseLifecycle }}.
       Running or scheduling new test executions is disabled.
     </div>
@@ -134,14 +137,14 @@
         <button
           class="btn-purple"
           (click)="onBulkRunNow()"
-          [disabled]="selectedTestCases.length === 0 || !isReleaseActive()"
+          [disabled]="selectedTestCases.length === 0 || !canExecuteTests()"
         >
           Bulk Run Now ({{ selectedTestCases.length }})
         </button>
         <button
           class="btn btn-primary"
           (click)="onBulkSchedule()"
-          [disabled]="selectedTestCases.length === 0 || !isReleaseActive()"
+          [disabled]="selectedTestCases.length === 0 || !canExecuteTests()"
         >
           Bulk Schedule ({{ selectedTestCases.length }})
         </button>

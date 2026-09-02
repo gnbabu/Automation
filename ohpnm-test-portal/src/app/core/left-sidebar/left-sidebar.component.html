@@ -24,7 +24,7 @@
 
   <div class="nav flex-column">
     <a
-      *ngIf="isAdmin"
+      *ngIf="canAccessManagerFeatures"
       [routerLink]="['/dashboard']"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
@@ -53,7 +53,7 @@
       <span class="hide-on-collapse">User Management</span>
     </a>
     <a
-      *ngIf="isAdmin"
+      *ngIf="canAccessManagerFeatures"
       [routerLink]="['/test-case-assignment-user']"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
@@ -63,6 +63,7 @@
       <span class="hide-on-collapse">Test Case Assignment</span>
     </a>
     <a
+      *ngIf="!isViewer"
       [routerLink]="['/test-data-management']"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
@@ -72,7 +73,7 @@
       <span class="hide-on-collapse">Test Data Management</span>
     </a>
     <a
-      *ngIf="isAdmin"
+      *ngIf="canAccessManagerFeatures"
       [routerLink]="['/release-management']"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"

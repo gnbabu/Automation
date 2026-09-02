@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
+import { managerGuard } from './core/guards/manager.guard';
+import { notViewerGuard } from './core/guards/not-viewer.guard';
 import { loginGuard } from './core/guards/login.guard';
 
 export const routes: Routes = [
@@ -42,7 +44,7 @@ export const routes: Routes = [
           import('./pages/dashboard/dashboard.component').then(
             (m) => m.DashboardComponent,
           ),
-        canActivate: [authGuard, adminGuard],
+        canActivate: [authGuard, managerGuard],
       },
       {
         path: 'test-case-execution-panel',
@@ -58,7 +60,7 @@ export const routes: Routes = [
           import('./pages/test-data-management/test-data-management.component').then(
             (m) => m.TestDataManagementComponent,
           ),
-        canActivate: [authGuard],
+        canActivate: [authGuard, notViewerGuard],
       },
       {
         path: 'users',
@@ -72,7 +74,7 @@ export const routes: Routes = [
           import('./pages/test-case-assignment-user/test-case-assignment-user.component').then(
             (m) => m.TestCaseAssignmentUserComponent,
           ),
-        canActivate: [authGuard, adminGuard],
+        canActivate: [authGuard, managerGuard],
       },
       {
         path: 'release-management',
@@ -80,7 +82,7 @@ export const routes: Routes = [
           import('./pages/release-management/release-management.component').then(
             (m) => m.ReleaseManagementComponent,
           ),
-        canActivate: [authGuard, adminGuard],
+        canActivate: [authGuard, managerGuard],
       },
       {
         path: 'release-management/new',
@@ -88,7 +90,7 @@ export const routes: Routes = [
           import('./pages/release-management/release-form/release-form.component').then(
             (m) => m.ReleaseFormComponent,
           ),
-        canActivate: [authGuard, adminGuard],
+        canActivate: [authGuard, managerGuard],
       },
       {
         path: 'release-management/edit/:id',
@@ -96,7 +98,7 @@ export const routes: Routes = [
           import('./pages/release-management/release-form/release-form.component').then(
             (m) => m.ReleaseFormComponent,
           ),
-        canActivate: [authGuard, adminGuard],
+        canActivate: [authGuard, managerGuard],
       },
       {
         path: 'release-management/:id',
@@ -104,7 +106,7 @@ export const routes: Routes = [
           import('./pages/release-management/release-details/release-details.component').then(
             (m) => m.ReleaseDetailsComponent,
           ),
-        canActivate: [authGuard, adminGuard],
+        canActivate: [authGuard, managerGuard],
       },
       {
         path: 'environment-management',

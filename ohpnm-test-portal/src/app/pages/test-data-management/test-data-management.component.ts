@@ -109,7 +109,12 @@ export class TestDataManagementComponent implements OnInit {
       });
   }
 
+  isViewer(): boolean {
+    return this.authService.isViewer();
+  }
+
   onSubmit(form: NgForm): void {
+    if (this.isViewer()) return;
     if (!form.valid || !this.selectedSection || !this.selectedEnvironment) return;
 
     if (!this.validateTestContentFormat(this.testContent)) {

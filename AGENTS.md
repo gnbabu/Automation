@@ -138,7 +138,53 @@ Mirrors Environment Management's soft/hard delete split:
   mirrors the existing convention in `test-case-execution-panel.component.ts` for consistency.
 
 ### Still TODO (future)
-- Finer role gating beyond `isAdmin` (Manager/Tester/Viewer) if required.
+- **Fixed**: "Finer role gating beyond `isAdmin`" — `aut.UserRole` only has 3 real roles
+  (`Admin`, `User`, `Manager`; no separate Tester/Viewer). Managers already received
+  Release activation/DLLs-ready email notifications and are the natural approver role, so
+  they now get UI parity with Admin on **Release Management** (+ its 4 sub-routes),
+  **Dashboard**, and **Test Case Assignment** — `AuthService.isManager()` +
+  `canAccessManagerFeatures()` (`isAdmin() || isManager()`), a new `managerGuard`
+  (mirrors `adminGuard`, same redirect-to-`/test-case-execution-panel` fallback) swapped in
+  for those routes in `app.routes.ts`, and the corresponding sidebar links switched from
+  `*ngIf="isAdmin"` to `*ngIf="canAccessManagerFeatures"`. **Users Management** and
+  **Environment Management** stay strictly `isAdmin`/`adminGuard`-only (system/account
+  administration, not a Manager duty). Enforcement is **UI-only** (route guard + sidebar),
+  matching the existing convention — API controllers keep their blanket `[Authorize]`, not
+  `[Authorize(Roles=...)]` (see Dashboard's "Access" note below for why). Since no page has
+  any internal `isAdmin`-gated button/action (confirmed via search), Managers get full
+  functional parity (create/edit/delete/activate/sign-off/assign), not just read-only
+  visibility, on these 3 pages.
+- **Fixed**: `aut.UserRole` also has a real, actively-used `Viewer` role (RoleID 4; 5 live
+  users) that was initially missed (only found by directly querying the live DB — the
+  `User`/`Tester` naming differs across seed scripts, and one seed script omits `Viewer`
+  entirely). Unlike Manager (more access), Viewer means **less** access: read-only. Two
+  write actions were previously open to Viewers exactly like Testers (no gating existed):
+  - **Test Case Execution Panel**: Run Now / Schedule (single + bulk) are now blocked for
+    Viewers. `AuthService.isViewer()` + `TestCaseExecutionPanelComponent.canExecuteTests()`
+    (`isReleaseActive() && !isViewer()`) replace the old bare `isReleaseActive()` checks in
+    all 4 action handlers, the bulk-button `[disabled]`s, and `isTestCaseSelectable` (so
+    Viewers can't even select rows to bulk-act on); a dedicated warning banner explains why.
+    Also enforced **server-side** in `TestCaseExecutionQueueController` (`IsViewer() =>
+    User.IsInRole("Viewer")`, checked in all 4 actions — `SingleRunNow`/`BulkRunNow`/
+    `SingleSchedule`/`BulkSchedule` — returning `403`), since a Viewer's valid JWT could
+    otherwise call the API directly. The JWT's `ClaimTypes.Role` is already `user.RoleName`
+    (`AuthService.cs`), so `User.IsInRole("Viewer")` works with no auth changes needed.
+  - **Test Data Management**: unlike the Execution Panel (kept visible but read-only for
+    Viewers), this page is **hidden entirely** from Viewers — it's about editing test input
+    data, so there's no useful "view" mode of it, per explicit decision. Sidebar link is
+    `*ngIf="!isViewer"`, and the `/test-data-management` route got a new `notViewerGuard`
+    (redirects to `/test-case-execution-panel`, same fallback as the other guards) so direct
+    navigation is blocked too. The component-level `onSubmit`/`[readonly]`/`[disabled]`
+    guards (added first, before the page was hidden) were left in place as defense-in-depth
+    for the brief window before the guard/sidebar change, and are now effectively unreachable
+    in normal use. Also enforced server-side in `AutomationController`'s
+    `InsertAutomationDataAsync`/`UpdateAutomationDataAsync` (`IsViewer()` pattern, `403`) —
+    this stays regardless of UI visibility, since it's the only thing that actually stops a
+    direct API call. The Section CRUD endpoints (`sections` POST/PUT/DELETE) were
+    deliberately **not** touched — this page never calls them (confirmed via the component),
+    so gating them was out of scope for this fix.
+  - Unlike the Manager change above, this one **is** enforced server-side (not just UI),
+    since it's blocking a genuinely undesired write, not just hiding a page.
 - **Fixed**: `SqlReaderExtensions.GetNullable<T>` used to return `default(T)` (e.g. `0` for
   `int`, `DateTime.MinValue`/`"0001-01-01T00:00:00"` for `DateTime`) instead of a true
   `null` for DB NULLs on value types. Long flagged as "harmless" (e.g. for `ReleaseId`,

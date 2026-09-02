@@ -221,6 +221,17 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
     return this.selectedAssignmentRelease?.releaseLifecycle === 'Active';
   }
 
+  isViewer(): boolean {
+    return this.authService.isViewer();
+  }
+
+  // Viewers have read-only access — Run Now/Schedule (single + bulk) stay disabled for
+  // them regardless of the release's lifecycle. Combined with isReleaseActive() so
+  // there's a single guard used everywhere (buttons, row selectability, submit handlers).
+  canExecuteTests(): boolean {
+    return this.isReleaseActive() && !this.isViewer();
+  }
+
   // Same convention as release-management.component.ts's statusPillClass, so the
   // lifecycle badge here matches the color used everywhere else in the app.
   releaseLifecycleBadgeClass(lifecycle?: string): string {
@@ -355,10 +366,8 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   }
 
   async onRunNow(testCase: IAssignedTestCase) {
-    if (!this.isReleaseActive()) {
-      this.toaster.error(
-        `This release is ${this.selectedAssignmentRelease?.releaseLifecycle}. New executions are disabled.`
-      );
+    if (!this.canExecuteTests()) {
+      this.toaster.error(this.getBlockedExecutionMessage());
       return;
     }
 
@@ -421,10 +430,8 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   }
 
   onSchedule(testCase: IAssignedTestCase) {
-    if (!this.isReleaseActive()) {
-      this.toaster.error(
-        `This release is ${this.selectedAssignmentRelease?.releaseLifecycle}. New executions are disabled.`
-      );
+    if (!this.canExecuteTests()) {
+      this.toaster.error(this.getBlockedExecutionMessage());
       return;
     }
 
@@ -455,10 +462,8 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   }
 
   async onBulkRunNow() {
-    if (!this.isReleaseActive()) {
-      this.toaster.error(
-        `This release is ${this.selectedAssignmentRelease?.releaseLifecycle}. New executions are disabled.`
-      );
+    if (!this.canExecuteTests()) {
+      this.toaster.error(this.getBlockedExecutionMessage());
       return;
     }
 
@@ -505,10 +510,8 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   }
 
   onBulkSchedule() {
-    if (!this.isReleaseActive()) {
-      this.toaster.error(
-        `This release is ${this.selectedAssignmentRelease?.releaseLifecycle}. New executions are disabled.`
-      );
+    if (!this.canExecuteTests()) {
+      this.toaster.error(this.getBlockedExecutionMessage());
       return;
     }
 
@@ -560,9 +563,17 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
     return (
       !disabledStatuses.includes(row.testCaseStatus ?? '') &&
-      this.isReleaseActive()
+      this.canExecuteTests()
     );
   };
+
+  private getBlockedExecutionMessage(): string {
+    if (this.isViewer()) {
+      return 'Viewers have read-only access and cannot run or schedule test executions.';
+    }
+
+    return `This release is ${this.selectedAssignmentRelease?.releaseLifecycle}. New executions are disabled.`;
+  }
 
   ngOnDestroy(): void {
     this.stopAutoRefresh();

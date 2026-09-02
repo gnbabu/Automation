@@ -84,6 +84,7 @@
           [(ngModel)]="testContent"
           rows="15"
           required
+          [readonly]="isViewer()"
           placeholder="Output will appear here..."
           [ngClass]="{
             'is-invalid': testDataForm.submitted && !testContent.trim()
@@ -94,10 +95,13 @@
 
       <!-- Save Button -->
       <div class="text-end">
+        <div class="alert alert-warning py-2 mb-2 text-start" *ngIf="isViewer()">
+          You have Viewer (read-only) access. Saving test content is disabled.
+        </div>
         <button
           class="btn-purple"
           type="submit"
-          [disabled]="!testDataForm.valid || !testContent.trim() || !selectedEnvironment"
+          [disabled]="isViewer() || !testDataForm.valid || !testContent.trim() || !selectedEnvironment"
         >
           <i class="bi bi-save me-1"></i>
           {{ existingSectionData?.id ? "Update" : "Save" }}

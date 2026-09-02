@@ -15,9 +15,13 @@ import { environment } from 'environments/environment';
 export class LeftSidebarComponent {
   @Output() toggle = new EventEmitter<void>();
   isAdmin: boolean;
+  canAccessManagerFeatures: boolean;
+  isViewer: boolean;
   user: IUser | null;
   constructor(private authService: AuthService) {
     this.isAdmin = this.authService.isAdmin();
+    this.canAccessManagerFeatures = this.authService.canAccessManagerFeatures();
+    this.isViewer = this.authService.isViewer();
     this.user = this.authService.getLoggedInUser();
   }
   logout() {

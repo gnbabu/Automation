@@ -36,6 +36,11 @@ namespace AutomationAPI.Controllers
             return null;
         }
 
+        // Viewers have read-only access - mirrors the client-side canExecuteTests() guard
+        // in test-case-execution-panel.component.ts, enforced server-side too since the UI
+        // guard alone can't stop a direct API call from a Viewer's valid token.
+        private bool IsViewer() => User.IsInRole("Viewer");
+
         [HttpPost("single-run")]
         public async Task<IActionResult> SingleRunNow([FromBody] SingleRunNowRequest request)
         {
@@ -46,6 +51,9 @@ namespace AutomationAPI.Controllers
 
                 if (request.AssignmentId <= 0 || request.AssignmentTestCaseId <= 0)
                     return BadRequest("AssignmentId and AssignmentTestCaseId must be valid.");
+
+                if (IsViewer())
+                    return StatusCode(403, "Viewers have read-only access and cannot run or schedule test executions.");
 
                 var blockedReason = await GetBlockedReleaseLifecycleReasonAsync(request.AssignmentId);
                 if (blockedReason != null)
@@ -87,6 +95,9 @@ namespace AutomationAPI.Controllers
                 if (request.AssignmentTestCaseIds == null || !request.AssignmentTestCaseIds.Any())
                     return BadRequest("At least one AssignmentTestCaseId is required.");
 
+                if (IsViewer())
+                    return StatusCode(403, "Viewers have read-only access and cannot run or schedule test executions.");
+
                 var blockedReason = await GetBlockedReleaseLifecycleReasonAsync(request.AssignmentId);
                 if (blockedReason != null)
                     return BadRequest(blockedReason);
@@ -122,6 +133,9 @@ namespace AutomationAPI.Controllers
 
                 if (request.ScheduleDate == default)
                     return BadRequest("ScheduleDate is invalid.");
+
+                if (IsViewer())
+                    return StatusCode(403, "Viewers have read-only access and cannot run or schedule test executions.");
 
                 var blockedReason = await GetBlockedReleaseLifecycleReasonAsync(request.AssignmentId);
                 if (blockedReason != null)
@@ -166,6 +180,9 @@ namespace AutomationAPI.Controllers
 
                 if (request.ScheduleDate == default)
                     return BadRequest("ScheduleDate is invalid.");
+
+                if (IsViewer())
+                    return StatusCode(403, "Viewers have read-only access and cannot run or schedule test executions.");
 
                 var blockedReason = await GetBlockedReleaseLifecycleReasonAsync(request.AssignmentId);
                 if (blockedReason != null)

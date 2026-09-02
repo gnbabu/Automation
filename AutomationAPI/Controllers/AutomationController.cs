@@ -20,6 +20,11 @@ namespace AutomationAPI.Controllers
             _logger = logger;
         }
 
+        // Viewers have read-only access - mirrors the client-side isViewer() guard in
+        // test-data-management.component.ts, enforced server-side too since the UI guard
+        // alone can't stop a direct API call from a Viewer's valid token.
+        private bool IsViewer() => User.IsInRole("Viewer");
+
         // Get Automation Flow Names
         [HttpGet("flows")]
         public async Task<IActionResult> GetAutomationFlowNamesAsync()
@@ -99,6 +104,9 @@ namespace AutomationAPI.Controllers
         {
             try
             {
+                if (IsViewer())
+                    return StatusCode(403, "Viewers have read-only access and cannot save test content.");
+
                 if (request.EnvironmentId is null || request.EnvironmentId <= 0)
                     return BadRequest("EnvironmentId is required.");
 
@@ -119,6 +127,9 @@ namespace AutomationAPI.Controllers
         {
             try
             {
+                if (IsViewer())
+                    return StatusCode(403, "Viewers have read-only access and cannot save test content.");
+
                 _logger.LogInformation("Updating automation data for SectionID: {SectionID}", request.SectionId);
                 await _automationRepository.UpdateAutomationDataAsync(request);
                 return NoContent(); // Successfully updated
