@@ -228,6 +228,67 @@ selected Release (`selectedRelease.environmentName`).
   `GET /api/TestCaseAssignments/library-release-assigned-testcases`), replacing the old
   Library + Environment-text check for this screen (the old SP/endpoint is left in place,
   unused, in case anything else still calls it).
+- **Tried and reverted**: briefly experimented with showing every discovered test case
+  (instead of hiding ones assigned to a different tester) plus a disable-checkbox-only-if-
+  `Passed`/`Failed` rule (`isTestCaseSelectable`/`[rowSelectableFn]`, `ITestCaseModel.
+  testCaseStatus`), since the backend has no constraint against the same `TestCaseId` being
+  assigned to multiple testers (confirmed via `sp_helptext` on
+  `usp_CreateOrUpdateAssignmentWithTestCases` - each Tester+Library+Release combination gets
+  its own `AssignmentId`, so this would've been safe DB-wise). Ended up causing several
+  follow-on bugs in quick succession (wrong-tester status leaking across testers, a stale
+  in-flight request race when switching testers, `onSaveAssignments()` clobbering an
+  already-executed test case's real status back to `'Assigned'`). Compared directly against
+  the exact pre-Release-Management version (`git show 932c73a:...
+  test-case-assignment-user.component.ts`, before `4ae06da` "Make Test Case Assignment
+  Release-aware") and confirmed it had **no** disable-checkbox concept either - just the
+  same hide-if-assigned-to-someone-else filter, scoped by `Environment` text instead of
+  `ReleaseId`. Per explicit request, **reverted to that exact proven filter-based
+  behavior** (`tryLoadTestCases()`'s Step 4 hides a test case if it's assigned to anyone
+  other than the currently selected tester; `onSaveAssignments()` always sends
+  `testCaseStatus: 'Assigned'`), just kept Release-scoped instead of Environment-text-scoped.
+  One improvement kept from the experiment: `tryLoadTestCases()` now guards against the
+  stale-in-flight-request race with a `loadRequestId` generation counter (switching User/
+  Library/Release while a previous load is still in flight now discards that stale
+  response instead of risking it overwriting the current selection) - this protection is
+  unrelated to the disable-checkbox idea and is safe to keep with the reverted filter logic.
+- **Fixed**: "Reset Assignments" (and, more generally, deselecting/removing any previously-
+  saved test case via Save) failed outright with a `500` — `SqlException: The DELETE
+  statement conflicted with the REFERENCE constraint
+  'FK_TestCaseExecutionQueue_AssignedTestCase'` — for any test case that had ever actually
+  been queued/executed (a real `aut.TestCaseExecutionQueue` row referencing it) or had a
+  screenshot (`aut.TestScreenshots`). Root cause: `usp_CreateOrUpdateAssignmentWithTestCases`
+  hard-deletes `aut.AssignedTestCases` rows no longer present in `@TestCases`, but neither
+  FK has `ON DELETE CASCADE` - pre-existing (confirmed via `sp_helptext`/direct repro this
+  wasn't introduced by any Release/Manager/Viewer work this session), just never exercised
+  on a test case with real execution history until now. **Fixed** in
+  `Database/TestCaseAssignment_Reset_FK_Fix_Migration.sql` (idempotent `CREATE OR ALTER`,
+  applied to the live DB and verified end-to-end via a real Reset call against a live
+  assignment): before the existing "delete removed test cases" step, the SP now also
+  deletes the matching `TestCaseExecutionQueue` and `TestScreenshots` rows (the actual
+  FK-enforced blockers) and `TestCaseExecutionLogs` rows (no FK forces this, but leaving
+  them orphaned pointing at a since-deleted `AssignmentTestCaseId` made no sense either) for
+  exactly the `AssignmentTestCaseId`s about to be removed. Un-assigning/resetting a test
+  case is a deliberate action, so clearing its execution history along with it is the
+  correct behavior - re-assigning it later starts fresh. Verified via `sys.foreign_keys`
+  that none of the affected tables have a filtered index, so `QUOTED_IDENTIFIER` isn't
+  actually load-bearing here, but set it explicitly anyway per this project's established
+  convention.
+- **Changed** (per explicit request): "Reset Assignments" used to be a soft delete - it
+  cleared all `AssignedTestCases` (and, after the fix above, their dependent Queue/
+  Screenshots/Logs) but left the `aut.TestCaseAssignment` row itself in place with
+  `AssignmentStatus = 'Removed'` (verified via a real Reset call: the row stayed, just with
+  that status). Now, resetting an **existing** assignment down to zero test cases
+  permanently **deletes the `TestCaseAssignment` row itself** (`Database/
+  TestCaseAssignment_Reset_Permanent_Delete_Migration.sql`, idempotent `CREATE OR ALTER`,
+  applied to the live DB and verified with a self-contained create-then-reset test: the
+  assignment and its test case were both completely gone afterward, not just status-
+  flipped) - cleaning up `TestCaseExecutionQueue` (by both its FKs -
+  `AssignmentTestCaseId` via `AssignedTestCases` and the direct `AssignmentId` FK),
+  `TestScreenshots`, and `TestCaseExecutionLogs` first, same as the fix above. The next
+  time that Tester+Library+Release combination gets test cases assigned again, a brand-new
+  `AssignmentId` is created - there's no lingering `'Removed'` row. Creating a brand-new
+  assignment with zero test cases is unchanged (still just no-ops/rolls back - nothing to
+  create or delete either way).
 
 ### Test discovery and execution moved from the global TestLibs folder to per-Release folders
 Both DLL discovery and actual test execution are now scoped to **each Release's own**

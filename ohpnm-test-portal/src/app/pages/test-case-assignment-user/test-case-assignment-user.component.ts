@@ -62,6 +62,15 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   unassignedCount = 0;
   showGrid = false;
 
+  // tryLoadTestCases() chains 3 sequential HTTP calls. Switching the User (or Library/
+  // Release) dropdown starts a brand-new chain without cancelling whatever chain is still
+  // in flight from the *previous* selection - if that older chain's later steps resolve
+  // after the newer one's, its (now-stale, wrong-tester) data would silently overwrite the
+  // rows that already reflect the current selection. Each call captures the current
+  // requestId and checks it's still current before applying results, so a late-arriving
+  // stale response is discarded instead of corrupting the current view.
+  private loadRequestId = 0;
+
   constructor(
     private testSuitesService: TestSuitesService,
     private authService: AuthService,
@@ -205,27 +214,40 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       !this.selectedLibrary ||
       !this.selectedUser
     ) {
+      this.loadRequestId++; // invalidate any still-in-flight chain from a prior selection
       this.testCases = [];
       this.selectedMethods = [];
       this.showGrid = false;
       return;
     }
 
+    // Bump the generation counter and capture it locally. Every step below checks this
+    // before applying its results/writing to this.testCases - if the User/Library/Release
+    // selection changes again while this chain is still in flight, loadRequestId moves on
+    // and this chain's (now-stale) results are discarded instead of being applied on top
+    // of whatever the newer selection already loaded.
+    const requestId = ++this.loadRequestId;
+    const requestedUser = this.selectedUser;
+    const requestedRelease = this.selectedRelease;
+    const requestedLibrary = this.selectedLibrary;
+
     const assignmentName =
-      `${this.selectedUser.userName}-` +
-      `${this.selectedLibrary.libraryName}-` +
-      `${this.selectedRelease.environmentName}-` +
-      `${this.selectedRelease.releaseName}`;
+      `${requestedUser.userName}-` +
+      `${requestedLibrary.libraryName}-` +
+      `${requestedRelease.environmentName}-` +
+      `${requestedRelease.releaseName}`;
 
     // STEP 1: Get ALL test cases for selected Library (scoped to the Release's own folder)
     this.testSuitesService
       .getAllTestCasesByLibraryName(
-        this.selectedRelease.releaseId,
-        this.selectedLibrary.libraryName
+        requestedRelease.releaseId,
+        requestedLibrary.libraryName
       )
       .subscribe({
         next: (libraryCases) => {
-          this.testCases = libraryCases.map((tc) => ({
+          if (requestId !== this.loadRequestId) return; // stale - a newer selection is loading
+
+          const loadedTestCases: ITestCaseModel[] = libraryCases.map((tc) => ({
             ...tc,
             selected: false,
           }));
@@ -233,37 +255,42 @@ export class TestCaseAssignmentUserComponent implements OnInit {
           // STEP 2: Load ALL assigned testcases (for ALL users) scoped to this Release
           this.testCaseAssignmentService
             .getAssignedTestCasesForLibraryAndRelease(
-              this.selectedLibrary?.libraryName ?? '',
-              this.selectedRelease?.releaseId ?? 0
+              requestedLibrary.libraryName ?? '',
+              requestedRelease.releaseId ?? 0
             )
             .subscribe({
               next: (allAssigned) => {
-                // TestCases assigned to ANY user
-                const allAssignedIds = new Set(
-                  allAssigned.map((a) => a.testCaseId)
-                );
+                if (requestId !== this.loadRequestId) return;
 
                 // STEP 3: Load only assignments for CURRENT USER
                 this.testCaseAssignmentService
                   .getTestCasesByAssignmentAndUser(
-                    this.selectedUser?.userId ?? 0,
+                    requestedUser.userId ?? 0,
                     assignmentName
                   )
                   .subscribe({
                     next: (myAssigned) => {
+                      if (requestId !== this.loadRequestId) return;
+
                       const myAssignedIds = new Set(
                         myAssigned.map((a) => a.testCaseId)
                       );
 
-                      // STEP 4: Filter test cases available for CURRENT USER:
-                      this.testCases = this.testCases.filter(
+                      // TestCases assigned to ANY user (reverted to the original,
+                      // pre-disable-checkbox behavior per explicit request - see AGENTS.md).
+                      const allAssignedIds = new Set(
+                        allAssigned.map((a) => a.testCaseId)
+                      );
+
+                      // STEP 4: Filter test cases available for CURRENT USER
+                      let filteredTestCases = loadedTestCases.filter(
                         (tc) =>
                           !allAssignedIds.has(tc.testCaseId) ||
                           myAssignedIds.has(tc.testCaseId)
                       );
 
                       // STEP 5: Assign correct assignedUserName for ALL test cases
-                      this.testCases.forEach((tc) => {
+                      filteredTestCases.forEach((tc) => {
                         const assignedEntry = allAssigned.find(
                           (a) => a.testCaseId === tc.testCaseId
                         );
@@ -281,8 +308,13 @@ export class TestCaseAssignmentUserComponent implements OnInit {
                         tc.selected = myAssignedIds.has(tc.testCaseId);
                       });
 
+                      // Only now, once every step of THIS request has been confirmed
+                      // current, actually publish the results to the grid.
+                      this.testCases = filteredTestCases;
+
                       // STEP 6: Populate selectedMethods
                       Promise.resolve().then(() => {
+                        if (requestId !== this.loadRequestId) return;
                         this.selectedMethods = this.testCases.filter(
                           (tc) => tc.selected
                         );
