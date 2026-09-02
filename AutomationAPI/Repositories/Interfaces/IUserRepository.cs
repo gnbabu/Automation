@@ -9,6 +9,7 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<User> GetUserByIdAsync(int userId);        
         Task<int> CreateUserAsync(User user);
         Task UpdateUserAsync(User user);
+        Task UpdateOwnProfileAsync(int userId, string? photo, string? phoneNumber, int? timeZone);
         Task DeleteUserAsync(int userId);
         Task ChangePasswordAsync(ChangePasswordRequest request);
         Task SetUserActiveStatusAsync(int userId, bool active);

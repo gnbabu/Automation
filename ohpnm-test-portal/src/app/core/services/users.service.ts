@@ -5,6 +5,7 @@ import {
   IChangePasswordRequest,
   IPriorityStatus,
   ITimeZone,
+  IUpdateOwnProfileRequest,
   IUser,
   IUserFilter,
   IUserRole,
@@ -80,6 +81,10 @@ export class UsersService {
 
   changePassword(request: IChangePasswordRequest): Observable<any> {
     return this.httpService.post(`Users/change-password`, request);
+  }
+
+  updateOwnProfile(request: IUpdateOwnProfileRequest): Observable<any> {
+    return this.httpService.put(`Users/me/profile`, request);
   }
 
   delete(userId: number): Observable<any> {

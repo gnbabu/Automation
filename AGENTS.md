@@ -385,3 +385,133 @@ data):
 - `usp_GetAutomationDataByFlowName` was **not** touched — confirmed it has zero frontend
   callers (dead code, pre-existing), so it wasn't worth updating for a dimension nothing
   reads it through.
+
+## Settings page — self-service Profile editing + Users API privilege-escalation fix
+`SettingsComponent` (`/settings`, open to every authenticated role) previously only showed
+Username/Email/FullName/Role/Photo as static text plus Change Password. It now also lets a
+user edit their own **Photo, Phone Number, Time Zone** (Role/Status/Priority/Active/Teams
+stay Admin-only, edited via User Management) — split into a **Profile** card and a
+**Security** card (existing Change Password, just regrouped), matching this app's existing
+stacked-`.filter-card` convention (no new tab UI introduced).
+
+### Fixed: `PUT/POST/DELETE /api/Users` had no role restriction (privilege escalation)
+`UsersController`'s `CreateUser`/`UpdateUser`/`DeleteUser`/`SetUserActiveStatus` (`activate`)
+only had blanket `[Authorize]` — no `Roles = "Admin"` check and no ownership check. Any
+logged-in user (Tester/Viewer included) could call `PUT /api/Users` directly (their own
+valid, legitimately-issued token — no exploit needed, just curl/Postman/devtools) with an
+arbitrary `UserId` + `RoleId: 1` in the body and grant themselves Admin, entirely bypassing
+the Users page being hidden from non-admins in the sidebar/routes — a UI-side restriction
+has zero effect on what the server accepts, since the server can't know or verify how a
+request arrived (same class of gap as the Viewer bypass fixed earlier, just privilege
+escalation instead of a read-only bypass, so more severe). **Fixed** by adding
+`[Authorize(Roles = "Admin")]` to those 4 actions specifically (confirmed via grep: today
+only `AddEditUserComponent`/`UserListComponent`, both inside the already Admin-gated `/users`
+page, call them — so this is a non-breaking lockdown). `GetAllUsers`/`GetUserById`/
+`GetUsers` (Filters)/`roles`/`status`/`timezones`/`priorities` are unchanged (blanket
+`[Authorize]`), since non-admin pages legitimately read from these (dropdowns, self-profile
+fetch).
+
+**Flagged, deliberately not fixed** (kept out of scope to avoid scope creep on this task):
+- `GetUserById` still lets any authenticated user fetch **any** user's record by ID (minor
+  info-disclosure of another user's email/phone/photo). Settings only ever calls it with the
+  caller's own ID today, but nothing enforces that server-side.
+- `ChangePassword` (`UsersController`) has the same "trusts `UserId` from the request body"
+  pattern as the old `UpdateUser` did — though less severe, since you'd still need to know
+  the target user's *current* password to successfully change it via this route.
+
+### New: JWT carries a real user-id claim
+`AuthService.Login`'s claims were `Name`/`Email`/`Jti`/`Role` only — no user-id claim, so the
+server had no way to verify "is this really you" for any future self-service endpoint (the
+frontend just trusts `getLoggedInUserId()` from `localStorage`). Added
+`new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())` at login — purely additive.
+**Note**: users already logged in when this shipped are holding an old token without this
+claim; `PUT /api/Users/me/profile` returns `401` for them until they log out/in again to get
+a fresh token (expected, one-time transitional behavior, not a bug).
+
+### New: `PUT /api/Users/me/profile` — self-service profile update
+- New DTO `UpdateOwnProfileRequest { Photo?, PhoneNumber?, TimeZone? }` — deliberately **has
+  no `UserId` field at all**. The endpoint always derives the caller's identity from
+  `User.FindFirstValue(ClaimTypes.NameIdentifier)` (the JWT claim above), never from the
+  request body, so there's no way to target another user's row through it. No role
+  restriction — any authenticated user may update their own profile this way.
+- Backed by a **new, narrower** stored proc `usp_UpdateUserProfile`
+  (`Database/User_Self_Profile_Migration.sql`, idempotent `CREATE OR ALTER`, already applied
+  to the live DB) rather than reusing the existing full-row `usp_UpdateUser`/`UpdateUserAsync`
+  via a fetch-merge approach. Reason: `UserRepository.GetUserByIdAsync`'s SELECT doesn't map
+  `PriorityId`/`Status` into the `User` object at all (pre-existing gap — those columns exist
+  and are written by `UpdateUserAsync`/`CreateUserAsync`, just never read back out). A
+  fetch-full-user-then-mutate-3-fields-then-call-`UpdateUserAsync` approach would have
+  silently NULLed out the user's real Status/Priority on every self-save. The new proc only
+  ever touches `Photo`/`PhoneNumber`/`TimeZone` — `RoleID`/`Active`/`Status`/`PriorityId`/
+  `Teams`/`UserName`/`Email`/`PasswordHash` are never in its `UPDATE` statement, so there's
+  no merge/fetch step and no way for it to clobber an unrelated field. `@Photo` is only
+  overwritten when a new photo was actually supplied (`COALESCE(@Photo, Photo)`), since a
+  user editing just their phone/time zone shouldn't have to re-upload a photo every time;
+  `@PhoneNumber`/`@TimeZone` are always set directly (including clearing them).
+- `IUserRepository`/`UserRepository.UpdateOwnProfileAsync` reuses the exact same base64→
+  `VARBINARY` photo-conversion pattern already used by `UpdateUserAsync`/`CreateUserAsync`.
+- Frontend: `IUpdateOwnProfileRequest` (also no `userId` field, matching the backend DTO) +
+  `UsersService.updateOwnProfile()`. `SettingsComponent`'s "Edit Profile" toggle reuses the
+  same base64 `FileReader` upload pattern already in `AddEditUserComponent`, and the Time
+  Zone `<select>` reuses `UsersService.getTimeZones()` the same way the admin form does.
+
+### Fixed (found while testing the redesigned Profile card): `GET /api/Users/{id}` was silently dropping fields
+`usp_GetUserById`/`UserRepository.GetUserByIdAsync` — used **only** by Settings
+(`GET Users/{id}` for the logged-in user's own record) — never selected/mapped
+`Status`/`StatusName`/`Priority`/`PriorityName`/`LastLogin`, and selected-but-never-mapped
+`TimeZoneName`. Pre-existing gap (not introduced by this work): `usp_GetAllUsers` already
+joined `UserStatus`/`PriorityStatus`/`TimeZone` and selected all of these correctly — 
+`usp_GetUserById` just never got the same treatment. Invisible until now because nothing
+previously displayed Status/Last Login on the page that calls this endpoint. **Fixed**:
+`usp_GetUserById` rewritten to match `usp_GetAllUsers`'s joins/columns
+(`Database/User_GetById_Fix_Migration.sql`, idempotent `CREATE OR ALTER`, already applied
+to the live DB and verified via `sqlcmd`); `GetUserByIdAsync`'s mapping updated to read all
+of them. Confirmed via direct SP execution: `Status`/`LastLogin`/`Priority`/`TimeZoneName`
+now come through correctly for a real user.
+
+Also fixed while investigating: `GetPhotoBase64` (shared by `GetAllUsersAsync`/
+`GetUserByIdAsync`/`GetUserByUsernameAsync`/`GetFilteredUsersAsync` — one shared helper, all
+4 fixed at once) hardcoded `data:image/png;base64,...` regardless of the photo's actual
+format. Verified directly (isolated SP+reader test outside the API) that a real user's
+stored photo is actually a JPEG (`FF D8 FF` signature), not a PNG — so every photo was being
+mislabeled. Most browsers still render a mislabeled `data:` URI via content-sniffing (so this
+wasn't necessarily the cause of any specific "photo won't display" report), but it was
+objectively wrong regardless, so a `GetImageMimeType()` byte-signature sniff (JPEG/PNG/GIF/
+WebP, defaulting to PNG if unrecognized) was added and is now used for the MIME type instead
+of a hardcoded assumption.
+
+### Fixed (found via a live Viewer-account test): `usp_UpdateUserProfile` failed with a QUOTED_IDENTIFIER error
+Saving the new "Edit Profile" form threw `SqlException: UPDATE failed because the following
+SET options have incorrect settings: 'QUOTED_IDENTIFIER'` for every user, reproduced live
+using a real Viewer JWT. Root cause: `aut.[User]` has a filtered index
+(`IX_User_ResetPasswordToken`) — same class of constraint already documented for
+`aut.Release`'s filtered unique index above — so any UPDATE against it requires
+`QUOTED_IDENTIFIER ON`. A stored procedure **bakes in** whatever `QUOTED_IDENTIFIER` setting
+was active in the session at `CREATE`/`ALTER` time; running the migration via plain
+`sqlcmd ... -i script.sql` (no `-I` flag) created `usp_UpdateUserProfile` with it baked in as
+OFF, so every call failed at runtime regardless of the caller. **Fixed** by adding an
+explicit `SET QUOTED_IDENTIFIER ON` + `GO` directly in
+`Database/User_Self_Profile_Migration.sql` before the `CREATE OR ALTER PROCEDURE`, so the
+correct setting is self-contained in the script regardless of how/with-what-flags it's ever
+re-run — re-applied to the live DB and verified via `sys.sql_modules.uses_quoted_identifier`
+(now `1`) and a real `EXEC ... UPDATE` against a live Viewer account (`UserID 22`, phone
+number actually persisted). `usp_GetUserById` (`User_GetById_Fix_Migration.sql`, added
+earlier in this same session) got the same fix for consistency, even though it's SELECT-only
+so isn't actually affected by this specific error at runtime.
+
+### Fixed: sidebar didn't reflect a profile update until reload
+`LeftSidebarComponent` lives outside `<router-outlet>` (rendered once by `LayoutComponent`
+for the whole session — see `layout.component.html`), so it only ever read
+`AuthService.getLoggedInUser()` once, in its constructor. Saving a profile change on
+Settings updated `SettingsComponent`'s own `user` field and `localStorage`, but the
+already-alive sidebar instance never re-read either, so its photo/name stayed stale until a
+full page reload. **Fixed** by adding a reactive `AuthService.currentUser$`
+(`BehaviorSubject<IUser | null>`, seeded from `localStorage` on service creation) and a new
+`AuthService.setCurrentUser(user)` (updates both `localStorage` and the subject — used by
+`login()` and by `SettingsComponent.loadUserDetails()` after every fetch, including right
+after a successful save). `LeftSidebarComponent` now subscribes to `currentUser$` in
+`ngOnInit` (unsubscribed in `ngOnDestroy`) instead of only reading once, so it re-renders
+immediately when Settings pushes a change — no reload needed. `getLoggedInUser()`/
+`isAdmin()`/`isManager()`/`isViewer()`/etc. were left reading `localStorage` directly and
+unchanged (still correct, just not reactive) since everywhere else calls them synchronously
+and doesn't need push updates.

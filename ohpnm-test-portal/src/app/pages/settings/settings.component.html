@@ -6,8 +6,9 @@
   </div>
   <div class="brand-header-underline"></div>
 
+  <!-- Profile Card -->
   <div class="filter-card" *ngIf="user">
-    <h5>User Details</h5>
+    <h5>Profile</h5>
 
     <div class="row mt-3">
       <div class="col-md-6">
@@ -17,6 +18,17 @@
           <strong>Full Name:</strong> {{ user.firstName }} {{ user.lastName }}
         </p>
         <p><strong>Role:</strong> {{ user.roleName }}</p>
+        <p><strong>Status:</strong> {{ user.statusName || '—' }}</p>
+        <p>
+          <strong>Last Login:</strong>
+          {{ user.lastLogin ? (user.lastLogin | date: 'medium') : '—' }}
+        </p>
+        <p *ngIf="!showProfileForm">
+          <strong>Phone:</strong> {{ user.phoneNumber || '—' }}
+        </p>
+        <p *ngIf="!showProfileForm">
+          <strong>Time Zone:</strong> {{ user.timeZoneName || '—' }}
+        </p>
       </div>
       <div class="col-md-6 text-center">
         <img
@@ -29,8 +41,97 @@
     </div>
 
     <button
-      *ngIf="!showPasswordForm"
+      *ngIf="!showProfileForm"
       class="btn-purple"
+      (click)="toggleEditProfile()"
+    >
+      Edit Profile
+    </button>
+
+    <div *ngIf="showProfileForm" class="row mt-4 justify-content-start">
+      <div class="col-md-6 col-sm-10 col-12">
+        <h4>Edit Profile</h4>
+
+        <!-- Photo -->
+        <div class="mb-3">
+          <label class="form-label">Profile Picture</label>
+          <div class="d-flex align-items-center gap-3">
+            <img
+              [src]="getProfileEditPhotoUrl()"
+              class="img-thumbnail rounded"
+              style="width: 70px; height: 70px"
+              alt="Profile Picture Preview"
+            />
+            <div class="input-group">
+              <input
+                type="file"
+                #profileFileInput
+                accept="image/*"
+                style="display: none"
+                (change)="onProfilePhotoChange($event)"
+              />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="profileFileInput.click()"
+              >
+                <i class="bi bi-upload me-1"></i> Upload New Photo
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phone -->
+        <div class="mb-2">
+          <label class="form-label">Phone Number</label>
+          <input
+            type="text"
+            name="profilePhoneNumber"
+            class="form-control"
+            placeholder="Phone Number"
+            [(ngModel)]="profileEdit.phoneNumber"
+          />
+        </div>
+
+        <!-- Time Zone -->
+        <div class="mb-2">
+          <label class="form-label">Time Zone</label>
+          <select
+            name="profileTimeZone"
+            class="form-control"
+            [(ngModel)]="profileEdit.timeZone"
+          >
+            <option [ngValue]="undefined">Select a time zone</option>
+            <option *ngFor="let tz of timeZones" [ngValue]="tz.timeZoneId">
+              {{ tz.timeZoneName }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2 mt-3">
+          <button class="btn-purple" type="button" (click)="onSaveProfile()">
+            Save Profile
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            (click)="toggleEditProfile()"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security Card -->
+  <div class="filter-card" *ngIf="user">
+    <h5>Security</h5>
+
+    <button
+      *ngIf="!showPasswordForm"
+      class="btn-purple mt-3"
       (click)="toggleChangePassword()"
     >
       Change Password

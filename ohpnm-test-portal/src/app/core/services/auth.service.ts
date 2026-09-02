@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { HttpService } from './http.service';
 import { IUser, LoginRequest, RegisterRequest } from '@interfaces';
 import { jwtDecode } from 'jwt-decode';
@@ -11,6 +11,16 @@ import { jwtDecode } from 'jwt-decode';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private logoutTimer: any;
+
+  // Reactive mirror of localStorage's `currentUser`, so long-lived components that only
+  // read it once at construction time (e.g. LeftSidebarComponent, which lives outside
+  // <router-outlet> for the whole session) pick up changes made elsewhere (e.g. Settings'
+  // "Edit Profile" save) without needing a page reload. `setCurrentUser`/`logout` are the
+  // only writers; `getLoggedInUser`/`isAdmin`/etc. still read localStorage directly (kept
+  // as-is) since they're called synchronously in places that don't need reactivity.
+  private currentUserSubject = new BehaviorSubject<IUser | null>(this.getLoggedInUser());
+  currentUser$ = this.currentUserSubject.asObservable();
+
   constructor(private httpService: HttpService, private router: Router) {}
 
   login(loginRequest: LoginRequest): Observable<any> {
@@ -19,10 +29,18 @@ export class AuthService {
       .pipe(
         tap((response) => {
           localStorage.setItem('token', response.token);
-          localStorage.setItem('currentUser', JSON.stringify(response.user));
+          this.setCurrentUser(response.user);
           this.startAutoLogout(response.token);
         })
       );
+  }
+
+  // Updates both localStorage (so a page refresh/other tabs still see it) and the
+  // reactive currentUser$ stream (so already-open components, notably the sidebar, update
+  // immediately). Called on login and whenever Settings saves a profile change.
+  setCurrentUser(user: IUser): void {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    this.currentUserSubject.next(user);
   }
 
   forgotPassword(email: string): Observable<{ message: string }> {
@@ -60,6 +78,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('currentUser');
+    this.currentUserSubject.next(null);
     //this.router.navigate(['/login']);
     this.router.navigate(['/login'], { replaceUrl: true });
   }

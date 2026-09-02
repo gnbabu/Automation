@@ -7,6 +7,7 @@
         public const string GetUserById = "[aut].[usp_GetUserById]";
         public const string CreateUser = "[aut].[usp_CreateUser]";
         public const string UpdateUser = "[aut].[usp_UpdateUser]";
+        public const string UpdateUserProfile = "[aut].[usp_UpdateUserProfile]";
         public const string DeleteUser = "[aut].[usp_DeleteUser]";
         public const string ChangePassword = "[aut].[usp_ChangePassword]";
         public const string SetUserActiveStatus = "[aut].[usp_SetUserActiveStatus]";

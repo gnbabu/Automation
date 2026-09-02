@@ -79,6 +79,14 @@ export interface IChangePasswordRequest {
   userId: number | undefined;
 }
 
+// No userId field - the server always derives the caller's identity from their JWT
+// (see UsersController.UpdateOwnProfile), never from this request body.
+export interface IUpdateOwnProfileRequest {
+  photo?: string;
+  phoneNumber?: string;
+  timeZone?: number;
+}
+
 export interface LibraryInfo {
   libraryName: string;
   classes: ClassInfo[];

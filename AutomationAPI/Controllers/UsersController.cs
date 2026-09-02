@@ -2,6 +2,7 @@
 using AutomationAPI.Repositories.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AutomationAPI.Controllers
 {
@@ -53,6 +54,7 @@ namespace AutomationAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateUser([FromBody] User user)
         {
             try
@@ -68,6 +70,7 @@ namespace AutomationAPI.Controllers
         }
 
         [HttpPut]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateUser([FromBody] User user)
         {
             try
@@ -83,6 +86,7 @@ namespace AutomationAPI.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(int id)
         {
             try
@@ -94,6 +98,31 @@ namespace AutomationAPI.Controllers
             {
                 _logger.LogError(ex, $"Error deleting user with ID {id}");
                 return StatusCode(500, "An error occurred while deleting the user.");
+            }
+        }
+
+        // Self-service profile update - no role restriction (any authenticated user may
+        // update their own profile). UserId always comes from the JWT's NameIdentifier
+        // claim (added at login in AuthService.cs), never from the request body -
+        // UpdateOwnProfileRequest has no UserId field at all, so there's no way to target
+        // another user's row through this endpoint. Only Photo/PhoneNumber/TimeZone can
+        // be changed here; Role/Status/Priority/Active/Teams stay Admin-only (UpdateUser).
+        [HttpPut("me/profile")]
+        public async Task<IActionResult> UpdateOwnProfile([FromBody] UpdateOwnProfileRequest request)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, out var userId) || userId <= 0)
+                    return Unauthorized("Unable to determine the current user.");
+
+                await _userRepository.UpdateOwnProfileAsync(userId, request.Photo, request.PhoneNumber, request.TimeZone);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating own profile");
+                return StatusCode(500, "An error occurred while updating your profile.");
             }
         }
 
@@ -133,6 +162,7 @@ namespace AutomationAPI.Controllers
         }
 
         [HttpPost("activate")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SetUserActiveStatus([FromBody] SetActiveStatusRequest request)
         {
             try

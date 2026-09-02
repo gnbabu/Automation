@@ -85,7 +85,29 @@ namespace AutomationAPI.Repositories
 
         public string GetPhotoBase64(byte[] photoBytes)
         {
-            return $"data:image/png;base64,{Convert.ToBase64String(photoBytes)}";
+            return $"data:{GetImageMimeType(photoBytes)};base64,{Convert.ToBase64String(photoBytes)}";
+        }
+
+        // Sniffs the actual image format from its magic bytes instead of assuming PNG -
+        // uploads from AddEditUserComponent/Settings' Edit Profile are typically JPEG
+        // (browser file picker output), so hardcoding "image/png" mislabeled almost every
+        // photo. Most browsers still render mislabeled data: URIs via content sniffing, but
+        // it's not guaranteed, so this fixes it properly. Defaults to PNG if unrecognized.
+        private static string GetImageMimeType(byte[] bytes)
+        {
+            if (bytes.Length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF)
+                return "image/jpeg";
+
+            if (bytes.Length >= 8 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47)
+                return "image/png";
+
+            if (bytes.Length >= 6 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38)
+                return "image/gif";
+
+            if (bytes.Length >= 12 && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50)
+                return "image/webp";
+
+            return "image/png";
         }
 
         public async Task<User> GetUserByIdAsync(int userId)
@@ -111,9 +133,27 @@ namespace AutomationAPI.Repositories
                 RoleName = reader.GetString(reader.GetOrdinal("RoleName")),
                 RoleId = reader.GetInt32(reader.GetOrdinal("RoleID")),
                 Active = reader.GetBoolean(reader.GetOrdinal("Active")),
+                PriorityId = reader.IsDBNull(reader.GetOrdinal("Priority"))
+                        ? null
+                        : reader.GetInt32(reader.GetOrdinal("Priority")),
+                PriorityName = reader.IsDBNull(reader.GetOrdinal("PriorityName"))
+                        ? string.Empty
+                        : reader.GetString(reader.GetOrdinal("PriorityName")),
+                LastLogin = reader.IsDBNull(reader.GetOrdinal("LastLogin"))
+                        ? (DateTime?)null
+                        : reader.GetDateTime(reader.GetOrdinal("LastLogin")),
                 TimeZone = reader.IsDBNull(reader.GetOrdinal("TimeZone"))
                         ? null
                         : reader.GetInt32(reader.GetOrdinal("TimeZone")),
+                TimeZoneName = reader.IsDBNull(reader.GetOrdinal("TimeZoneName"))
+                        ? string.Empty
+                        : reader.GetString(reader.GetOrdinal("TimeZoneName")),
+                Status = reader.IsDBNull(reader.GetOrdinal("Status"))
+                        ? null
+                        : reader.GetInt32(reader.GetOrdinal("Status")),
+                StatusName = reader.IsDBNull(reader.GetOrdinal("StatusName"))
+                        ? string.Empty
+                        : reader.GetString(reader.GetOrdinal("StatusName")),
                 TwoFactor = reader.IsDBNull(reader.GetOrdinal("TwoFactor"))
                         ? false
                         : reader.GetBoolean(reader.GetOrdinal("TwoFactor")),
@@ -217,6 +257,41 @@ namespace AutomationAPI.Repositories
             });
 
             await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.UpdateUser, parameters.ToArray());
+        }
+
+        // Self-service profile update - intentionally a *partial* update (only Photo/
+        // PhoneNumber/TimeZone) backed by its own SP, rather than fetching the full User
+        // via GetUserByIdAsync and calling UpdateUserAsync: GetUserByIdAsync's SELECT
+        // doesn't map PriorityId/Status at all, so a fetch-merge approach would silently
+        // NULL those out on every self-save. RoleID/Active/Status/PriorityId/Teams/
+        // UserName/Email/PasswordHash are never touched by this method.
+        public async Task UpdateOwnProfileAsync(int userId, string? photo, string? phoneNumber, int? timeZone)
+        {
+            var parameters = new List<SqlParameter>
+            {
+                new SqlParameter("@UserId", userId),
+                new SqlParameter("@PhoneNumber", string.IsNullOrEmpty(phoneNumber) ? (object)DBNull.Value : phoneNumber),
+                new SqlParameter("@TimeZone", timeZone.HasValue ? (object)timeZone.Value : DBNull.Value)
+            };
+
+            byte[] imageBytes = Array.Empty<byte>();
+            if (!string.IsNullOrEmpty(photo))
+            {
+                var base64 = photo.Contains(",")
+                    ? photo.Substring(photo.IndexOf(",") + 1)
+                    : photo;
+
+                imageBytes = Convert.FromBase64String(base64);
+            }
+
+            parameters.Add(new SqlParameter
+            {
+                ParameterName = "@Photo",
+                SqlDbType = SqlDbType.VarBinary,
+                Value = (imageBytes.Length > 0) ? imageBytes : (object)DBNull.Value
+            });
+
+            await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.UpdateUserProfile, parameters.ToArray());
         }
 
 
