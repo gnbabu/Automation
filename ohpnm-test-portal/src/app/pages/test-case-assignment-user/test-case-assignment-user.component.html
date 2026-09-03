@@ -65,14 +65,33 @@
         </app-dropdown>
       </div>
     </div>
-    <div class="d-flex gap-3">
-      <div class="stats-box">
-        <div class="stats-number">{{ totalCases }}</div>
-        <div class="stats-label">Total Cases</div>
+    <div class="d-flex flex-column" style="min-width: 220px">
+      <div class="d-flex gap-3">
+        <div class="stats-box">
+          <div class="stats-number">{{ totalCases }}</div>
+          <div class="stats-label">Total Cases</div>
+        </div>
+        <div class="stats-box">
+          <div class="stats-number text-primary">{{ unassignedCount }}</div>
+          <div class="stats-label">Unassigned</div>
+        </div>
       </div>
-      <div class="stats-box">
-        <div class="stats-number text-primary">{{ unassignedCount }}</div>
-        <div class="stats-label">Unassigned</div>
+
+      <!-- Assignment coverage - quick visual read of Assigned vs Unassigned, same
+           dashboard-style progress-bar language already used elsewhere in the app
+           (e.g. Settings' password-strength bar). Numbers above are kept as-is (they
+           weren't wrong, just less immediately scannable than a bar). -->
+      <div class="mt-2" *ngIf="totalCases > 0">
+        <div class="d-flex justify-content-between small text-muted mb-1">
+          <span>Assignment coverage</span>
+          <span>{{ assignedCount }} / {{ totalCases }} assigned</span>
+        </div>
+        <div class="progress" style="height: 8px">
+          <div
+            class="progress-bar bg-success"
+            [style.width.%]="(assignedCount / totalCases) * 100"
+          ></div>
+        </div>
       </div>
     </div>
   </div>

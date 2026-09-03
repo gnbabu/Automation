@@ -72,6 +72,12 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   // stale response is discarded instead of corrupting the current view.
   private loadRequestId = 0;
 
+  // Snapshot of the current tester's assignment set as of the last successful load
+  // (tryLoadTestCases()'s Step 3 "myAssigned"), kept around purely so onSaveAssignments()
+  // can diff the current selection against it to report real "N added, M removed" counts
+  // instead of a generic "saved successfully" message.
+  private originallyAssignedIds = new Set<string>();
+
   constructor(
     private testSuitesService: TestSuitesService,
     private authService: AuthService,
@@ -326,6 +332,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
                       const myAssignedIds = new Set(
                         myAssigned.map((a) => a.testCaseId)
                       );
+                      this.originallyAssignedIds = myAssignedIds;
 
                       // TestCases assigned to ANY user (reverted to the original,
                       // pre-disable-checkbox behavior per explicit request - see AGENTS.md).
@@ -423,9 +430,25 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       })),
     };
 
+    // Diff against the assignment set as it was when this screen last loaded, so the
+    // success toast can report exactly what changed instead of a generic message -
+    // computed here (before the save call) since selectedMethods is the "after" state.
+    const selectedIds = new Set(this.selectedMethods.map((tc) => tc.testCaseId));
+    const addedCount = [...selectedIds].filter(
+      (id) => !this.originallyAssignedIds.has(id)
+    ).length;
+    const removedCount = [...this.originallyAssignedIds].filter(
+      (id) => !selectedIds.has(id)
+    ).length;
+
     this.testCaseAssignmentService.saveAssignment(request).subscribe({
       next: (res: any) => {
-        this.showSaveResultToast(res, 'Assignments saved successfully.');
+        this.showSaveResultToast(
+          res,
+          'Assignments saved successfully.',
+          addedCount,
+          removedCount
+        );
         this.tryLoadTestCases(); // Refresh grid
         this.loadLibraryTestCaseCounts(this.selectedLibrary?.libraryName ?? '');
       },
@@ -439,13 +462,25 @@ export class TestCaseAssignmentUserComponent implements OnInit {
   // Server-side lock enforcement (usp_CreateOrUpdateAssignmentWithTestCases) reports back
   // how many test cases it left untouched because they'd already entered the execution
   // pipeline - surfaced here so a Save/Reset that silently skipped something isn't a
-  // silent no-op from the user's point of view.
-  private showSaveResultToast(res: any, defaultMessage: string): void {
+  // silent no-op from the user's point of view. addedCount/removedCount (Save only - Reset
+  // doesn't pass these) give a concrete "what actually changed" summary instead of a
+  // generic success message.
+  private showSaveResultToast(
+    res: any,
+    defaultMessage: string,
+    addedCount = 0,
+    removedCount = 0
+  ): void {
     const lockedCount = res?.lockedCount ?? 0;
     if (lockedCount > 0) {
       this.toaster.info(
         `${lockedCount} test case(s) could not be changed because they have already been executed.`
       );
+    } else if (addedCount > 0 || removedCount > 0) {
+      const parts: string[] = [];
+      if (addedCount > 0) parts.push(`${addedCount} added`);
+      if (removedCount > 0) parts.push(`${removedCount} removed`);
+      this.toaster.success(`Assignments saved: ${parts.join(', ')}.`);
     } else {
       this.toaster.success(defaultMessage);
     }

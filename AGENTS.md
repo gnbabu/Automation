@@ -768,6 +768,64 @@ one-off manual cleanup (like the earlier legacy-assignment cleanup) - not captur
 reusable/idempotent migration script, since re-running it wouldn't make sense (no more
 qualifying users exist).
 
+## UX improvements: Save-diff toast, Assignment coverage bar, remaining badge-color spots
+Implemented 3 of the previously-deferred UX suggestions (search box and loading
+spinners/skeletons for `DataGridComponent`/`AppDropdownComponent` remain deferred, per
+explicit request - noted for later, not implemented):
+
+### Test Case Assignment: "N added, M removed" in the Save toast
+`tryLoadTestCases()`'s Step 3 already computed `myAssignedIds` (the tester's assignment set
+*before* any changes) but only used it locally. Now stored as `private
+originallyAssignedIds` on the component, and `onSaveAssignments()` diffs
+`selectedMethods`'s ids against it right before calling the save API to compute real
+added/removed counts, passed into `showSaveResultToast()` (already the shared success/
+locked-count toast helper, extended with two new optional params). Message becomes
+`"Assignments saved: 2 added, 1 removed."` instead of a generic "saved successfully" -
+falls back to the generic message when nothing actually changed. `onResetAssignments()`'s
+call site is unaffected (doesn't pass the new params, so it still shows its own "All
+assignments reset." message via the same defaulted-to-0 fallback path).
+
+### Test Case Assignment: coverage progress bar
+Added a compact Bootstrap `.progress` bar (green fill, `assignedCount/totalCases` width)
+below the existing "Total Cases"/"Unassigned" stat boxes in the filter card - same
+dashboard-style visual language already used elsewhere (e.g. Settings' password-strength
+bar). Kept the two existing numbers as-is (they weren't wrong, just less immediately
+scannable than a bar) plus an explicit "X / Y assigned" caption above the bar.
+
+### Remaining badge-color-pairing spots (2 found via a fresh app-wide sweep)
+Same `.status-pill`/`.badge` + bare `bg-*` (no text color) pattern fixed everywhere else
+this session, via the existing shared `pairBadgeTextColor` (`core/utils/badge-class.util.ts`):
+- `environment-management.component.html`'s Active/Inactive status pill.
+- `common-components/execution-logs-viewer/execution-logs-viewer.component.html`'s "N
+  steps" badge (a single fixed `bg-secondary` case, no branching, so fixed directly with
+  `text-white` in the markup rather than importing the utility for a one-liner).
+
+### Fixed: `tsconfig.json`'s `baseUrl` deprecation lint error
+Flagged by the IDE: `baseUrl` is deprecated as of TS 5.x, removed in TS 7.0. Not migrating
+off it outright - confirmed via `grep` that 24+ files (including several added this
+session) rely on bare `app/...` imports that only resolve via `baseUrl`, not just the 3
+explicit `@services`/`@interfaces`/`@mappers` `paths` aliases - a full migration would mean
+rewriting every one of those imports (or restructuring `paths` to be baseUrl-independent)
+as its own unrelated refactor. Silenced with `"ignoreDeprecations": "5.0"` instead - **not**
+`"6.0"` as the IDE's own lint hint suggested: confirmed directly that this project's actual
+installed compiler (`npx tsc --version` → 5.7.3) rejects `"6.0"` with a hard `TS5103`
+error that breaks the real build (the IDE's suggestion is presumably from a newer bundled
+language-service TS version than what's actually installed here) - reverted that attempt
+immediately after confirming the build failure, then verified `"5.0"` is both accepted and
+actually suppresses the warning (`npx tsc -p tsconfig.json --noEmit` shows nothing
+baseUrl-related). Revisit this suppression when actually upgrading toward TS 7.0.
+
+**Note**: the IDE may keep showing this exact warning anyway - confirmed the project's own
+`package.json`-pinned TypeScript (`~5.7.2`, installed 5.7.3) is what actually needs `"5.0"`,
+but the IDE's language server is evidently a different (newer) bundled TS version that
+expects `"6.0"` instead - a workspace-vs-editor TypeScript version mismatch, not a project
+config bug. The standard fix (`.vscode/settings.json` with `"typescript.tsdk"` pointed at
+`ohpnm-test-portal/node_modules/typescript/lib`, so the editor lints with the same compiler
+that actually builds the project) was proposed and **declined** - left as unresolved IDE
+noise by choice, not oversight. Do not "fix" this again by changing `ignoreDeprecations`
+back to `"6.0"` - that value is confirmed to break the real build under this project's
+actual TypeScript version.
+
 ## Fixed: `ModalService` couldn't close a dialog after leaving and returning to its page
 `ModalService` (`core/services/modal.service.ts`) is `providedIn: 'root'` - a singleton
 that lives for the whole SPA session - but `register(id, element)` only ever created a

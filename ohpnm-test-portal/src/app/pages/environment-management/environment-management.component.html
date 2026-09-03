@@ -29,7 +29,7 @@
 
           <span
             class="status-pill"
-            [ngClass]="env.isActive ? 'bg-success' : 'bg-secondary'"
+            [ngClass]="pairBadgeTextColor(env.isActive ? 'bg-success' : 'bg-secondary')"
           >
             {{ env.isActive ? "Active" : "Inactive" }}
           </span>

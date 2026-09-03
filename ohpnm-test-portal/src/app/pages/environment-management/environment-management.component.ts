@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { IEnvironmentModel, IEnvironmentRequestDto } from '@interfaces';
 import { CommonToasterService, EnvironmentService } from '@services';
+import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
 
 @Component({
   selector: 'app-environment-management',
@@ -14,6 +15,10 @@ import { CommonToasterService, EnvironmentService } from '@services';
 export class EnvironmentManagementComponent {
   environments: IEnvironmentModel[] = [];
   themes = ['green', 'orange', 'blue', 'purple', 'teal'];
+
+  // Exposed to the template so the Active/Inactive status pill pairs its bg-* class with
+  // legible text color, same fix already applied everywhere else in the app this session.
+  pairBadgeTextColor = pairBadgeTextColor;
 
   constructor(
     private envService: EnvironmentService,

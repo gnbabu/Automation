@@ -3,6 +3,19 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    // baseUrl is deprecated as of TS 5.x and slated for removal in TS 7.0. Not removing it
+    // outright: 24+ files (including several added this session, e.g.
+    // badge-class.util.ts's consumers) rely on bare `app/...` imports that only resolve
+    // via baseUrl, not just the 3 explicit `paths` aliases below - removing it would mean
+    // rewriting every one of those imports (or restructuring `paths` to be
+    // baseUrl-independent) as its own standalone refactor, unrelated to any actual bug.
+    // Silencing the warning for now instead. Note: the installed compiler (TS 5.7.3, `npx
+    // tsc --version`) only accepts "5.0" here - the IDE's lint hint suggesting "6.0" is
+    // presumably from a newer bundled language-service TS version; "6.0" is rejected by
+    // this project's actual compiler with a hard TS5103 error (verified directly - do not
+    // change this value without re-testing `ng build`). Revisit this whole suppression
+    // when actually upgrading toward TS 7.0.
+    "ignoreDeprecations": "5.0",
     "outDir": "./dist/out-tsc",
     "rootDir": "./src",
     "strict": true,
