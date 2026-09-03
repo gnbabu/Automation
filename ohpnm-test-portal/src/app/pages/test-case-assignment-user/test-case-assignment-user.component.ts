@@ -20,6 +20,7 @@ import {
 } from '@services';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
+import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -173,6 +174,24 @@ export class TestCaseAssignmentUserComponent implements OnInit {
 
   onAssignmentStatusChange(status: any) {
     this.selectedAssignmentStatus = status;
+  }
+
+  // Same convention as test-case-execution-panel.component.ts's releaseLifecycleBadgeClass/
+  // release-management.component.ts's statusPillClass, so this badge matches the color
+  // used everywhere else in the app.
+  releaseLifecycleBadgeClass(lifecycle?: string): string {
+    switch ((lifecycle || '').toLowerCase()) {
+      case 'active':
+        return pairBadgeTextColor('bg-success');
+      case 'completed':
+        return pairBadgeTextColor('bg-primary');
+      case 'rejected':
+        return pairBadgeTextColor('bg-danger');
+      case 'draft':
+        return pairBadgeTextColor('bg-secondary');
+      default:
+        return pairBadgeTextColor('bg-info');
+    }
   }
 
   // Anything past 'Assigned' means it's entered the execution pipeline at all (not just
@@ -493,9 +512,16 @@ export class TestCaseAssignmentUserComponent implements OnInit {
       this.selectedRelease.releaseId,
       libraryName
     );
+    // Release-scoped (not getAllAssignedTestCasesInLibrary, which counts assignments
+    // across every Release that ever used this library name) - using the non-scoped
+    // endpoint here let assignedCount exceed totalCases, so unassignedCount went
+    // negative whenever a library had more historical assignments from other Releases
+    // than the current Release has test cases. Same endpoint tryLoadTestCases() already
+    // uses correctly.
     const assignedCases$ =
-      this.testCaseAssignmentService.getAllAssignedTestCasesInLibrary(
-        libraryName
+      this.testCaseAssignmentService.getAssignedTestCasesForLibraryAndRelease(
+        libraryName,
+        this.selectedRelease.releaseId
       );
 
     forkJoin([allCases$, assignedCases$]).subscribe({

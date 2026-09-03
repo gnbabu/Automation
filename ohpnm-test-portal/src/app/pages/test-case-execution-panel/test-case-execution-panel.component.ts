@@ -30,6 +30,7 @@ import { ConfirmDialogComponent } from 'app/core/modals/confirm-dialog/confirm-d
 import { ScheduleTestcasesDialogComponent } from './schedule-testcases-dialog/schedule-testcases-dialog.component';
 import { TestScreenshotGalleryComponent } from './test-screenshot-gallery/test-screenshot-gallery.component';
 import { ExecutionLogsDialogComponent } from 'app/common-modals/execution-logs-dialog/execution-logs-dialog.component';
+import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -246,15 +247,15 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   releaseLifecycleBadgeClass(lifecycle?: string): string {
     switch ((lifecycle || '').toLowerCase()) {
       case 'active':
-        return 'bg-success';
+        return pairBadgeTextColor('bg-success');
       case 'completed':
-        return 'bg-primary';
+        return pairBadgeTextColor('bg-primary');
       case 'rejected':
-        return 'bg-danger';
+        return pairBadgeTextColor('bg-danger');
       case 'draft':
-        return 'bg-secondary';
+        return pairBadgeTextColor('bg-secondary');
       default:
-        return 'bg-info text-dark';
+        return pairBadgeTextColor('bg-info');
     }
   }
 
@@ -329,31 +330,31 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   getBadgeClass(status?: string): string {
     switch (status) {
       case 'Assigned':
-        return 'bg-primary text-white';
+        return pairBadgeTextColor('bg-primary');
 
       case 'Queued':
         return 'bg-light text-dark border';
 
       case 'Scheduled':
-        return 'bg-info text-dark';
+        return pairBadgeTextColor('bg-info');
 
       case 'InProgress':
-        return 'bg-warning text-dark';
+        return pairBadgeTextColor('bg-warning');
 
       case 'Passed':
-        return 'bg-success text-white';
+        return pairBadgeTextColor('bg-success');
 
       case 'Failed':
-        return 'bg-danger text-white';
+        return pairBadgeTextColor('bg-danger');
 
       case 'Cancelled':
-        return 'bg-dark text-white';
+        return pairBadgeTextColor('bg-dark');
 
       case 'Skipped':
-        return 'bg-secondary text-white';
+        return pairBadgeTextColor('bg-secondary');
 
       case 'Inconclusive':
-        return 'bg-warning text-dark';
+        return pairBadgeTextColor('bg-warning');
 
       default:
         return 'bg-light text-dark border';

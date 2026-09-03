@@ -10,10 +10,15 @@
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
 }
 
+/* Matches Dashboard's .rd-header / app-execution-logs-viewer's .log-header style, for
+   visual consistency across the app's card headers instead of this page's own
+   one-off purple gradient. */
 .section-head {
-  background: linear-gradient(135deg, #5c3c9e, #7b5fc0);
-  color: #fff;
+  background: #f9fafb;
+  color: #212529;
   font-weight: 600;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
   border-radius: 14px 14px 0 0;
 }
 

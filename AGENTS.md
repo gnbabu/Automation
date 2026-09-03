@@ -232,6 +232,12 @@ Also filled in the previously-intentionally-missing `Description`/`Priority` on
 `DeliberatelySkipped_ShouldReportAsSkipped` (`TC_SEL_004`) for consistency - it wasn't a
 bug (that test genuinely never declared them), just incomplete authoring.
 
+### `ReflectionTestRunner` removed
+Deleted (`AutomationAPI/Repositories/TestRunner/ReflectionTestRunner.cs`) - confirmed
+unregistered/unreferenced anywhere else, superseded by `NUnitEngineTestRunner` which was
+regression-tested and verified end-to-end with real Selenium execution. Git history
+preserves it if ever needed again.
+
 ### Fixed: `Assert.Pass(...)` shows a confusing "exception" in tools like Test Explorer
 `BrowserParameter_IsReadable` (`TC_SEL_003`) used to end with `Assert.Pass($"...")`.
 `Assert.Pass` has always worked by throwing `NUnit.Framework.SuccessException` internally
@@ -606,6 +612,161 @@ captured in `Release_Management_Migration_Full.sql` as an idempotent, guarded se
 tightens the column if it's still nullable **and** no `NULL` rows remain — never fails or
 loses data if re-run) — the one-time DELETE itself is not part of the idempotent script
 (it was a manual, explicitly-confirmed one-off cleanup).
+
+## Fixed: negative "Unassigned" count, mislabeled "Total Tests", badge legibility, Release Readiness/UX (Release Management + Test Case Assignment)
+
+### Test Case Assignment: negative "Unassigned" count
+`test-case-assignment-user.component.ts`'s `loadLibraryTestCaseCounts()` computed
+`assignedCount` from `getAllAssignedTestCasesInLibrary(libraryName)` - **not** Release-scoped,
+counts assignments across *every* Release that ever used that library name (the legacy,
+pre-Release-Management endpoint, left in place "in case anything else still calls it" - it
+turned out this counts method still did). `totalCases` (from `getAllTestCasesByLibraryName`)
+**is** Release-scoped, so `unassignedCount = totalCases - assignedCount` went negative
+whenever a library had more historical assignments from other Releases than the current
+Release has test cases. Fixed by switching to the already-existing Release-scoped
+`getAssignedTestCasesForLibraryAndRelease(libraryName, releaseId)` (same one
+`tryLoadTestCases()` already used correctly).
+
+### Release Management: "Total Tests" only ever counted assigned test cases
+`aut.usp_GetReleaseById`/`usp_GetAllRelease`'s `TotalTests` (via `sp_helptext`) is
+`COUNT(*) FROM TestCaseAssignment JOIN AssignedTestCases WHERE ReleaseId = ...` - i.e. total
+*assigned* test cases, not the total discoverable in the Release's DLLs, but displayed
+everywhere as plain "Total"/"Tests", implying it was the full inventory. Fixed by adding a
+genuine total-discoverable count:
+- `ITestSuitesRepository.GetTotalTestCaseCountAsync(releaseFolderPath)` - sums
+  `GetLibrariesAsync()`'s (i.e. `NUnitEngineHelper.Explore()`, already cached by
+  last-write-time) method counts across every DLL in the folder.
+- `ReleaseController`'s `PopulateFolderInfoAsync` (renamed from the now-async
+  `PopulateFolderInfo`) populates a new `ReleaseModel.TotalDiscoveredTests` /
+  `IReleaseModel.totalDiscoveredTests` field the same way `DllFileCount`/`FolderReady`
+  already are, on both `GET /api/Release` (list) and `GET /api/Release/{id}` (details) -
+  verified live: `REL-14_SeleniumPoC` correctly shows `totalTests: 5` (assigned) vs
+  `totalDiscoveredTests: 6` (real total, all 6 discovered `SeleniumSmokeTests` cases)
+  as two distinct numbers instead of one mislabeled one.
+- Release Management cards now show `Tests: {{ totalDiscoveredTests }} total` plus a
+  separate `Assigned: {{ totalTests }} (P.. F.. S..)` line; Release Details' Test Summary
+  card shows Total/Assigned/Unassigned/Passed/Failed/Skipped/Running as distinct numbers.
+- `TotalTests`/`totalTests` themselves are unchanged/kept (Passed/Failed/Skipped/Running
+  only make sense for assigned+executed tests anyway) - just no longer mislabeled as "Total".
+
+### Illegible badge text (dark text on dark backgrounds) app-wide
+`.status-pill` (global, `styles.css`) sets no `color`; Bootstrap's `bg-*` utility classes
+only set background, not text color - every status/lifecycle/sign-off badge helper
+(`releaseLifecycleBadgeClass`, `statusPillClass`, `signOffPillClass`, and several inline
+`[ngClass]` badges) returned bare `bg-*` classes, so dark backgrounds (Completed/
+`bg-primary`, Active/`bg-success`, Rejected/`bg-danger`, Approved/`bg-success`) rendered
+with illegible dark/black text - confirmed live against the exact reported case
+(`Release_ODM v1.5.0`, `releaseLifecycle: "Completed"`). Fixed with one shared helper,
+`ohpnm-test-portal/src/app/core/utils/badge-class.util.ts`'s `pairBadgeTextColor(bgClass)`
+- always pairs a background class with the correct contrasting text color (dark
+backgrounds → `text-white`, light ones like `bg-info`/`bg-warning` → `text-dark`) - used
+from `test-case-execution-panel.component.ts` (`releaseLifecycleBadgeClass`/`getBadgeClass`),
+`release-management.component.ts` (`statusPillClass`/`signOffPillClass`, plus the inline
+"Deactivated" badge), `release-details.component.ts` (new `lifecyclePillClass`/
+`signOffPillClass`/`notificationStatusPillClass` methods, `pairBadgeTextColor` also exposed
+directly to its template for a couple of inline ternary badges), and
+`test-case-assignment-user.component.ts`'s new release-lifecycle badge (see below).
+**Follow-up**: initially left `dashboard.component.ts`/`left-sidebar.component.ts` out of
+this pass since they weren't in the original bug report - reported back as still broken
+("Dashboard badges are still not fixed"), so fixed those too: `dashboard.component.ts`'s
+own copy-paste of `releaseLifecycleBadgeClass` (identical bug/fix), and
+`left-sidebar.component.ts`'s `environmentBadgeClass` (Development/QA/Production pills -
+same missing-text-color pattern). `dashboard.component.ts`'s `getBadgeClass` was already
+correct (explicit `text-white`/`text-dark` pairings per case) - left as-is.
+`settings.component.html`'s only `bg-*` usage is a `.progress-bar` fill (password
+strength), not a text badge, so there's no legibility concern there - left untouched.
+
+### Release Readiness stuck on "READY FOR ACTIVATION" after activation
+The Release Details "Release Readiness" card's badge/message was driven purely by
+`readiness.isReady` (does the folder currently have usable DLLs) with zero awareness of the
+Release's actual lifecycle - kept saying "READY FOR ACTIVATION" forever, even once already
+`Active`/`Completed`. Also, `load()` unconditionally re-ran the reflection-heavy readiness
+scan on every call (including right after a successful `activate()`), even though
+`silentRefresh()` (the auto-refresh tick) already had the right idea of only doing that
+while still `Draft`. Fixed: `load()` now only calls `refreshReadiness()` while `Draft`
+(same guard as `silentRefresh()`); the template's Readiness card now shows "This release
+has already been activated - DLL readiness no longer applies" (+ activated-by/-on) once
+not `Draft`, instead of the stale DLL-readiness badge, and hides the manual Refresh button
+in that state too.
+
+### Test Case Assignment: better Release/Environment display
+"Environment" used to be squeezed in as a `form-control-plaintext` between two real
+dropdowns (Release, Test Suite), looking like a broken/disabled dropdown. Replaced with a
+summary info bar below the filter row (Release name + version + lifecycle status-pill +
+Environment + selected Test Suite), matching `test-case-execution-panel.component.html`'s
+"Selected Assignment Info" card pattern for visual consistency between the two screens.
+
+### Release Details: plain `<table>`s converted to `app-data-grid`, with status badges
+"Sign-Off History" and "Notifications" now use `app-data-grid` (matching the rest of the
+app's convention) instead of hand-rolled `<table>`s, with `cellTemplate`s for their status
+columns (color-coded badges via the shared `pairBadgeTextColor` pairing) and for date
+columns (`dd-MMM-yyyy HH:mm` formatting, previously done inline via the `date` pipe -
+preserved via a shared `dateTemplate`).
+
+### Release Details: section headers now match Dashboard's neutral style
+`.section-head` was a page-specific purple gradient (`linear-gradient(135deg, #5c3c9e,
+#7b5fc0)`, white text) unique to this page. Replaced with Dashboard's `.rd-header`/
+`app-execution-logs-viewer`'s `.log-header` style (light gray `#f9fafb` background, subtle
+bottom border, dark bold text) across all of this page's card headers (Release Information,
+Release Readiness, Test Summary, Lifecycle & Sign-Off, Sign-Off History, Notifications),
+for visual consistency with the rest of the app.
+
+### Fixed: duplicate Release notifications ("showing more records than actual")
+Reported as the Notifications grid "showing more records than actual". Root cause found
+in the **database**, not the frontend grid: `aut.usp_ActivateRelease` had **no guard**
+against activating a release that wasn't `Draft` - it unconditionally re-stamped
+`ActivatedBy`/`ActivatedOn` and returned success every time called, and
+`ReleaseController.Activate()` unconditionally sends a full "release available for
+testing" notification batch to every active Manager/Admin after every successful call.
+The frontend's `canActivate` getter normally keeps the Activate button disabled once a
+release isn't `Draft`, but that's a UI-only guard - calling the endpoint again (as
+happened here, directly, during iterative testing/redeployment of a Release's DLL) could
+still re-activate and re-notify with nothing stopping it. Confirmed live:
+`aut.ReleaseNotification` had exactly 14 rows for `REL-14_SeleniumPoC` (2 full batches of
+7 recipients) instead of 7 - genuinely duplicate database rows, not a rendering bug.
+**Fixed** in `Database/Release_Activate_Guard_Migration.sql` (idempotent `CREATE OR ALTER`,
+applied to the live DB and verified: re-running `usp_ActivateRelease` against the
+already-`Active` Release 14 now correctly raises `"Cannot activate: release is already
+Active."` instead of silently succeeding) - only a `Draft` release can be activated now,
+matching the same Draft-only-transition convention already used elsewhere (e.g. Delete is
+also only allowed while Draft). The existing `RAISERROR`/`GetUserMessage` error-surfacing
+pattern this controller already uses for other guarded stored procedures picks this up
+automatically as a `400` with a clear message - no controller code changes needed.
+
+### Investigated, not a bug: "Release Activation notifies more than Admin/Manager"
+Reported as Release Activation notifying users beyond Admin/Manager. Checked
+`ReleaseNotificationService.NotifyManagersAndAdminsAsync`'s recipient filter
+(`u.Active && (RoleName == "Admin" || RoleName == "Manager")`) directly against the real
+`aut.ReleaseNotification` rows for Release 14/15 - every single recipient was genuinely
+either Admin or Manager by role; no Tester/Viewer ever received anything. The filtering
+code was already correct. Root cause was **test data**, not code: user "Tester7" (and
+inactive "Tester6") were assigned `RoleID = 1` (Admin) instead of `RoleID = 2` (Tester) -
+looked like a bug because of the username, but the account genuinely was Admin per the
+database. Fixed the data directly (confirmed with the user first): `UPDATE aut.[User] SET
+RoleID = 2 WHERE UserID IN (14, 15)` (needs `-I`/`QUOTED_IDENTIFIER ON` like other writes
+to `aut.[User]`/`aut.Release`). No code changes were needed or made for this one.
+
+### One-off cleanup: users with no `PasswordHash` deleted
+Per explicit request and confirmation: 14 of 18 `aut.[User]` rows had no `PasswordHash`
+(never completed real registration - some looked like disposable test/viewer accounts,
+others (`vishnu`/`Saharsh`/`muralip`/`Vamshi`/`Tester7`) were genuinely the real Admin/
+Manager notification recipients verified earlier the same session, each with real
+`ReleaseNotification` history and, for a few, `Environment.CreatedBy` references - flagged
+this explicitly and got explicit confirmation to delete all 14 anyway before doing
+anything). Checked `sys.foreign_keys` first to find the only two real FKs referencing
+`aut.[User]`: `FK_ReleaseNotification_User` (`RecipientUserId`, nullable - those 30 rows
+were deleted outright, matching "and that users related data") and
+`FK_Environment_CreatedBy` (`CreatedBy`, `NOT NULL` - reassigned the 5 affected
+Environment rows' `CreatedBy` to `UserID 1` (`Nareshg`, the real primary Admin) instead of
+deleting the Environments themselves, which were out of scope). Also confirmed
+`aut.TestCaseAssignment` had zero rows referencing any of the 14 as `AssignedUser`/
+`AssignedBy`, so no cleanup needed there. Verified after: no orphaned
+`ReleaseNotification.RecipientUserId` references, all `Environment.CreatedBy` values
+resolve to an existing user. Remaining users: `Nareshg` (Admin), `testuser25` (Viewer),
+`saharshg` (Manager), `muralip1` (Viewer) - all 4 have a real `PasswordHash`. This was a
+one-off manual cleanup (like the earlier legacy-assignment cleanup) - not captured as a
+reusable/idempotent migration script, since re-running it wouldn't make sense (no more
+qualifying users exist).
 
 ## Fixed: `ModalService` couldn't close a dialog after leaving and returning to its page
 `ModalService` (`core/services/modal.service.ts`) is `providedIn: 'root'` - a singleton

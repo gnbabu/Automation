@@ -32,6 +32,7 @@ import { forkJoin, map } from 'rxjs';
 import { TestScreenshotGalleryComponent } from '../test-case-execution-panel/test-screenshot-gallery/test-screenshot-gallery.component';
 import { ExecutionLogsViewerComponent } from 'app/common-components/execution-logs-viewer/execution-logs-viewer.component';
 import { ExecutionLogsDialogComponent } from 'app/common-modals/execution-logs-dialog/execution-logs-dialog.component';
+import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
 
 @Component({
   selector: 'app-dashboard',
@@ -397,15 +398,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   releaseLifecycleBadgeClass(lifecycle?: string): string {
     switch ((lifecycle || '').toLowerCase()) {
       case 'active':
-        return 'bg-success';
+        return pairBadgeTextColor('bg-success');
       case 'completed':
-        return 'bg-primary';
+        return pairBadgeTextColor('bg-primary');
       case 'rejected':
-        return 'bg-danger';
+        return pairBadgeTextColor('bg-danger');
       case 'draft':
-        return 'bg-secondary';
+        return pairBadgeTextColor('bg-secondary');
       default:
-        return 'bg-info text-dark';
+        return pairBadgeTextColor('bg-info');
     }
   }
 

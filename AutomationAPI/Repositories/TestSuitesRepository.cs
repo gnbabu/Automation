@@ -88,5 +88,15 @@ namespace AutomationAPI.Repositories
 
             return testCases;
         }
+
+        // Total test cases discoverable across every DLL in the folder, regardless of
+        // assignment - built on the same cached GetLibrariesAsync()/Explore() discovery
+        // used everywhere else here, so repeat calls (e.g. once per Release on every
+        // GET /api/Release list load) are cheap after the first per-file scan.
+        public async Task<int> GetTotalTestCaseCountAsync(string releaseFolderPath)
+        {
+            var libraries = await GetLibrariesAsync(releaseFolderPath);
+            return libraries.Sum(lib => lib.Classes.Sum(cls => cls.Methods.Count));
+        }
     }
 }

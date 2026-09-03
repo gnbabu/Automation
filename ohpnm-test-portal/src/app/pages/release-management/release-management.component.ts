@@ -8,6 +8,7 @@ import {
   EnvironmentService,
   ReleaseService,
 } from '@services';
+import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
 
 @Component({
   selector: 'app-release-management',
@@ -177,26 +178,26 @@ export class ReleaseManagementComponent implements OnInit, OnDestroy {
   statusPillClass(lifecycle: string): string {
     switch ((lifecycle || '').toLowerCase()) {
       case 'active':
-        return 'bg-success';
+        return pairBadgeTextColor('bg-success');
       case 'completed':
-        return 'bg-primary';
+        return pairBadgeTextColor('bg-primary');
       case 'rejected':
-        return 'bg-danger';
+        return pairBadgeTextColor('bg-danger');
       case 'draft':
-        return 'bg-secondary';
+        return pairBadgeTextColor('bg-secondary');
       default:
-        return 'bg-info text-dark';
+        return pairBadgeTextColor('bg-info');
     }
   }
 
   signOffPillClass(status: string): string {
     switch ((status || '').toLowerCase()) {
       case 'approved':
-        return 'bg-success';
+        return pairBadgeTextColor('bg-success');
       case 'rejected':
-        return 'bg-danger';
+        return pairBadgeTextColor('bg-danger');
       default:
-        return 'bg-secondary';
+        return pairBadgeTextColor('bg-secondary');
     }
   }
 }

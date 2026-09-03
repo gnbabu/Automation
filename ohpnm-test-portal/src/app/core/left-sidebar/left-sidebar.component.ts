@@ -4,6 +4,7 @@ import { RouterLink, RouterModule } from '@angular/router';
 import { AuthService } from '@services';
 import { IUser } from '@interfaces';
 import { environment } from 'environments/environment';
+import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -65,13 +66,13 @@ export class LeftSidebarComponent implements OnInit, OnDestroy {
   get environmentBadgeClass(): string {
     switch (environment.environmentName.toLowerCase()) {
       case 'development':
-        return 'bg-success'; // green
+        return pairBadgeTextColor('bg-success'); // green
       case 'qa':
-        return 'bg-warning text-dark'; // yellow
+        return pairBadgeTextColor('bg-warning'); // yellow
       case 'production':
-        return 'bg-danger'; // red
+        return pairBadgeTextColor('bg-danger'); // red
       default:
-        return 'bg-secondary'; // fallback gray
+        return pairBadgeTextColor('bg-secondary'); // fallback gray
     }
   }
 }

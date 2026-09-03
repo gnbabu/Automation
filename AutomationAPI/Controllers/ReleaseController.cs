@@ -1,4 +1,4 @@
-﻿using AutomationAPI.Repositories.Interfaces;
+using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -16,6 +16,7 @@ namespace AutomationAPI.Controllers
         private readonly IReleaseFileService _fileService;
         private readonly IReleaseReadinessService _readinessService;
         private readonly IReleaseNotificationService _notificationService;
+        private readonly ITestSuitesRepository _testSuitesRepository;
         private readonly ILogger<ReleaseController> _logger;
 
         public ReleaseController(
@@ -24,6 +25,7 @@ namespace AutomationAPI.Controllers
             IReleaseFileService fileService,
             IReleaseReadinessService readinessService,
             IReleaseNotificationService notificationService,
+            ITestSuitesRepository testSuitesRepository,
             ILogger<ReleaseController> logger)
         {
             _repo = repo;
@@ -31,6 +33,7 @@ namespace AutomationAPI.Controllers
             _fileService = fileService;
             _readinessService = readinessService;
             _notificationService = notificationService;
+            _testSuitesRepository = testSuitesRepository;
             _logger = logger;
         }
 
@@ -39,7 +42,7 @@ namespace AutomationAPI.Controllers
         {
             var releases = (await _repo.GetAllAsync()).ToList();
             foreach (var r in releases)
-                PopulateFolderInfo(r);
+                await PopulateFolderInfoAsync(r);
             return Ok(releases);
         }
 
@@ -49,7 +52,7 @@ namespace AutomationAPI.Controllers
             var release = await _repo.GetByIdAsync(id);
             if (release == null)
                 return NotFound();
-            PopulateFolderInfo(release);
+            await PopulateFolderInfoAsync(release);
             return Ok(release);
         }
 
@@ -111,7 +114,7 @@ namespace AutomationAPI.Controllers
             }
 
             var created = await _repo.GetByIdAsync(newId);
-            PopulateFolderInfo(created);
+            await PopulateFolderInfoAsync(created);
             return Ok(created);
         }
 
@@ -168,12 +171,12 @@ namespace AutomationAPI.Controllers
             }
 
             var updated = await _repo.GetByIdAsync(id);
-            PopulateFolderInfo(updated);
+            await PopulateFolderInfoAsync(updated);
             return Ok(updated);
         }
 
         // Permanent delete: only allowed while still in Draft (nothing of value to lose
-        // yet — no activation, no test history). Once a release progresses past Draft,
+        // yet � no activation, no test history). Once a release progresses past Draft,
         // use Deactivate (soft delete, via Update with IsActive=false) instead so its
         // folder/results/sign-off history is preserved.
         [HttpDelete("{id:int}")]
@@ -257,7 +260,7 @@ namespace AutomationAPI.Controllers
                 id, "ActivatedForTesting", subject, body);
 
             var updated = await _repo.GetByIdAsync(id);
-            PopulateFolderInfo(updated);
+            await PopulateFolderInfoAsync(updated);
             return Ok(new { Release = updated, Notification = notifyResult });
         }
 
@@ -291,7 +294,7 @@ namespace AutomationAPI.Controllers
             }
 
             var updated = await _repo.GetByIdAsync(id);
-            PopulateFolderInfo(updated);
+            await PopulateFolderInfoAsync(updated);
             return Ok(updated);
         }
 
@@ -311,13 +314,32 @@ namespace AutomationAPI.Controllers
 
         // ---- helpers ----
 
-        // Cheap, non-reflective folder scan for list/detail display badges.
-        private void PopulateFolderInfo(ReleaseModel release)
+        // Cheap, non-reflective folder scan for list/detail display badges, plus the real
+        // total-discoverable-test-case count (reflection-based, but cached after the first
+        // scan per file via NUnitEngineHelper.Explore()'s last-write-time cache).
+        private async Task PopulateFolderInfoAsync(ReleaseModel release)
         {
             if (release == null) return;
             var count = _readinessService.GetDllFileCount(release.ReleaseFolderPath);
             release.DllFileCount = count;
             release.FolderReady = count > 0;
+
+            if (string.IsNullOrWhiteSpace(release.ReleaseFolderPath))
+            {
+                release.TotalDiscoveredTests = 0;
+                return;
+            }
+
+            try
+            {
+                release.TotalDiscoveredTests =
+                    await _testSuitesRepository.GetTotalTestCaseCountAsync(release.ReleaseFolderPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to compute total discoverable test count for Release {ReleaseId}", release.ReleaseId);
+                release.TotalDiscoveredTests = 0;
+            }
         }
 
         private static string GetUserMessage(Exception ex, string fallback)

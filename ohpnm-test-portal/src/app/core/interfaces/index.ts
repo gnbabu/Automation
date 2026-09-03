@@ -343,12 +343,16 @@ export interface IReleaseModel {
   // Cheap, filesystem-based readiness indicator for list/detail badges (no reflection).
   dllFileCount: number;
   folderReady: boolean;
-  // Test summary
+  // Test summary - despite the name, totalTests is really "total *assigned* test
+  // cases" (Passed/Failed/Skipped/Running only make sense for assigned+executed tests
+  // anyway); totalDiscoveredTests below is the real total test cases found in the
+  // Release's DLLs regardless of assignment.
   totalTests: number;
   passedTests: number;
   failedTests: number;
   skippedTests: number;
   runningTests: number;
+  totalDiscoveredTests: number;
 }
 
 export interface IReleaseRequestDto {

@@ -30,12 +30,21 @@
         public int DllFileCount { get; set; }
         public bool FolderReady { get; set; }
 
-        // Test summary (from AssignedTestCases via assignments on ReleaseId)
+        // Test summary (from AssignedTestCases via assignments on ReleaseId) - despite the
+        // name, TotalTests here is really "total *assigned* test cases", not the total
+        // test cases discoverable in the Release's DLLs. Kept as-is for backward
+        // compatibility (Passed/Failed/Skipped/Running only make sense for
+        // assigned+executed tests anyway); TotalDiscoveredTests below is the real total.
         public int TotalTests { get; set; }
         public int PassedTests { get; set; }
         public int FailedTests { get; set; }
         public int SkippedTests { get; set; }
         public int RunningTests { get; set; }
+
+        // Real total test cases discoverable across every DLL in the Release's folder,
+        // regardless of assignment - filesystem/reflection state, not database state, so
+        // populated by the controller the same way DllFileCount/FolderReady are.
+        public int TotalDiscoveredTests { get; set; }
     }
 
     public class ReleaseRequestDto

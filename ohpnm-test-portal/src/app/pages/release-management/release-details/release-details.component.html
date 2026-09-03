@@ -27,7 +27,7 @@
         <div class="card-header section-head">Release Information</div>
         <div class="card-body">
           <p><strong>Status:</strong>
-            <span class="badge bg-info text-dark ms-1">{{ r.releaseLifecycle }}</span>
+            <span class="badge ms-1" [ngClass]="lifecyclePillClass(r.releaseLifecycle)">{{ r.releaseLifecycle }}</span>
           </p>
           <p><strong>Description:</strong> {{ r.description || "—" }}</p>
           <p><strong>Release Folder:</strong> <code>{{ r.releaseFolderPath || "—" }}</code></p>
@@ -45,6 +45,7 @@
         <div class="card-header section-head d-flex justify-content-between align-items-center">
           <span>Release Readiness</span>
           <button
+            *ngIf="isDraft"
             class="btn btn-light btn-sm"
             [disabled]="refreshingReadiness"
             (click)="refreshReadiness()"
@@ -53,28 +54,43 @@
           </button>
         </div>
         <div class="card-body">
-          <p class="small text-muted mb-2">
-            DLLs are placed into the release folder by the existing build/deployment
-            process. This checks whether usable test content is available.
-          </p>
-
-          <div *ngIf="readiness">
-            <div class="mb-2" *ngIf="readiness.isReady">
-              <i class="fas fa-check-circle text-success me-1"></i>
-              DLLs available ({{ readiness.usableDllCount }} usable of {{ readiness.dllFiles.length }} file(s))
+          <!-- Once a release has moved past Draft, DLL readiness no longer gates
+               anything - showing "READY FOR ACTIVATION" here forever (regardless of
+               current lifecycle) was misleading, since it only ever reflected whether
+               the folder currently has usable DLLs, not whether the release itself was
+               already activated. -->
+          <div *ngIf="!isDraft">
+            <i class="fas fa-check-circle text-success me-1"></i>
+            This release has already been activated - DLL readiness no longer applies.
+            <div class="small text-muted mt-1" *ngIf="r.activatedOn">
+              Activated {{ r.activatedOn | date: "dd-MMM-yyyy HH:mm" }}{{ r.activatedBy ? (' by ' + r.activatedBy) : '' }}.
             </div>
-            <div class="mb-2" *ngIf="!readiness.isReady">
-              <i class="fas fa-exclamation-triangle text-warning me-1"></i>
-              {{ readiness.message }}
-            </div>
+          </div>
 
-            <div class="small text-muted mb-2" *ngIf="readiness.dllFiles.length">
-              Files: {{ readiness.dllFiles.join(', ') }}
-            </div>
+          <div *ngIf="isDraft">
+            <p class="small text-muted mb-2">
+              DLLs are placed into the release folder by the existing build/deployment
+              process. This checks whether usable test content is available.
+            </p>
 
-            <span class="badge" [ngClass]="readiness.isReady ? 'bg-success' : 'bg-secondary'">
-              {{ readiness.isReady ? "READY FOR ACTIVATION" : "WAITING FOR DLLs" }}
-            </span>
+            <div *ngIf="readiness">
+              <div class="mb-2" *ngIf="readiness.isReady">
+                <i class="fas fa-check-circle text-success me-1"></i>
+                DLLs available ({{ readiness.usableDllCount }} usable of {{ readiness.dllFiles.length }} file(s))
+              </div>
+              <div class="mb-2" *ngIf="!readiness.isReady">
+                <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                {{ readiness.message }}
+              </div>
+
+              <div class="small text-muted mb-2" *ngIf="readiness.dllFiles.length">
+                Files: {{ readiness.dllFiles.join(', ') }}
+              </div>
+
+              <span class="badge" [ngClass]="pairBadgeTextColor(readiness.isReady ? 'bg-success' : 'bg-secondary')">
+                {{ readiness.isReady ? "READY FOR ACTIVATION" : "WAITING FOR DLLs" }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -86,14 +102,16 @@
         <div class="card-header section-head">Test Summary</div>
         <div class="card-body">
           <div class="d-flex flex-wrap gap-3">
-            <div class="stat"><span class="num">{{ r.totalTests }}</span> Total</div>
+            <div class="stat"><span class="num">{{ r.totalDiscoveredTests }}</span> Total</div>
+            <div class="stat"><span class="num">{{ r.totalTests }}</span> Assigned</div>
+            <div class="stat"><span class="num text-muted">{{ r.totalDiscoveredTests - r.totalTests }}</span> Unassigned</div>
             <div class="stat"><span class="num text-success">{{ r.passedTests }}</span> Passed</div>
             <div class="stat"><span class="num text-danger">{{ r.failedTests }}</span> Failed</div>
             <div class="stat"><span class="num text-muted">{{ r.skippedTests }}</span> Skipped</div>
             <div class="stat"><span class="num text-warning">{{ r.runningTests }}</span> Running</div>
           </div>
           <div class="mt-3">
-            <span class="badge" [ngClass]="testingComplete ? 'bg-success' : 'bg-secondary'">
+            <span class="badge" [ngClass]="pairBadgeTextColor(testingComplete ? 'bg-success' : 'bg-secondary')">
               {{ r.totalTests > 0 ? (testingComplete ? "TESTING COMPLETED" : "TESTING IN PROGRESS") : "NO TESTS YET" }}
             </span>
           </div>
@@ -125,7 +143,7 @@
 
           <!-- Sign-off -->
           <p class="mb-1"><strong>Sign-off Status:</strong>
-            <span class="badge bg-secondary ms-1">{{ r.signOffStatus || "Pending" }}</span>
+            <span class="badge ms-1" [ngClass]="signOffPillClass(r.signOffStatus)">{{ r.signOffStatus || "Pending" }}</span>
           </p>
 
           <div *ngIf="!canSignOff" class="small text-muted mb-2">
@@ -165,24 +183,12 @@
   <div class="card section-card mt-4" *ngIf="signOffHistory.length">
     <div class="card-header section-head">Sign-Off History</div>
     <div class="card-body p-0">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Status</th>
-            <th>By</th>
-            <th>On</th>
-            <th>Comments</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let h of signOffHistory">
-            <td>{{ h.signOffStatus }}</td>
-            <td>{{ h.signOffBy }}</td>
-            <td>{{ h.signOffOn | date: "dd-MMM-yyyy HH:mm" }}</td>
-            <td>{{ h.comments }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <app-data-grid
+        [columns]="signOffColumns"
+        [data]="signOffHistory"
+        [pagingEnabled]="false"
+        [sortingMode]="'client'"
+      ></app-data-grid>
     </div>
   </div>
 
@@ -190,24 +196,27 @@
   <div class="card section-card mt-4" *ngIf="notifications.length">
     <div class="card-header section-head">Notifications</div>
     <div class="card-body p-0">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Type</th>
-            <th>Recipient</th>
-            <th>Status</th>
-            <th>Created</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let n of notifications">
-            <td>{{ n.notificationType }}</td>
-            <td>{{ n.recipientEmail }}</td>
-            <td>{{ n.status }}</td>
-            <td>{{ n.createdOn | date: "dd-MMM-yyyy HH:mm" }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <app-data-grid
+        [columns]="notificationColumns"
+        [data]="notifications"
+        [pagingEnabled]="false"
+        [sortingMode]="'client'"
+      ></app-data-grid>
     </div>
   </div>
 </div>
+
+<!-- Sign-off status badge template -->
+<ng-template #signOffStatusTemplate let-row let-value="value">
+  <span class="badge" [ngClass]="signOffPillClass(value)">{{ value }}</span>
+</ng-template>
+
+<!-- Notification status badge template -->
+<ng-template #notificationStatusTemplate let-row let-value="value">
+  <span class="badge" [ngClass]="notificationStatusPillClass(value)">{{ value }}</span>
+</ng-template>
+
+<!-- Date formatting template - shared by both grids' date columns -->
+<ng-template #dateTemplate let-row let-value="value">
+  {{ value | date: "dd-MMM-yyyy HH:mm" }}
+</ng-template>

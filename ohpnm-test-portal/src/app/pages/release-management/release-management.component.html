@@ -83,7 +83,7 @@
         <div class="card-body env-body">
           <p class="text-muted small mb-2">
             REL-{{ r.releaseId }}
-            <span class="status-pill bg-secondary ms-1" *ngIf="!r.isActive">
+            <span class="status-pill bg-secondary text-white ms-1" *ngIf="!r.isActive">
               <i class="fas fa-ban me-1"></i>Deactivated
             </span>
           </p>
@@ -99,8 +99,11 @@
               {{ r.folderReady ? "DLLs available" : "Waiting for DLLs" }}
             </span>
           </p>
+          <p>
+            <strong>Tests:</strong> {{ r.totalDiscoveredTests }} total
+          </p>
           <p *ngIf="r.totalTests > 0">
-            <strong>Tests:</strong> {{ r.totalTests }}
+            <strong>Assigned:</strong> {{ r.totalTests }}
             (<span class="text-success">P {{ r.passedTests }}</span>,
             <span class="text-danger">F {{ r.failedTests }}</span>,
             <span class="text-muted">S {{ r.skippedTests }}</span>)
