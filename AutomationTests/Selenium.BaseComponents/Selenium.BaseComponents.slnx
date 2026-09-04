@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="../TC.PriorAuthInquiry/TC.PriorAuthInquiry.csproj" />
+  <Project Path="../TC.PriorAuthoriztion/TC.PriorAuthoriztion.csproj" />
+  <Project Path="../TC.Registration/TC.ProviderDataEntry.csproj" />
+  <Project Path="../TC.SearchEligibility/TC.MemberEligibilitySearch.csproj" />
+  <Project Path="../TC.SearchPA/TC.PriorAuthSearch.csproj" />
+  <Project Path="../TC.SearchRA/TC.SearchRA.csproj" />
+  <Project Path="../TC.SubmitClaims/TC.SubmitClaims.csproj" />
+  <Project Path="Selenium.BaseComponents.csproj" />
+</Solution>

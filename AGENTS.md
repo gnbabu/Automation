@@ -1025,6 +1025,61 @@ sends successfully purely from `appsettings.json` values, no user-secrets involv
   `SendAsync(EmailMessage)` overload directly against both providers (removed after
   verifying - not part of the shipped code).
 
+## Phase 0: merged the real `tests/` Selenium framework into `AutomationTests/`
+`D:\OHPNM-Automation\tests\` (a separate, real, production-grade Selenium framework -
+`Selenium.BaseComponents` core library + 7 project-specific suites: `TC.Registration`
+(namespace `TC.ProviderDataEntry`), `TC.SearchEligibility` (namespace
+`TC.MemberEligibilitySearch`), `TC.SearchPA` (namespace `TC.PriorAuthSearch`),
+`TC.SearchRA`, `TC.SubmitClaims`, `TC.PriorAuthInquiry`, `TC.PriorAuthoriztion` - note the
+typo, kept as-is per explicit request) was analyzed and merged into the existing
+`AutomationTests/` solution (`AutomationTests.sln`), which already served this exact role
+(a standalone solution of projects that get built and copied into Release folders for
+`AutomationAPI` to discover/run via `NUnit.Engine`) for the simpler `OnboardingTests`/
+`PayrollTests`/`RecruitmentTests`/`SeleniumSmokeTests` sample projects.
+
+**This move only** (folders relocated as-is via `robocopy /XD bin obj .vs` + old `tests/`
+removed, all 8 projects added to `AutomationTests.sln` via `dotnet sln add`) - explicitly
+**no renaming** (folder/csproj/namespace mismatches and the `PriorAuthoriztion` typo were
+audited and identified but intentionally left untouched per explicit request), **no other
+code changes**. Verified via a full clean `dotnet build AutomationTests.sln` (all `bin`/
+`obj` removed first) - 0 errors, confirming every `ProjectReference` (e.g. each `TC.*`
+project's `..\Selenium.BaseComponents\Selenium.BaseComponents.csproj` relative reference)
+resolves correctly now that both live as siblings under `AutomationTests\`.
+
+**Build note**: building this solution with default parallel MSBuild races on copying
+`Selenium.BaseComponents`'s output into multiple dependent projects' `bin/` folders
+simultaneously (`MSB3021: Access is denied` on `Selenium.BaseComponents.dll.config`) - a
+known MSBuild parallel-build issue when several projects share one `ProjectReference`, not
+a real problem with the move. Build with `-maxcpucount:1` to avoid it (or accept the
+occasional need to retry once).
+
+### Deferred to future phases (analyzed, not yet started)
+- `Selenium.BaseComponents.Utilities.APIGatway` calls a mix of endpoints - some match
+  current `AutomationAPI` exactly (`GET api/Automation/data/flow/{flowName}`,
+  `POST api/TestScreenshots/bulk`), others reference endpoints that no longer exist
+  (`POST api/TestCaseExecutionLogs` single-item, `POST api/TestResults/bulk-insert` - no
+  such controller - and `GET https://localhost:44390/api/Queue/{Id}/UpdateQueueStatus/
+  {status}`, a hardcoded stale port/host with a route shape matching nothing in today's
+  `TestCaseExecutionQueueController`). Confirms this framework was built against an
+  earlier, now-diverged API version (a "push" self-reporting model) vs. today's "pull/
+  observe" model (`NUnitEngineTestRunner`/`TestQueueWorker` watch an isolated process's
+  outcome afterward, proven this session via `SeleniumSmokeTests`/`REL-14`). Needs a
+  decision: repair the push model (JWT auth + missing endpoints), or drop it for
+  local-file + post-run collection via the already-existing `TestScreenshotsController`.
+- Confirmed near-100% duplicated boilerplate across every `TC.*` project's `Utilities/`
+  (diffed `Helper.cs` between two projects - only the namespace line differs) - a
+  consolidation candidate for `Selenium.BaseComponents` (e.g. a generic
+  `DataRepository.GetAutomationData<T>(flowName, sectionKey)`).
+- Test discovery metadata is inconsistent: `TC.SearchPA`/`TC.PriorAuthSearch`'s tests
+  already use the `[Property("TestCaseId"/"Priority"/"Description", ...)]` convention this
+  app's discovery (`ExploreXmlParser`) expects; `TC.Registration`/`TC.ProviderDataEntry`'s
+  tests use none of it (`[Author]`/`[Category]`/built-in `[Description]` only) - this
+  inconsistency, not a code bug, is why the Portal can't yet "always represent the actual
+  tests available" for every project uniformly.
+- Wiring real Release folders + proving end-to-end execution through the Portal for these
+  real suites, and eventual cleanup of dead `APIGatway` methods / hardcoded environment
+  URLs in `Data/Users.cs`.
+
 ## Fixed: `ModalService` couldn't close a dialog after leaving and returning to its page
 `ModalService` (`core/services/modal.service.ts`) is `providedIn: 'root'` - a singleton
 that lives for the whole SPA session - but `register(id, element)` only ever created a

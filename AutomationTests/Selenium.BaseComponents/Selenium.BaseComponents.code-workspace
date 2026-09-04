@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../TC.PriorAuthInquiry"
+		},
+		{
+			"path": "../TC.PriorAuthoriztion"
+		},
+		{
+			"path": "../TC.Registration"
+		},
+		{
+			"path": "../TC.SearchEligibility"
+		},
+		{
+			"path": "../TC.SearchPA"
+		},
+		{
+			"path": "../TC.SearchRA"
+		},
+		{
+			"path": "../TC.SubmitClaims"
+		}
+	]
+}
