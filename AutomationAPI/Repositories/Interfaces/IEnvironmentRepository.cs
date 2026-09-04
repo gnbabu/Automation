@@ -10,7 +10,7 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<IEnumerable<EnvironmentModel>> GetAllAsync();
         Task<EnvironmentModel> GetByIdAsync(int environmentId);
 
-        Task SoftDeleteAsync(int environmentId);
+        Task SoftDeleteAsync(int environmentId, int? modifiedBy = null);
         Task HardDeleteAsync(int environmentId);
     }
 }

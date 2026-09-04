@@ -47,9 +47,8 @@ export class EnvironmentFormComponent implements OnInit {
   }
 
   loadEnvironment(): void {
-    this.envService
-      .getById(this.environmentId)
-      .subscribe((env: IEnvironmentModel) => {
+    this.envService.getById(this.environmentId).subscribe({
+      next: (env: IEnvironmentModel) => {
         this.model = {
           environmentId: env.environmentId,
           environmentName: env.environmentName,
@@ -57,7 +56,15 @@ export class EnvironmentFormComponent implements OnInit {
           isActive: env.isActive,
           createdBy: env.createdBy,
         };
-      });
+      },
+      error: (err) => {
+        console.error('Failed to load environment:', err);
+        this.toaster.error(
+          err?.error?.message ?? err?.error ?? 'Environment not found.'
+        );
+        this.router.navigate(['/environment-management']);
+      },
+    });
   }
 
   save(): void {
@@ -79,8 +86,12 @@ export class EnvironmentFormComponent implements OnInit {
 
         this.router.navigate(['/environment-management']);
       },
-      error: () => {
+      error: (err) => {
+        console.error('Failed to save environment:', err);
         this.isSaving = false;
+        this.toaster.error(
+          err?.error?.message ?? err?.error ?? 'Failed to save environment.'
+        );
       },
     });
   }

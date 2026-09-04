@@ -17,9 +17,50 @@
       <i class="fas fa-plus me-2"></i> Create Environment
     </a>
   </div>
+
+  <!-- Search / status filter -->
+  <div class="filter-card d-flex flex-wrap gap-3 align-items-center mb-4">
+    <div class="flex-grow-1" style="min-width: 220px">
+      <label class="form-label">Search</label>
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Search by name or description..."
+        [(ngModel)]="search"
+      />
+    </div>
+    <div>
+      <label class="form-label">Status</label>
+      <select class="form-select" [(ngModel)]="statusFilter">
+        <option value="All">All</option>
+        <option value="Active">Active</option>
+        <option value="Inactive">Inactive</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading / empty states -->
+  <div *ngIf="loading" class="state-panel text-center py-5">
+    <div class="spinner-border text-danger mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="text-muted fw-semibold">Loading environments...</div>
+  </div>
+
+  <div
+    *ngIf="!loading && filteredEnvironments.length === 0"
+    class="state-panel text-center py-5"
+  >
+    <i class="fas fa-layer-group fa-2x text-muted mb-3"></i>
+    <div class="text-muted fw-semibold">No environments found.</div>
+    <div class="text-muted small mt-1" *ngIf="search || statusFilter !== 'All'">
+      Try adjusting your search or status filter.
+    </div>
+  </div>
+
   <!-- ✅ 3 Columns Per Row -->
-  <div class="row g-4">
-    <div class="col-12 col-md-6 col-lg-4" *ngFor="let env of environments">
+  <div class="row g-4" *ngIf="!loading && filteredEnvironments.length > 0">
+    <div class="col-12 col-md-6 col-lg-4" *ngFor="let env of filteredEnvironments">
       <div class="card env-card h-100">
         <div
           class="env-header"
@@ -42,6 +83,13 @@
             <strong>Created On:</strong>
             {{ env.createdOn | date: "dd-MMM-yyyy" }}
           </p>
+          <p *ngIf="env.modifiedByName">
+            <strong>Last Modified By:</strong> {{ env.modifiedByName }}
+          </p>
+          <p>
+            <strong>Used by:</strong>
+            {{ env.releaseCount }} release(s)
+          </p>
 
           <div class="env-actions d-flex justify-content-end gap-2 mt-3">
             <a
@@ -63,7 +111,13 @@
 
             <button
               class="btn btn-outline-danger btn-sm"
-              (click)="delete(env.environmentId)"
+              [disabled]="env.releaseCount > 0"
+              [title]="
+                env.releaseCount > 0
+                  ? 'Cannot delete: used by ' + env.releaseCount + ' release(s). Disable it instead.'
+                  : ''
+              "
+              (click)="delete(env)"
             >
               Delete
             </button>

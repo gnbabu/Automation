@@ -1,4 +1,5 @@
-﻿using AutomationAPI.Repositories.Interfaces;
+﻿using System.Security.Claims;
+using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -12,10 +13,12 @@ namespace AutomationAPI.Controllers
     public class EnvironmentController : ControllerBase
     {
         private readonly IEnvironmentRepository _repo;
+        private readonly ILogger<EnvironmentController> _logger;
 
-        public EnvironmentController(IEnvironmentRepository repo)
+        public EnvironmentController(IEnvironmentRepository repo, ILogger<EnvironmentController> logger)
         {
             _repo = repo;
+            _logger = logger;
         }
 
         // GET: api/environments
@@ -43,7 +46,17 @@ namespace AutomationAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var id = await _repo.CreateAsync(request);
+            int id;
+            try
+            {
+                id = await _repo.CreateAsync(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create environment {EnvironmentName}", request.EnvironmentName);
+                return Conflict(GetUserMessage(ex, "An environment with that name already exists."));
+            }
+
             return Ok(new { EnvironmentId = id });
         }
 
@@ -61,11 +74,22 @@ namespace AutomationAPI.Controllers
             if (existing == null)
                 return NotFound();
 
-            await _repo.UpdateAsync(request);
+            request.ModifiedBy = GetCurrentUserId();
+
+            try
+            {
+                await _repo.UpdateAsync(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to update environment {EnvironmentId}", request.EnvironmentId);
+                return Conflict(GetUserMessage(ex, "An environment with that name already exists."));
+            }
+
             return Ok();
         }
 
-        // SOFT DELETE
+        // SOFT DELETE (used by the list page's Disable action)
         [HttpDelete("{id:int}/soft")]
         public async Task<IActionResult> SoftDelete(int id)
         {
@@ -76,7 +100,7 @@ namespace AutomationAPI.Controllers
             if (env == null)
                 return NotFound();
 
-            await _repo.SoftDeleteAsync(id);
+            await _repo.SoftDeleteAsync(id, GetCurrentUserId());
             return Ok(new { Message = "Environment soft-deleted successfully" });
         }
 
@@ -91,8 +115,34 @@ namespace AutomationAPI.Controllers
             if (env == null)
                 return NotFound();
 
-            await _repo.HardDeleteAsync(id);
+            try
+            {
+                await _repo.HardDeleteAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Delete blocked for environment {EnvironmentId}", id);
+                return Conflict(GetUserMessage(ex, "This environment could not be deleted."));
+            }
+
             return Ok(new { Message = "Environment permanently deleted" });
+        }
+
+        // ---- helpers ----
+
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(userIdClaim, out var userId) && userId > 0 ? userId : null;
+        }
+
+        private static string GetUserMessage(Exception ex, string fallback)
+        {
+            // SqlDataAccessHelper wraps SQL errors; surface the innermost RAISERROR text.
+            var inner = ex;
+            while (inner.InnerException != null)
+                inner = inner.InnerException;
+            return string.IsNullOrWhiteSpace(inner.Message) ? fallback : inner.Message;
         }
     }
 }

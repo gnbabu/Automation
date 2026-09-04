@@ -54,12 +54,25 @@
   </div>
 
   <!-- Empty / loading states -->
-  <div *ngIf="loading" class="text-muted">Loading releases...</div>
+  <div *ngIf="loading" class="state-panel text-center py-5">
+    <div class="spinner-border text-danger mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="text-muted fw-semibold">Loading releases...</div>
+  </div>
+
   <div
     *ngIf="!loading && filteredReleases.length === 0"
-    class="alert alert-light border text-center"
+    class="state-panel text-center py-5"
   >
-    No releases found.
+    <i class="fas fa-box-open fa-2x text-muted mb-3"></i>
+    <div class="text-muted fw-semibold">No releases found.</div>
+    <div
+      class="text-muted small mt-1"
+      *ngIf="search || environmentFilter || statusFilter"
+    >
+      Try adjusting your search or filters.
+    </div>
   </div>
 
   <!-- ✅ 3 Columns Per Row -->

@@ -21,6 +21,16 @@
 }
 
 /* =====================================
+   LOADING / EMPTY STATE PANEL
+===================================== */
+.state-panel {
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* =====================================
    CARD BODY (LOCAL ONLY)
 ===================================== */
 .env-body p {

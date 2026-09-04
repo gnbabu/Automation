@@ -826,6 +826,72 @@ noise by choice, not oversight. Do not "fix" this again by changing `ignoreDepre
 back to `"6.0"` - that value is confirmed to break the real build under this project's
 actual TypeScript version.
 
+## Environment Management: fixed silent failures, unguarded Hard Delete, added audit trail/search/usage counts
+Full review of Environment Management (list page, create/edit form, service, controller,
+repository, and the actual stored procedures) surfaced several real gaps beyond the
+badge-color fix already applied earlier this session:
+
+### Silent failures on delete/toggle/save
+`environment-management.component.ts`'s `toggle()`/`delete()` and
+`environment-form.component.ts`'s `save()`/`loadEnvironment()` had no `error:` callbacks
+at all (or one that only reset a flag) - any backend failure (duplicate name, blocked
+delete, etc.) would just silently do nothing visible. Fixed with the same
+`err?.error?.message ?? err?.error ?? 'fallback'` toast pattern already used consistently
+elsewhere in the app (Settings, Users, auth pages).
+
+### Hard Delete had no guard against in-use environments
+Confirmed via `sys.foreign_keys`: 3 real FKs reference `Environment.EnvironmentId` -
+`Release`, `TestCaseAssignment`, `AutomationData`. `usp_EnvironmentHardDelete` was an
+unconditional `DELETE` with no check - deleting an in-use environment would throw a raw
+FK-violation error, and (combined with the silent-failure bug above) the user would see
+nothing at all. Fixed in `Database/Environment_Management_Improvements_Migration.sql`
+(idempotent): the SP now counts referencing rows across all 3 tables first and
+`RAISERROR`s a friendly message instead; `EnvironmentController.HardDelete`/`Create`/
+`Update` now catch and surface it as a `409` (same `GetUserMessage`-style pattern
+`ReleaseController` already uses). Verified live: hard-deleting the in-use `QA`
+environment now returns `409 "Cannot delete: this environment has 3 associated
+Release(s)..."` instead of a raw SQL error; creating a duplicate-named environment now
+returns `409 "Environment already exists"` instead of an unhandled 500.
+
+### No edit audit trail (`ModifiedBy`)
+`aut.Environment` only ever tracked `ModifiedOn`, never *who* last edited/disabled an
+environment. Added a nullable `ModifiedBy` column (+ FK to `aut.User`) via the same
+migration; `usp_EnvironmentUpdate`/`usp_EnvironmentSoftDelete` now accept and stamp it,
+threaded from the controller via `User.FindFirstValue(ClaimTypes.NameIdentifier)` (same
+convention `UsersController` already uses) rather than trusting a client-supplied value.
+`usp_EnvironmentGetAll`/`GetById` now also return `ModifiedByName` (`LEFT JOIN` - null
+until an environment is actually edited/disabled at least once), shown on each card when
+present. Verified live: soft-deleting (disabling) an environment now correctly populates
+`modifiedByName`.
+
+### Dead `softDelete()` resolved, not left unused or deleted
+`EnvironmentService.softDelete()` existed but was never called - the "Disable" button
+called the generic `update()` (with `isActive` flipped) instead, identically to "Enable".
+Gave it a real semantic role: `toggle()`'s disable path now calls `softDelete()`
+specifically, while `update()` stays reserved for actual name/description edits and
+re-enabling (there's no "un-soft-delete" endpoint, so re-enabling still uses `update()`).
+
+### Native `confirm()` replaced with the app's own dialog
+`delete()` used the browser's native `confirm(...)`, jarring compared to the rest of the
+app. Replaced with `ConfirmService.confirm(title, message)` (same pattern
+`test-case-execution-panel.component.ts` already uses) - no extra template wiring needed,
+since `<app-confirm-dialog>` is already mounted once, globally, in `layout.component.html`
+(shared by every routed page), not per-page.
+
+### Added: loading/empty states, search/filter, usage count + Delete button gating
+- List page now shows "Loading environments..."/"No environments found." states, mirroring
+  `release-management.component.ts`'s existing pattern (previously just showed a blank
+  area in both cases).
+- Added a search box (name/description) + Active/Inactive status filter, via a
+  `filteredEnvironments` computed property, same pattern as Release Management's own
+  filtering.
+- `usp_EnvironmentGetAll`/`GetById` now also return `ReleaseCount` (`Release` rows per
+  `EnvironmentId`), shown on each card as "Used by N release(s)" and used to `[disabled]`
+  the Delete button client-side (with an explanatory tooltip) whenever `releaseCount > 0` -
+  reinforcing the server-side guard above instead of only failing after a click+confirm.
+  `delete()` also re-checks this before even showing the confirm dialog, as defense in
+  depth against a stale count.
+
 ## Fixed: `ModalService` couldn't close a dialog after leaving and returning to its page
 `ModalService` (`core/services/modal.service.ts`) is `providedIn: 'root'` - a singleton
 that lives for the whole SPA session - but `register(id, element)` only ever created a

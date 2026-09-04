@@ -34,7 +34,8 @@ namespace AutomationAPI.Repositories
                 new SqlParameter("@EnvironmentId", request.EnvironmentId!.Value),
                 new SqlParameter("@EnvironmentName", request.EnvironmentName),
                 new SqlParameter("@Description", request.Description ?? (object)DBNull.Value),
-                new SqlParameter("@IsActive", request.IsActive ?? true)
+                new SqlParameter("@IsActive", request.IsActive ?? true),
+                new SqlParameter("@ModifiedBy", (object?)request.ModifiedBy ?? DBNull.Value)
             };
 
             await _db.ExecuteNonQueryAsync(SqlDbConstants.EnvironmentUpdate, parameters);
@@ -54,9 +55,13 @@ namespace AutomationAPI.Repositories
             return result.FirstOrDefault();
         }
 
-        public async Task SoftDeleteAsync(int environmentId)
+        public async Task SoftDeleteAsync(int environmentId, int? modifiedBy = null)
         {
-            var parameters = new[] { new SqlParameter("@EnvironmentId", environmentId) };
+            var parameters = new[]
+            {
+                new SqlParameter("@EnvironmentId", environmentId),
+                new SqlParameter("@ModifiedBy", (object?)modifiedBy ?? DBNull.Value)
+            };
             await _db.ExecuteNonQueryAsync(SqlDbConstants.EnvironmentSoftDelete, parameters);
         }
 
@@ -76,7 +81,9 @@ namespace AutomationAPI.Repositories
                 IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
                 CreatedOn = reader.GetDateTime(reader.GetOrdinal("CreatedOn")),
                 UserName = reader.GetString(reader.GetOrdinal("UserName")),
-                Email = reader.GetString(reader.GetOrdinal("Email"))
+                Email = reader.GetString(reader.GetOrdinal("Email")),
+                ModifiedByName = reader.GetNullableString("ModifiedByName"),
+                ReleaseCount = reader.GetInt32(reader.GetOrdinal("ReleaseCount"))
             };
         }
     }

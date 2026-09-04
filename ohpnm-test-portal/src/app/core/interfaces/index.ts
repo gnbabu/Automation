@@ -309,6 +309,12 @@ export interface IEnvironmentModel {
   createdOn: string;
   userName: string;
   email: string;
+  // Who last edited/disabled this environment - null if never modified since creation.
+  modifiedByName?: string | null;
+  // How many Releases currently use this environment - used to show "N releases use
+  // this environment" and to gate the Delete button client-side (server-side guard
+  // already enforces this in usp_EnvironmentHardDelete).
+  releaseCount: number;
 }
 
 // models/environment-request.dto.ts
