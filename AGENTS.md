@@ -892,6 +892,139 @@ since `<app-confirm-dialog>` is already mounted once, globally, in `layout.compo
   `delete()` also re-checks this before even showing the confirm dialog, as defense in
   depth against a stale count.
 
+## Follow-up: SendGrid removed entirely (per explicit request)
+The section below describes the state when SendGrid and Brevo coexisted as two selectable
+providers. Per a subsequent explicit request, **SendGrid support was fully removed**:
+`SendGridEmailService.cs` deleted, the `SendGrid` NuGet package reference dropped, its
+keyed DI registration and `appsettings.json`'s `SendGrid` config section (which held a
+live, already-invalid/expired API key) removed, and `Email:Provider`'s default changed
+from `"SendGrid"` to `"Brevo"` (confirmed live: with zero env var overrides, the app now
+resolves straight to Brevo and sends real email successfully). `IEmailService` and the
+generic `SmtpEmailService`/keyed-DI/named-options architecture described below are
+otherwise unchanged - Brevo is simply now the only registered provider, and the same
+"add a future SMTP vendor with zero new code" extensibility story still holds.
+
+**Later removed too** (user asked directly why it was still there): the old, already-
+orphaned `EmailSettings.cs`/`"EmailSettings"` config section (an Office365 account, with
+its own committed plaintext password - confirmed via grep it had zero remaining references
+anywhere once `SmtpEmailService` was rewritten to use the new `SmtpProviderSettings`/
+`Email:Brevo` instead). Deleted both the model file and the config block - no functional
+change, since nothing referenced either.
+
+### Two more providers added: Office365, Amazon SES (SMTP interface)
+Demonstrating the "zero new code" extensibility story for real: added `Email:Office365`
+and `Email:AmazonSES` config blocks (both `Enabled: false`, empty credentials - not
+configured, since no real accounts for these were provided) and refactored `Program.cs`'s
+provider registration into a `foreach` over a `smtpProviderNames` array (`["Brevo",
+"Office365", "AmazonSES"]`) instead of repeating the `Configure`/`AddKeyedScoped` pair per
+provider by hand - adding a 4th provider now means adding one more name to that array plus
+its own `Email:<Name>` config block, nothing else. (Originally added Mailgun instead of
+Office365 here - swapped per a follow-up request, same mechanics either way.) Verified
+live: switching `Email:Provider` to `"Office365"`/`"AmazonSES"` resolves the correct keyed
+`IEmailService` cleanly (proving the DI wiring for both is correct) and fails gracefully
+with `"<Provider> email provider is not enabled"` (since neither has real credentials)
+rather than a DI resolution error - confirming they're correctly registered and ready for
+real credentials whenever needed. `AmazonSES`'s `SmtpHost` includes a region segment
+(`email-smtp.us-east-1.amazonaws.com`) that must match whichever AWS region the
+account/domain is actually verified in; its SMTP username is a distinct "SMTP credentials"
+username generated in the SES console, not the AWS access key id/secret directly. Note:
+Office365/`smtp.office365.com` has been progressively disabling basic (plain
+username/password) SMTP AUTH for most tenants in favor of OAuth2/modern auth - a plain
+password may not authenticate depending on the tenant's configuration; an app password is
+sometimes required instead.
+
+## Added: generic, config-driven SMTP email provider (Brevo today, any SMTP vendor later) alongside SendGrid
+`IEmailService.SendAsync(string to, string subject, string body)` (6 call sites across
+`ReleaseNotificationService.cs`/`AuthenticationController.cs`) previously had exactly one
+implementation, `SendGridEmailService` (HTTP REST API via the SendGrid SDK - genuinely
+provider-specific, not SMTP at all), hardcoded in `Program.cs`'s DI registration.
+
+### Architecture
+- **SendGrid is fundamentally different from every other mainstream provider** - it's an
+  HTTP REST API, not SMTP, so it keeps its own dedicated class. Brevo, and virtually every
+  other provider (Mailgun, Amazon SES's SMTP interface, Office365, Postmark-SMTP, Zoho,
+  Gmail relay, etc.) all speak the same standard SMTP protocol - so instead of a
+  Brevo-specific class, revived the existing-but-dead `SmtpEmailService.cs` (registration
+  was commented out in `Program.cs`, confirmed zero other references anywhere) as **one
+  fully generic SMTP implementation**, driven entirely by a new `SmtpProviderSettings`
+  model (`Enabled`/`SmtpHost`/`SmtpPort`/`Username`/`Password`/`FromEmail`/`FromName`) -
+  Brevo today, any future SMTP vendor later, with **zero new code**, just another named
+  config block + one more DI registration line.
+- `IEmailService` gained a second method, `SendAsync(EmailMessage message)` (new
+  `Repositories/Models/EmailMessage.cs` - `To`/`Cc`/`Bcc`/`Subject`/`HtmlBody`/
+  `PlainTextBody`), for Cc/Bcc/plain-text support. The existing 3-arg method is unchanged
+  and both providers' 3-arg overload just delegates into the rich one internally - **none
+  of the 6 existing call sites needed any changes**.
+- **Provider selection uses .NET 8 keyed DI services**
+  (`AddKeyedScoped<IEmailService, X>("SendGrid"/"Brevo")` +
+  `GetRequiredKeyedService<IEmailService>(name)`), resolved **once**, in `Program.cs`,
+  from `Email:Provider` config (defaults to `"SendGrid"` - today's behavior, unchanged
+  unless explicitly set otherwise) into a plain `AddScoped<IEmailService>(...)`. Every
+  existing consumer keeps injecting plain `IEmailService` exactly as before, completely
+  unaware providers or keys exist - no `if (provider == "Brevo")` branching anywhere in
+  business logic/controllers.
+- `SmtpProviderSettings` is bound via .NET's *named* options
+  (`Configure<SmtpProviderSettings>("Brevo", config.GetSection("Email:Brevo"))`) - the same
+  settings type can have multiple independently-configured named instances, one per
+  provider, without needing a distinct C# type per vendor.
+- `EmailSettings.cs`/the old `"EmailSettings"` config section (which `SmtpEmailService`
+  used to be bound to) are now **fully orphaned dead code** - confirmed no remaining
+  references anywhere - left in place since removing them wasn't asked for, but safe to
+  delete later.
+
+### Fixed along the way: `System.Net.Mail.SmtpClient` doesn't work reliably against Brevo
+Confirmed via **direct live testing** against the real Brevo SMTP relay: the initial
+implementation using `System.Net.Mail.SmtpClient` (matching the old `SmtpEmailService`'s
+original approach) failed with `"535 5.7.0 Command not implemented... Please authenticate
+first"` - the AUTH command was never actually issued before `MAIL FROM`. This is a
+well-documented, longstanding STARTTLS/AUTH-ordering interoperability bug in .NET's legacy
+SMTP client against modern mail relays (Microsoft's own docs steer away from
+`System.Net.Mail.SmtpClient` for anything beyond the most trivial scenarios for exactly
+this reason). Switched to **MailKit** (`MailKit`/`MimeKit` NuGet packages, v4.17.0 - the
+de facto standard, actively-maintained SMTP client for .NET) - confirmed this correctly
+performs the STARTTLS→AUTH→MAIL FROM sequence and successfully authenticates/sends against
+the real Brevo relay.
+
+### Fixed along the way: Brevo's SMTP "Login" is not the account email
+The original config example assumed `Username` = the Brevo account's login email
+(`vishnu.reddy.naatla@gmail.com`). Confirmed via live testing this gets `535 5.7.8
+Authentication failed` - Brevo's actual SMTP Login (shown under Settings → SMTP & API →
+SMTP tab) is a distinct, auto-generated value (`b7a0f2001@smtp-brevo.com` for this
+account), not the account email. `FromEmail`/`FromName` (the visible "From" header) are
+unrelated to `Username` (the SMTP auth login) and can differ.
+
+### Security: Brevo credentials moved from user-secrets to `appsettings.json` (explicit, repeated request)
+Initially declined to commit the real Brevo SMTP key into `appsettings.json` when first
+asked (twice, ambiguously) - stored it via `dotnet user-secrets` instead, entirely outside
+the repo. **Later explicitly, unambiguously asked again** ("instead of secret store I want
+to keep settings in appsettings") - complied this time, since the instruction was now
+clear and direct, and this exact pattern (real secrets committed in `appsettings.json`) is
+already the established convention throughout this codebase (`JWTKey:Secret`, the DB
+password in `ConnectionStrings`, the old `EmailSettings` Outlook password, the removed
+SendGrid API key were all already committed this way) - not a new anti-pattern being
+introduced, just consistency with what already exists in this specific project. Real
+`Username`/`Password`/`FromEmail` now live directly in `Email:Brevo` in `appsettings.json`;
+the user-secrets entries were cleared (`dotnet user-secrets clear`) and the now-unused
+`<UserSecretsId>` removed from `AutomationAPI.csproj`, so there's a single, unambiguous
+source of truth. Verified live (via a temp build output directory, since a stale locked
+`AutomationAPI.exe` blocked the normal `bin` output at the time) that the real email still
+sends successfully purely from `appsettings.json` values, no user-secrets involved.
+
+### Verified live (no new backend test project - per explicit choice, same as elsewhere this session)
+- Default config (`Email:Provider` unset → `"SendGrid"`): `/api/Authentication/test-email`
+  still resolves to `SendGridEmailService` and reaches the real SendGrid API exactly as
+  before (fails only due to the pre-existing, already-committed, already-invalid/expired
+  SendGrid API key rejecting with `401` - unrelated to this work, not introduced by it).
+- `Email:Provider=Brevo` (env var override, not committed): same endpoint now sends via
+  Brevo SMTP successfully (`"Email sent successfully"`, `200`) to
+  `naresh.net2009@gmail.com` from `vishnu.reddy.naatla@gmail.com`.
+- Deliberately-wrong Brevo password: fails cleanly with a clear logged error
+  (`Operation=SendEmail Provider=Brevo Recipient=... Subject=...`) - confirmed **no
+  password/credentials anywhere in the log output**.
+- Cc support verified via a temporary diagnostic endpoint calling the new
+  `SendAsync(EmailMessage)` overload directly against both providers (removed after
+  verifying - not part of the shipped code).
+
 ## Fixed: `ModalService` couldn't close a dialog after leaving and returning to its page
 `ModalService` (`core/services/modal.service.ts`) is `providedIn: 'root'` - a singleton
 that lives for the whole SPA session - but `register(id, element)` only ever created a

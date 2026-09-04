@@ -9,6 +9,7 @@ using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.TestRunner;
 using AutomationAPI.Repositories.Models;
 using AutomationAPI.Repositories.Workers;
+using Microsoft.Extensions.Options;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -57,10 +58,34 @@ builder.Services.AddScoped<IReleaseReadinessService, ReleaseReadinessService>();
 builder.Services.AddScoped<IReleaseNotificationService, ReleaseNotificationService>();
 builder.Services.AddScoped<IEnvironmentRepository, EnvironmentRepository>();
 
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-//builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+// Email providers - all plain SMTP, so every one of them (Brevo, Mailgun, Amazon SES's
+// SMTP interface, and any future SMTP-based vendor - Office365, Zoho, Postmark, etc.)
+// shares the same generic SmtpEmailService/SmtpProviderSettings pair; adding a new
+// provider only ever needs another name added to this list + its own Email:<Name> config
+// block, never a new class. Named options let multiple distinct SmtpProviderSettings
+// instances (one per provider name) coexist from a single settings type. SendGrid support
+// has been removed.
+var smtpProviderNames = new[] { "Brevo", "Office365", "AmazonSES" };
+foreach (var providerName in smtpProviderNames)
+{
+    builder.Services.Configure<SmtpProviderSettings>(providerName, builder.Configuration.GetSection($"Email:{providerName}"));
 
-builder.Services.AddScoped<IEmailService, SendGridEmailService>();
+    builder.Services.AddKeyedScoped<IEmailService>(providerName, (sp, key) =>
+        new SmtpEmailService(
+            sp.GetRequiredService<IOptionsMonitor<SmtpProviderSettings>>().Get((string)key!),
+            sp.GetRequiredService<ILogger<SmtpEmailService>>(),
+            (string)key!));
+}
+
+// The only place provider selection happens - everything else in the app just injects
+// plain IEmailService and never knows which provider is active. Defaults to Brevo unless
+// Email:Provider is explicitly set to something else (e.g. a future SMTP provider).
+builder.Services.AddScoped<IEmailService>(sp =>
+{
+    var providerName = builder.Configuration["Email:Provider"];
+    providerName = string.IsNullOrWhiteSpace(providerName) ? "Brevo" : providerName;
+    return sp.GetRequiredKeyedService<IEmailService>(providerName);
+});
 
 
 builder.Services.AddScoped<ITestRunner, NUnitEngineTestRunner>();

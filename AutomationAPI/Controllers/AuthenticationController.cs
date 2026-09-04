@@ -106,7 +106,7 @@ namespace AutomationAPI.Controllers
             await _emailService.SendAsync(
             "naresh.net2009@gmail.com",
               "Forgot Username – OHPNM Automation Portal",
-            "<b>SendGrid email working successfully 🚀</b>");
+            "<b>Email provider working successfully 🚀</b>");
 
             return Ok("Email sent successfully");
         }
