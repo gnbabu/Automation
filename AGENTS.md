@@ -1080,6 +1080,222 @@ occasional need to retry once).
   real suites, and eventual cleanup of dead `APIGatway` methods / hardcoded environment
   URLs in `Data/Users.cs`.
 
+## Follow-up: bare-DLL deployment enabled for the real Selenium framework too (accepted tradeoff)
+After the CPM work below, explicitly asked to make bare-DLL (no full publish) deployment
+work for the real `TC.*` projects too - the same convention `SeleniumSmokeTests`/`REL-14`
+already had, just extended to cover `Selenium.BaseComponents`' fuller dependency set.
+**Deliberately accepted tradeoff**: this couples `AutomationAPI`'s own package references
+to what these test projects need - a version bump on either side now has to be kept in
+sync by hand (this is exactly the coupling risk raised earlier in favor of full-publish;
+proceeding anyway per explicit direction, "I am ok with that dependency for now").
+
+### What changed
+- `AutomationAPI.csproj` gained the rest of `Selenium.BaseComponents`' dependencies
+  (`FluentAssertions`, `Microsoft.Extensions.Configuration`/`.Json`, `Microsoft.Extensions.
+  DependencyInjection`, `MSTest.TestFramework`, `Newtonsoft.Json`, `NUnit3TestAdapter`,
+  `Selenium.Support`, `System.Configuration.ConfigurationManager`, `System.Data.OleDb`).
+- `NUnit`/`Selenium.WebDriver`/`WebDriverManager` bumped from `3.14.0`/`4.27.0`/`2.17.5`
+  (which only matched `SeleniumSmokeTests`, a PoC) to `4.3.0`/`4.47.0`/`2.17.6` (matching
+  the real framework) - **tradeoff**: `SeleniumSmokeTests`' own bare-DLL run may now lose
+  isolated (`ProcessModel=Separate`) execution and fall back to `InProcess` automatically
+  (the existing fallback already handles this gracefully - not a hard failure, confirmed
+  this is the documented, accepted behavior for a version mismatch).
+- `System.Configuration.ConfigurationManager` pinned to `8.0.1`, not `8.0.0` (what
+  `Selenium.BaseComponents` itself uses) - `Microsoft.Data.SqlClient` already transitively
+  requires `>= 8.0.1`; `8.0.0` caused a real `NU1605` downgrade build error.
+
+### Real minimum file count discovered by direct testing - corrects an earlier claim in this chat
+Initially assumed adding these packages would let a **single** bare test DLL run isolated
+per project. **Confirmed by direct testing this is wrong**: every real `TC.*` project also
+needs `Selenium.BaseComponents.dll` itself alongside it - that's a **project reference**
+(a sibling compiled assembly), not a NuGet package, so nothing added to `AutomationAPI`'s
+own package list can provide it. The actual minimum for N real test projects sharing one
+Release folder is **N project DLLs + 1 shared `Selenium.BaseComponents.dll`** (not N total,
+and not a full publish's ~80-110 files either) - confirmed end-to-end: copied only
+`TC.PriorAuthSearch.dll` + `Selenium.BaseComponents.dll` (2 files, no `.deps.json`, no
+other dependency DLLs) into a fresh Release folder, and a real queued run
+(`ProcessModel=Separate`) launched Chrome, logged into the real `E2EP3` environment, and
+reported **Passed** in ~12 seconds - genuinely isolated, genuinely minimal.
+
+### Also fixed while investigating: `ReleaseReadinessService`'s "unrunnable" check was over-broad
+Diagnosed via temporary debug logging (added, confirmed the exact failure, then removed):
+`NUnitEngineHelper.IsUnrunnableResult` returns true both for a genuine missing-dependency
+load failure *and* for an ordinary non-test DLL NUnit loaded fine but found no fixtures in
+(e.g. `Selenium.BaseComponents.dll` itself, sitting in the folder as a dependency, not a
+test assembly - `_SKIPREASON` says `"No test fixtures were found."`, not a load error).
+`ReleaseReadinessService.CheckReadiness` was counting both as "missing dependency
+evidence" for its hint message, which could show a misleading "use dotnet publish" hint in
+an edge case where the *only* unrunnable DLL was actually just a normal non-test
+dependency. Fixed by checking the `_SKIPREASON` text itself for `"load"` before treating it
+as missing-dependency evidence (confirmed by direct testing: real load failures say
+`"Unable to load one or more of the requested types"`/`"Could not load file or
+assembly"`, always containing "load"; the empty-assembly case never does). Doesn't affect
+the `IsReady` true/false result either way - only the accuracy of the hint text in an
+already-failing edge case.
+
+## Architecture requirement: one Release can (and must) contain many test projects
+Mandatory, not optional - a Release folder can hold the published output of several `TC.*`
+projects at once (each `dotnet publish`'d into the *same* folder), not just one project per
+Release. This raised a real question during the pilot: since a full publish bundles each
+project's own dependency DLLs alongside its test DLL, and multiple projects' publishes
+share one folder, what happens if two projects need *different* versions of the same shared
+package (e.g. `Newtonsoft.Json`)? Whichever publish runs last would silently overwrite the
+earlier one's copy on disk, while that earlier project's own `<AssemblyName>.deps.json`
+(published right alongside it) still expects the version it was actually built against -
+a real risk of a confusing runtime failure with no obvious cause pointing back to it.
+
+Checked directly: as of the pilot, all 7 real `TC.*` projects + `Selenium.BaseComponents`
+already used identical versions of every shared package - safe today, but only by
+coincidence, not by anything stopping it from silently drifting apart later (e.g. someone
+bumps one project's NUnit version alone to pick up a fix, without realizing it could break
+a *different* project the next time both land in the same Release folder).
+
+### Fix: NuGet Central Package Management (CPM) for `AutomationTests/`
+Added `AutomationTests/Directory.Packages.props`
+(`ManagePackageVersionsCentrally=true`) so every shared package version for the real
+Selenium framework (`NUnit`, `NUnit.Analyzers`, `NUnit3TestAdapter`, `Selenium.Support`/
+`Selenium.WebDriver`, `WebDriverManager`, `Newtonsoft.Json`, `Microsoft.Extensions.
+Configuration`/`.Json`, `Microsoft.Extensions.DependencyInjection`, `MSTest.TestFramework`,
+`FluentAssertions`, `System.Configuration.ConfigurationManager`, `System.Data.OleDb`,
+`coverlet.collector`, `Microsoft.NET.Test.Sdk`) is pinned in exactly one place. All 8
+project `.csproj` files (`Selenium.BaseComponents` + 7 `TC.*`) had their per-`PackageReference`
+`Version=` attributes removed - they now inherit from the central file, so it's no longer
+physically possible for one of them to silently drift onto a different version of a shared
+package without a deliberate, visible edit to the one central file (a build-time guarantee
+instead of a today-it-happens-to-be-true coincidence).
+
+**Pre-existing sample/demo projects kept their own versions, deliberately, via
+`VersionOverride`**: `OnboardingTests`/`PayrollTests`/`RecruitmentTests`/
+`SeleniumSmokeTests`/`API` already used genuinely different, older versions of `NUnit`/
+`NUnit.Analyzers`/`NUnit3TestAdapter`/`Selenium.WebDriver`/`WebDriverManager` (they're
+standalone samples/PoCs, never deployed together with the real framework in one Release, so
+there was no reason to force them onto the same versions). `Directory.Packages.props` sets
+`CentralPackageVersionOverrideEnabled=true` specifically so these 5 projects can keep their
+existing versions via an explicit `VersionOverride="..."` attribute on the affected
+`PackageReference`s - a visible, deliberate per-package opt-out, not a silent one, and
+zero behavior change for any of them (confirmed via a full solution rebuild: 0 errors, only
+pre-existing nullable/style warnings, before and after).
+
+### Adding a new test project under this scheme
+- If it only needs packages already used elsewhere (the common case - `Selenium.
+  BaseComponents` already covers NUnit/Selenium/Newtonsoft.Json/etc.), just reference the
+  package name with no `Version=` at all - it automatically inherits the correct, already-
+  proven-consistent version, guaranteed identical to every other project, with less work
+  than before (no need to even know the right version number).
+- If it needs a genuinely new package nothing else uses yet, add one `<PackageVersion>`
+  line to `Directory.Packages.props`, then reference it with no version in the `.csproj`.
+  Trying to put a `Version=` directly on a `PackageReference` instead (bypassing the
+  central file) fails the build outright with NuGet error `NU1008` - this isn't a
+  convention that relies on remembering to do it the right way, the build itself blocks
+  the shortcut.
+
+### Deployment convention going forward
+**Always `dotnet publish` (never just copy the built DLL) for every real `TC.*` project**,
+into whichever Release folder it belongs to - including when multiple projects share one
+Release folder. One standard procedure for every project removes the "does this one need
+special treatment" guesswork for whoever's deploying, and CPM is what makes doing this
+safe for multiple co-located projects (their shared dependency DLLs are now guaranteed
+byte-for-byte the same version, so overwriting each other during publish is a non-event).
+`ReleaseReadinessService`'s message was also improved to hint at this directly: if a DLL
+looks like it should be a test assembly but can't actually load (missing dependencies -
+detected via the existing `NUnitEngineHelper.IsUnrunnableResult`/
+`IsMissingFrameworkDependency` helpers), the "not ready" message now says so explicitly
+("...Use 'dotnet publish' (not just the built DLL)...") instead of a generic "no usable
+test content" message that gives no hint about *why*.
+
+## Pilot: real end-to-end execution of `TC.PriorAuthSearch` through the Portal - PASSED, 2 real bugs found and fixed
+Per the "bring Portal/API/Selenium tests into sync" effort, ran `TC.PriorAuthSearch`
+(folder `TC.SearchPA`, already `[Property(...)]`-metadata-correct) all the way through a
+**genuine** real execution - real Chrome, real login to the real `E2EP3` Maximus OHPNM test
+environment (`ohpnm-e2ep3.omes.maximus.com`) as `autotechadmin`, real navigation, real
+Pass/Fail outcome flowing back through the actual Portal API - not a simulated/theoretical
+check. **Result: Passed**, ~28 second real duration. This is the first real (non-sample)
+Selenium suite proven to work end-to-end through this pipeline.
+
+### JWT auth threaded into isolated test processes (new capability)
+`Selenium.BaseComponents.Utilities.APIGatway.GetAutomationData` calls
+`AutomationController`'s `[Authorize]`-protected `api/Automation/data/flow/{flowName}` but
+never attached any credentials - would 401 in a real run. Added:
+- `AutomationAPI/Repositories/TestRunner/ServiceTokenGenerator.cs` - mints a short-lived
+  (30 min default) JWT for a generic `"TestRunner"` identity, signed with the same
+  `JWTKey:Secret` real user logins use, so `[Authorize]` accepts it with zero server-side
+  changes. The isolated test process has no real user session of its own to reuse a token
+  from, so `TestQueueWorker` mints one of these per run instead.
+- `TestRunRequest.AccessToken` (new) - threaded through `NUnitEngineTestRunner`'s
+  `TestParametersDictionary`/`TestParameters` package settings exactly the same way
+  `Browser` already was (both are now merged into one dictionary instead of two separate
+  `AddSetting` calls, since NUnit only keeps the last one set per key).
+- `APIGatway` reads it back via `NUnit.Framework.TestContext.Parameters["AccessToken"]`
+  (same indexer-based, null-safe pattern `BaseFeatureFixture` already used for `queueId`)
+  and attaches it as `Authorization: Bearer <token>` before the call. Absent when running
+  outside the queue pipeline (e.g. local Test Explorer) - the call just goes out
+  unauthenticated then, same as before this existed.
+
+### Bug found and fixed: `ReleaseReadinessService` still used the old, pre-refactor reflection approach
+Confirmed by direct testing: activating a Release with a **real, full `dotnet publish`**
+output (79 files, `TC.PriorAuthSearch.dll` + all its dependencies) reported
+`"DLLs are present but none contain usable test content"` / `usableDllCount: 0` - even
+though the exact same DLL was already proven discoverable via `TestSuitesRepository`
+(`NUnitEngineHelper.Explore()`) moments earlier. Root cause:
+`ReleaseReadinessService.CheckReadiness` was never migrated off the old, pre-NUnit.Engine
+reflection technique (`Assembly.LoadFrom` + a direct `TestFixtureAttribute` scan) when
+`TestSuitesRepository`/`ReflectionTestRunner` were - it silently hit an NUnit version
+conflict (`AutomationAPI` itself references NUnit 3.14.0; this test project's full publish
+bundles its own NUnit 4.3.0) during `assembly.GetTypes()`, swallowed by a bare `catch {}`.
+**Fixed**: rewrote `CheckReadiness` to use `NUnitEngineHelper.Explore()` (counting
+`//test-case` nodes) instead of raw reflection - same fix category as the original
+refactor, just the one caller that got missed. Verified live: after the fix, the exact
+same Release/folder reported `usableDllCount: 1, isReady: true` and activated
+successfully.
+
+### Bug found and fixed: parameterized `[TestFixture(...)]` classes were unrunnable once assigned
+Confirmed by direct testing: `ExploreXmlParser.ParseClasses` read a `TestFixture` node's
+`name` attribute as `ClassName` - for a *parameterized* fixture like
+`[TestFixture("TechAdmin")]`, NUnit's `name` is the display form
+`SearchPATest("TechAdmin")` (includes the constructor arg), not a real class name. This
+value flowed untouched from discovery (`GET /api/TestSuites/libraries?releaseId=...`)
+into a real Test Case Assignment exactly as the Portal's UI would submit it, and then
+`NUnitEngineHelper.FindMatchingTestCases` (used to build the filter for `Run()`) could
+never match it against anything - NUnit's own `<test-case>` `classname` attribute never
+includes the constructor-arg text - so the assigned test silently failed every run with
+`"No test matching Class='SearchPATest(\"TechAdmin\")', Method='...' was found"`.
+**Fixed**: `ParseClasses` now reads the fixture node's `classname` attribute instead (the
+plain, always-correct fully-qualified name NUnit provides specifically for this purpose),
+reduced to the simple class name the same way `name` already was for the (more common)
+non-parameterized case - so `SearchPATest("TechAdmin")` correctly becomes `SearchPATest`,
+matching what `FindMatchingTestCases` expects. Verified live: re-discovery showed the
+corrected `className`, and the previously-failing assignment (repaired via a direct,
+one-off data fix since it was already locked/terminal from the earlier failed run) then
+executed and **passed** for real. This bug would have affected *any* parameterized
+`[TestFixture(...)]` class across all 7 real test projects, not just this one - worth
+re-checking during Phase 2's metadata audit.
+
+### Pilot process notes (not code issues, just environment friction worth remembering)
+- A stray `AutomationAPI.exe`/`.NET Host` process from an earlier session repeatedly
+  resisted `Stop-Process -Force`/`taskkill /F` (access denied) while holding the normal
+  `bin/Debug` output locked - worked around by building/running to an alternate output
+  directory (`bin/pilot_run`) and invoking the DLL directly via `dotnet exec`, rather than
+  `dotnet run`, whenever the default output is unexpectedly locked by a process that can't
+  be stopped.
+- The very first queued run of the corrected code fell back to `InProcess` (logged
+  `"ran in-process (not isolated) - the Release folder is likely missing a full publish
+  output"`) despite a genuine full publish being present; the very next run of the same
+  Release succeeded isolated with no such warning - looked transient (e.g. first-attempt
+  module loading contention), not reproduced on the second run. Worth watching for during
+  the Phase 4 rollout to the other 6 projects, but not treated as a real blocker here since
+  the isolated path did work.
+
+### What this means for the remaining phases
+- **Phase 2 (metadata audit)**: also check every parameterized `[TestFixture(...)]` class
+  across the other 6 projects for the same class-name bug now that it's fixed upstream -
+  no additional code changes should be needed per-project, just confirming the fix covers
+  them too (it's a generic XML-parsing fix, not project-specific).
+- **Phase 3 (push vs. pull)**: the pilot's one real API call needed (`GetAutomationData`)
+  is now fixed and proven working with real auth. The pilot's test method didn't exercise
+  `SaveTestCaseLog`/`InvokeServicePost`/`UpdateQueue` at all, so this pilot alone doesn't
+  yet answer the broader push-vs-pull question for projects that *do* call those - still
+  open for whichever of the remaining 6 projects turns out to need them.
+
 ## Fixed: `ModalService` couldn't close a dialog after leaving and returning to its page
 `ModalService` (`core/services/modal.service.ts`) is `providedIn: 'root'` - a singleton
 that lives for the whole SPA session - but `register(id, element)` only ever created a

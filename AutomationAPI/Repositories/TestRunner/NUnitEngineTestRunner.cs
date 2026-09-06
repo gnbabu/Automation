@@ -118,14 +118,20 @@ namespace AutomationAPI.Repositories.TestRunner
             var package = new TestPackage(dllPath);
             package.AddSetting(EnginePackageSettings.ProcessModel, isolated ? "Separate" : "InProcess");
 
+            var testParameters = new Dictionary<string, string>();
             if (!string.IsNullOrWhiteSpace(request.Browser))
+                testParameters["Browser"] = request.Browser;
+            if (!string.IsNullOrWhiteSpace(request.AccessToken))
+                testParameters["AccessToken"] = request.AccessToken;
+
+            if (testParameters.Count > 0)
             {
                 // Set both the modern dictionary form and the legacy string form, so the
-                // parameter is readable via TestContext.Parameters regardless of which
+                // parameters are readable via TestContext.Parameters regardless of which
                 // NUnit.Framework version the test project was built against (the console
                 // runner does the same for exactly this reason).
-                package.AddSetting("TestParametersDictionary", new Dictionary<string, string> { ["Browser"] = request.Browser });
-                package.AddSetting("TestParameters", $"Browser={request.Browser}");
+                package.AddSetting("TestParametersDictionary", testParameters);
+                package.AddSetting("TestParameters", string.Join(";", testParameters.Select(kv => $"{kv.Key}={kv.Value}")));
             }
 
             // `filter` was built by name (class+method), not by NUnit's numeric test-case

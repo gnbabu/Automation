@@ -10,13 +10,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageReference Include="NUnit" Version="3.14.0" />
-    <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
-    <PackageReference Include="Selenium.WebDriver" Version="4.27.0" />
-    <PackageReference Include="WebDriverManager" Version="2.17.5" />
+    <!-- Deliberately pinned older than the shared central versions (see
+         Directory.Packages.props) - this is a standalone PoC/sample suite, not part of
+         the real Selenium framework, and was never meant to move in lockstep with it. -->
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NUnit" VersionOverride="3.14.0" />
+    <PackageReference Include="NUnit.Analyzers" VersionOverride="3.9.0" />
+    <PackageReference Include="NUnit3TestAdapter" VersionOverride="4.5.0" />
+    <PackageReference Include="Selenium.WebDriver" VersionOverride="4.27.0" />
+    <PackageReference Include="WebDriverManager" VersionOverride="2.17.5" />
   </ItemGroup>
 
   <ItemGroup>

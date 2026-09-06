@@ -89,6 +89,7 @@ builder.Services.AddScoped<IEmailService>(sp =>
 
 
 builder.Services.AddScoped<ITestRunner, NUnitEngineTestRunner>();
+builder.Services.AddScoped<ServiceTokenGenerator>();
 
 builder.Services.AddHostedService<TestQueueWorker>();
 builder.Services.AddHostedService<ReleaseDllsReadyNotificationWorker>();

@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace Selenium.BaseComponents.Utilities
@@ -10,6 +11,20 @@ namespace Selenium.BaseComponents.Utilities
         public APIGatway()
         {
             _settingReader = new SettingsReader();
+        }
+
+        // Short-lived JWT minted by AutomationAPI's ServiceTokenGenerator and threaded in
+        // via NUnit TestParameters (the same mechanism Browser already uses) - read here
+        // so calls to [Authorize]-protected endpoints (e.g. GetAutomationData below) don't
+        // 401. Absent when running outside the queue-driven pipeline (e.g. locally via
+        // Test Explorer), in which case those calls simply go out unauthenticated, same as
+        // before this existed.
+        private static string? AccessToken => NUnit.Framework.TestContext.Parameters["AccessToken"];
+
+        private static void AttachAuthIfAvailable(HttpClient httpClient)
+        {
+            if (!string.IsNullOrWhiteSpace(AccessToken))
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
         }
 
         public void InvokeServicePost(List<TestResults> testResults)
@@ -114,6 +129,7 @@ namespace Selenium.BaseComponents.Utilities
                     httpClient.BaseAddress = new Uri(apiUrl);
                     httpClient.DefaultRequestHeaders.Accept.Clear();
                     httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                    AttachAuthIfAvailable(httpClient);
 
                     HttpResponseMessage response = await httpClient.GetAsync($"api/Automation/data/flow/{flowName}");
 

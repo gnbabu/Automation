@@ -9,6 +9,12 @@
         public string? ClassName { get; set; }
         public string? MethodName { get; set; }
         public string? Browser { get; set; }
+
+        // Short-lived JWT (see ServiceTokenGenerator) threaded into the isolated test
+        // process's TestParameters so it can call back into AutomationAPI's
+        // [Authorize]-protected endpoints (e.g. Selenium.BaseComponents.Utilities.
+        // APIGatway.GetAutomationData).
+        public string? AccessToken { get; set; }
     }
 
     public interface ITestRunner

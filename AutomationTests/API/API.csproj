@@ -7,8 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NUnit" Version="3.14.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />
+    <!-- NUnit deliberately pinned older than the shared central version (see
+         Directory.Packages.props) - this is a superseded, unrelated prototype, not part
+         of the real Selenium framework. -->
+    <PackageReference Include="NUnit" VersionOverride="3.14.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 
 </Project>

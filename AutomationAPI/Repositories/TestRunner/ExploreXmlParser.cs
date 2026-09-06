@@ -19,12 +19,27 @@ namespace AutomationAPI.Repositories.TestRunner
             // type="TestFixture" test-suites are exactly the [TestFixture]-decorated
             // classes - "name" is the simple (non-namespace-qualified) class name,
             // matching the old reflection scan's `t.Name` exactly.
+            //
+            // Fixed: for a *parameterized* fixture (e.g. [TestFixture("TechAdmin")]),
+            // NUnit's "name" attribute is the display form including the constructor arg
+            // (e.g. `SearchPATest("TechAdmin")`) - confirmed by direct testing this got
+            // stored as ClassName and round-tripped all the way to a real Test Case
+            // Assignment, where NUnitEngineHelper.FindMatchingTestCases (used to build the
+            // filter for Run()) couldn't match it against anything, since NUnit's own
+            // <test-case> classname attribute never includes the constructor-arg text -
+            // the assigned test became silently unrunnable ("No test matching Class=...").
+            // The fixture node's own "classname" attribute doesn't have this problem (it's
+            // always the plain fully-qualified class name); use that, reduced to the
+            // simple name the same way "name" already was for the non-parameterized case.
             var fixtureNodes = exploreResult.SelectNodes("//test-suite[@type='TestFixture']");
             if (fixtureNodes == null) return classes;
 
             foreach (XmlNode fixtureNode in fixtureNodes)
             {
-                var className = fixtureNode.Attributes?["name"]?.Value ?? "";
+                var fullClassName = fixtureNode.Attributes?["classname"]?.Value;
+                var className = !string.IsNullOrEmpty(fullClassName)
+                    ? fullClassName.Substring(fullClassName.LastIndexOf('.') + 1)
+                    : (fixtureNode.Attributes?["name"]?.Value ?? "");
 
                 var methods = new List<LibraryMethodInfo>();
                 // ".//test-case" (descendant), not just direct children - a method with

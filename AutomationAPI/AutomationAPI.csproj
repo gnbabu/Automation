@@ -13,11 +13,40 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
     <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="17.8.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
-    <PackageReference Include="NUnit" Version="3.14.0" />
+    <!-- NUnit/Selenium.WebDriver bumped from 3.14.0/4.27.0 (which matched only
+         SeleniumSmokeTests, a PoC) to 4.3.0/4.47.0 to match the real Selenium
+         framework (Selenium.BaseComponents + 7 TC.* projects, see AGENTS.md) - so a bare
+         test DLL for those can run fully isolated (ProcessModel=Separate) without a full
+         publish. SeleniumSmokeTests itself still targets 3.14.0/4.27.0 (see its own
+         VersionOverride in AutomationTests/Directory.Packages.props) - its bare-DLL run
+         will fall back to InProcess automatically if the version mismatch prevents
+         isolated loading (NUnitEngineTestRunner already does this gracefully; not a hard
+         failure, just less isolated for that one PoC suite). -->
+    <PackageReference Include="NUnit" Version="4.3.0" />
     <PackageReference Include="NUnit.Engine" Version="3.20.1" />
-    <PackageReference Include="Selenium.WebDriver" Version="4.27.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Selenium.Support" Version="4.47.0" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.47.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-    <PackageReference Include="WebDriverManager" Version="2.17.5" />
+    <PackageReference Include="WebDriverManager" Version="2.17.6" />
+    <!-- The rest of Selenium.BaseComponents' dependencies, added so a bare test DLL for
+         any of the 7 real TC.* projects can run fully isolated without a full publish -
+         see "Architecture requirement: one Release can (and must) contain many test
+         projects" in AGENTS.md for the full reasoning and the tradeoff being accepted
+         (AutomationAPI's own dependency list is now coupled to what these test projects
+         need; a version bump on either side needs to be kept in sync deliberately). -->
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- 8.0.1, not 8.0.0 (what Selenium.BaseComponents itself pins) - Microsoft.Data.SqlClient
+         already transitively requires >= 8.0.1; NuGet would downgrade-error otherwise.
+         8.0.1 is a same-major patch bump, expected compatible for the bare-DLL isolation
+         use case. -->
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
+    <PackageReference Include="System.Data.OleDb" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

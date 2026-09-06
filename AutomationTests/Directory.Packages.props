@@ -1,0 +1,53 @@
+<Project>
+
+  <!--
+    NuGet Central Package Management (CPM). One place to pin every shared package version
+    for every project under AutomationTests/, so projects meant to be deployed together into
+    one Release folder (the real TC.* projects + Selenium.BaseComponents) can never silently
+    drift onto different versions of a shared dependency - a real risk once multiple test
+    projects' full `dotnet publish` outputs land in the same folder (their shared dependency
+    DLLs would overwrite each other; if the versions ever differed, whichever project got
+    overwritten could break at runtime with no obvious cause). With CPM, that's a build-time
+    guarantee instead of something that "happens to be true today, until someone touches
+    one .csproj file to bump a version." See AGENTS.md for the full write-up.
+
+    CentralPackageVersionOverrideEnabled lets a handful of pre-existing, unrelated sample/
+    demo projects (OnboardingTests/PayrollTests/RecruitmentTests/SeleniumSmokeTests/API - not
+    part of the real Selenium framework, never deployed together with it) keep their own,
+    already-working, genuinely different package versions via an explicit VersionOverride on
+    the PackageReference itself - a deliberate, visible opt-out per package, not a silent one.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageVersionOverrideEnabled>true</CentralPackageVersionOverrideEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Shared by Selenium.BaseComponents + all 7 real TC.* projects (confirmed identical
+         across every one of them before this migration) - the versions that matter for the
+         "many test projects share one Release folder" guarantee. -->
+    <PackageVersion Include="NUnit" Version="4.3.0" />
+    <PackageVersion Include="NUnit.Analyzers" Version="4.4.0" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageVersion Include="Selenium.Support" Version="4.47.0" />
+    <PackageVersion Include="Selenium.WebDriver" Version="4.47.0" />
+    <PackageVersion Include="WebDriverManager" Version="2.17.6" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageVersion Include="MSTest.TestFramework" Version="3.1.1" />
+    <PackageVersion Include="FluentAssertions" Version="6.12.0" />
+    <PackageVersion Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+    <PackageVersion Include="System.Data.OleDb" Version="8.0.0" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+
+    <!-- Used only by the pre-existing sample/demo projects, not the real Selenium
+         framework - still need a central entry (CPM requires one for every referenced
+         package), even though these 5 packages happen to only ever be overridden below. -->
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.1" />
+  </ItemGroup>
+
+</Project>

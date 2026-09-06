@@ -45,6 +45,7 @@ namespace AutomationAPI.Repositories.TestRunner
                     try
                     {
                         var runner = scope.ServiceProvider.GetRequiredService<ITestRunner>();
+                        var tokenGenerator = scope.ServiceProvider.GetRequiredService<ServiceTokenGenerator>();
 
                         var results = await runner.RunAsync(new TestRunRequest
                         {
@@ -52,7 +53,8 @@ namespace AutomationAPI.Repositories.TestRunner
                             Library = queue.LibraryName,
                             ClassName = queue.ClassName,
                             MethodName = queue.MethodName,
-                            Browser = queue.Browser
+                            Browser = queue.Browser,
+                            AccessToken = tokenGenerator.GenerateTestRunnerToken()
                         });
 
                         foreach (var result in results)
