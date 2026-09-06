@@ -118,11 +118,32 @@ namespace AutomationAPI.Repositories.TestRunner
             var package = new TestPackage(dllPath);
             package.AddSetting(EnginePackageSettings.ProcessModel, isolated ? "Separate" : "InProcess");
 
+            // Tells the engine where this package's tests are "based" - harmless and
+            // generally correct to set, but confirmed by direct testing this does NOT
+            // change the spawned agent process's real OS-level working directory (it
+            // stayed AutomationAPI's own directory regardless). That turned out to
+            // matter: Selenium.BaseComponents.Utilities.SettingsReader used to read
+            // "appSettings.json" relative to Directory.GetCurrentDirectory(), which
+            // picked up AutomationAPI's own appsettings.json instead (matched case-
+            // insensitively on Windows) - no "AppSettings:AutomationAPI" key there,
+            // producing a null apiUrl and "must be an absolute URI" HttpClient failures.
+            // The actual fix was in SettingsReader itself (resolve relative to its own
+            // assembly location instead of CWD) - kept this setting anyway since it's
+            // still correct/useful for whatever the engine itself uses it for.
+            // project relying on a relative-path config file, not just this one.
+            var workDirectory = Path.GetDirectoryName(dllPath);
+            if (!string.IsNullOrEmpty(workDirectory))
+                package.AddSetting(EnginePackageSettings.WorkDirectory, workDirectory);
+
             var testParameters = new Dictionary<string, string>();
             if (!string.IsNullOrWhiteSpace(request.Browser))
                 testParameters["Browser"] = request.Browser;
             if (!string.IsNullOrWhiteSpace(request.AccessToken))
                 testParameters["AccessToken"] = request.AccessToken;
+            if (request.AssignmentId > 0)
+                testParameters["AssignmentId"] = request.AssignmentId.ToString();
+            if (request.AssignmentTestCaseId > 0)
+                testParameters["AssignmentTestCaseId"] = request.AssignmentTestCaseId.ToString();
 
             if (testParameters.Count > 0)
             {

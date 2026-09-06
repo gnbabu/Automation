@@ -27,8 +27,8 @@ namespace TC.PriorAuthSearch.Tests
     [TestFixture("TechAdmin")]
     public class SearchPATest : BaseFeatureFixture
     {
-        public int AssignmentTestCaseId { get; set; }
-        public int AssignmentId { get; set; }
+        // AssignmentId/AssignmentTestCaseId are inherited from BaseFeatureFixture, which
+        // now populates them automatically from TestParameters - see AGENTS.md "Phase 3".
 
         public string? MethodName { get; set; }
 
@@ -58,26 +58,26 @@ namespace TC.PriorAuthSearch.Tests
             testCaseExecutionLog.TestCaseId = "TCSearchPA";
             testCaseExecutionLog.TestCaseDescription = "Navigate to Search PA Page";
 
-            //SaveLog(testCaseExecutionLog);
+            SaveLog(testCaseExecutionLog);
 
-            //_screenshots = new Screeshots
-            //{
-            //    AssignmentTestCaseId = AssignmentTestCaseId,
-            //    screenShot = new List<byte[]>()
-            //};
+            _screenshots = new Screeshots
+            {
+                AssignmentTestCaseId = AssignmentTestCaseId,
+                screenShot = new List<byte[]>()
+            };
 
 
-            //_screenshots.screenShot = new List<byte[]>();
-            //_screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "LoginCompletedSuccessfully"));
+            _screenshots.screenShot = new List<byte[]>();
+            _screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "LoginCompletedSuccessfully"));
 
             SidebarMenu.Click();
             Thread.Sleep(4000);
 
-            //_screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "Navingating to SelfService"));
+            _screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "Navingating to SelfService"));
 
             testCaseExecutionLog.LogMessage = "Navigating to self service...!";
             testCaseExecutionLog.StepName = "Self Service";
-            //SaveLog(testCaseExecutionLog);
+            SaveLog(testCaseExecutionLog);
 
             NavigateToSelfService();
 
@@ -87,9 +87,9 @@ namespace TC.PriorAuthSearch.Tests
 
             testCaseExecutionLog.LogMessage = "Entered 2422659 for search";
             testCaseExecutionLog.StepName = "Medicaid Search";
-            //SaveLog(testCaseExecutionLog);
+            SaveLog(testCaseExecutionLog);
 
-            //  _screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "MedicaidEntered"));
+            _screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "MedicaidEntered"));
 
             financialProviderInformationPage.lnkBtnPriorAuth.Click();
 
@@ -99,17 +99,17 @@ namespace TC.PriorAuthSearch.Tests
 
             testCaseExecutionLog.LogMessage = "SearchButton Clicked";
             testCaseExecutionLog.StepName = "PA Search";
-            // SaveLog(testCaseExecutionLog);
+            SaveLog(testCaseExecutionLog);
 
-            // _screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "SearchButton Clicked"));
+            _screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "SearchButton Clicked"));
 
             SearchPAPage.WaitUntilElementIsVisible();
 
-            // _screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "Success"));
+            _screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, "Success"));
 
             testCaseExecutionLog.LogMessage = "Success";
             testCaseExecutionLog.StepName = "Test case executed successfully...!";
-            // SaveLog(testCaseExecutionLog);
+            SaveLog(testCaseExecutionLog);
         }
 
 

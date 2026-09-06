@@ -47,6 +47,17 @@ namespace AutomationAPI.Repositories.TestRunner
                         var runner = scope.ServiceProvider.GetRequiredService<ITestRunner>();
                         var tokenGenerator = scope.ServiceProvider.GetRequiredService<ServiceTokenGenerator>();
 
+                        // Marked here, server-side, right before the run actually starts -
+                        // not via a push from inside the isolated test process (which was
+                        // considered and rejected: it would only fire if the isolated
+                        // process successfully starts and reaches OneTimeSetUp, leaving a
+                        // launch failure stuck showing "Queued" forever with no signal an
+                        // attempt was made; this way it's unconditional). Gives the Portal
+                        // a mid-flight signal distinct from "queued, not started yet" for
+                        // tests that can run 12-30+ seconds.
+                        queue.QueueStatus = "InProgress";
+                        await queueRepo.UpdateQueueStatusAsync(queue.QueueId, queue.QueueStatus);
+
                         var results = await runner.RunAsync(new TestRunRequest
                         {
                             LibsPath = releaseFolderPath,
@@ -54,7 +65,9 @@ namespace AutomationAPI.Repositories.TestRunner
                             ClassName = queue.ClassName,
                             MethodName = queue.MethodName,
                             Browser = queue.Browser,
-                            AccessToken = tokenGenerator.GenerateTestRunnerToken()
+                            AccessToken = tokenGenerator.GenerateTestRunnerToken(),
+                            AssignmentId = queue.AssignmentId,
+                            AssignmentTestCaseId = queue.AssignmentTestCaseId
                         });
 
                         foreach (var result in results)

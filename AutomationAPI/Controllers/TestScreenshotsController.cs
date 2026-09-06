@@ -15,9 +15,10 @@ namespace AutomationAPI.Controllers
         private readonly ITestScreenshotRepository _repository;
         private readonly ILogger<TestScreenshotsController> _logger;
 
-        public TestScreenshotsController(ITestScreenshotRepository repository)
+        public TestScreenshotsController(ITestScreenshotRepository repository, ILogger<TestScreenshotsController> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         [HttpPost]

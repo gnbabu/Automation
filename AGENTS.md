@@ -1080,6 +1080,81 @@ occasional need to retry once).
   real suites, and eventual cleanup of dead `APIGatway` methods / hardcoded environment
   URLs in `Data/Users.cs`.
 
+## Phase 3: made TC.PriorAuthSearch's SaveTestCaseLog/SaveMethodScreenShots actually work end-to-end
+Verified **Passed** for real: real Chrome, real login, all 5 expected `TestCaseExecutionLogs`
+rows created with correct `AssignmentId`/`AssignmentTestCaseId` and step names, all 5
+screenshots uploaded with real image data, `hasLogs`/`hasScreenshots` both `true` on the
+real assignment afterward (previously always `false`). Found and fixed two layers of bugs
+- an already-known set (auth/wiring) and, underneath those, one genuinely new root cause
+  that only became visible once the known ones were fixed.
+
+### Layer 1 (as analyzed in planning): auth + dead ID wiring + dead code
+- `SaveTestCaseLog`/`SaveMethodScreenShots` (`APIGatway.cs`) never attached the JWT
+  `AttachAuthIfAvailable` already built for `GetAutomationData` in the pilot - added it to
+  both.
+- `AssignmentId`/`AssignmentTestCaseId` were public settable properties on `SearchPATest`
+  that nothing ever populated (always `0`) - threaded them end-to-end instead, mirroring
+  `Browser`/`AccessToken`: `PendingExecutionQueue`/`usp_GetPendingExecutionQueues` (added
+  `ATC.AssignmentId` to the SELECT - `AssignmentTestCaseId` alone was already there) ->
+  `TestRunRequest` -> `NUnitEngineTestRunner`'s `TestParametersDictionary` ->
+  `BaseFeatureFixture` reads them via `TestContext.Parameters` and exposes them as
+  properties every subclass inherits (moved up from `SearchPATest`, which had its own
+  copies that shadowed nothing correctly).
+- Retired `APIGatway.UpdateQueue` and `InvokeServicePost` entirely (dead/redundant, see
+  the question-and-answer below) plus the dead commented-out `foreach` block in
+  `BaseFeatureFixture.TearDownTestSuite()` that only ever fed `InvokeServicePost`.
+- `TestQueueWorker` now marks a queue item `InProgress` itself, immediately before calling
+  `RunAsync` - **not** via a push from inside the test (that was the original plan; revised
+  after asking "do we really need this, given TestQueueWorker already handles queue
+  status?" - correct instinct: the in-test push only fires if the isolated process
+  successfully starts, so a launch failure would leave an item stuck showing "Queued"
+  forever; the server-side version is unconditional and needs no new endpoint/auth at all).
+- Fixed an unrelated, adjacent bug noticed while reading `TestScreenshotsController`:
+  `_logger` was declared but never assigned in the constructor (a real `CS0649` warning) -
+  any exception in `InsertScreenshot`/`BulkInsertScreenshots` would have NullReferenceException
+  instead of returning the intended 500.
+
+### Layer 2 (only found once Layer 1 was fixed and testing continued anyway): a real working-directory bug
+After fixing all of the above, the calls still silently failed with **"An invalid request
+URI was provided. Either the request URI must be an absolute URI or BaseAddress must be
+set."** Root cause, confirmed by direct testing (dumped the full NUnit run-result XML,
+including its `<output>` CDATA, straight from `AutomationAPI`'s own process to see what the
+isolated child process had actually written): `Selenium.BaseComponents.SettingsReader`
+resolves `"appSettings.json"` relative to `Directory.GetCurrentDirectory()`. For an isolated
+(`ProcessModel=Separate`) run, that working directory is **not** the Release folder - it
+stayed `AutomationAPI`'s own directory (confirmed via the run XML's `<environment
+cwd="...">` attribute, both before and after trying `EnginePackageSettings.WorkDirectory`,
+which does *not* change the spawned agent process's real OS-level CWD despite being the
+setting that sounds like it should). On Windows, `AutomationAPI`'s own `appsettings.json`
+matches the requested filename case-insensitively, so `SettingsReader`'s `optional: false`
+check was satisfied by **the wrong file** - one with no `"AppSettings:AutomationAPI"` key
+at all - silently producing a `null` `apiUrl` instead of a startup crash.
+
+This had been lurking, undetected, since the pilot: `GetAutomationData` (the only method
+exercised during the original pilot) happened to always be tested via a **full publish**
+deployment (where the isolated process's CWD quirk didn't matter as much for other
+reasons, and `appSettings.json` was always present regardless of CWD resolution
+correctness anyway) - `SaveTestCaseLog`/`SaveMethodScreenShots` were the first calls ever
+exercised under the bare-file (non-full-publish) deployment style, which is exactly what
+surfaced this.
+
+**Fixed** in `SettingsReader.cs` itself: resolve `"appSettings.json"` relative to
+`Assembly.GetExecutingAssembly().Location`'s directory instead of
+`Directory.GetCurrentDirectory()` - always correct regardless of the spawned process's
+working directory, since `appSettings.json` is always deployed alongside
+`Selenium.BaseComponents.dll` itself (`CopyToOutputDirectory=Always`).
+
+### Correction to the pilot's "bare-DLL minimum" claim: it's 3 files, not 2
+The pilot's real-execution proof (`GetAutomationData` only) claimed the minimum bare-file
+deployment for a real `TC.*` project was **2 files**: its own DLL + `Selenium.
+BaseComponents.dll`. That was incomplete - it happened to work only because that
+specific call path didn't depend on `appSettings.json` being resolved correctly. The real,
+now fully-verified minimum (needed for *any* `APIGatway` call, not just
+`GetAutomationData`) is **3 files**: `<Project>.dll` + `Selenium.BaseComponents.dll` +
+`appSettings.json` (all three sit right next to each other in
+`Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
+extra work to locate them).
+
 ## Follow-up: bare-DLL deployment enabled for the real Selenium framework too (accepted tradeoff)
 After the CPM work below, explicitly asked to make bare-DLL (no full publish) deployment
 work for the real `TC.*` projects too - the same convention `SeleniumSmokeTests`/`REL-14`

@@ -35,6 +35,17 @@ namespace Selenium.BaseComponents.Pages
         // Page object for login page
         protected LoginPage LoginPage;
 
+        // Populated automatically from TestParameters (threaded through by TestQueueWorker/
+        // NUnitEngineTestRunner, same mechanism as Browser/AccessToken) so any subclass can
+        // use them for step-level log/screenshot uploads (e.g. TC.PriorAuthSearch's
+        // SaveTestCaseLog/SaveMethodScreenShots calls) without needing its own wiring -
+        // moved up here from SearchPATest, which used to declare these locally with nothing
+        // ever populating them (always defaulted to 0). Stay 0 when running outside the
+        // queue pipeline (e.g. locally via Test Explorer) - same graceful degradation
+        // AccessToken already has.
+        public int AssignmentId { get; set; }
+        public int AssignmentTestCaseId { get; set; }
+
 
         //  public TestContext TestContext { get; set; }
 
@@ -82,14 +93,24 @@ namespace Selenium.BaseComponents.Pages
         [OneTimeSetUp]
         public virtual void InitializeTestSuite()
         {
+            // Read here, not in the constructor - confirmed by direct testing that
+            // TestContext.Parameters isn't reliably populated yet during fixture
+            // construction (NUnit sets up the current test context around actual
+            // execution, not object creation/discovery), even though the same
+            // TestParametersDictionary package setting is what ultimately supplies it.
+            // Matches where every other TestContext.Parameters read in this codebase
+            // already happens (Browser/AccessToken/the old queueId), never a constructor.
+            if (int.TryParse(TestContext.Parameters["AssignmentId"], out var assignmentId))
+                AssignmentId = assignmentId;
+            if (int.TryParse(TestContext.Parameters["AssignmentTestCaseId"], out var assignmentTestCaseId))
+                AssignmentTestCaseId = assignmentTestCaseId;
 
-            var queueId = TestContext.Parameters["queueId"];
-
-            if (queueId != null)
-            {
-                bool status = APIGateway.UpdateQueue(queueId, "InProgress").Result;
-            }
-
+            // The queue item is now marked "InProgress" server-side by TestQueueWorker,
+            // immediately before this isolated process is even started - more reliable
+            // than a push from in here (which would never fire if this process failed to
+            // launch at all) and needs no API call/auth from the test's side. See
+            // AGENTS.md "Phase 3" for the reasoning; this used to push queueId/"InProgress"
+            // via APIGatway.UpdateQueue, now retired.
             InitializeChromeAndLogin();
         }
 
@@ -132,40 +153,12 @@ namespace Selenium.BaseComponents.Pages
         [OneTimeTearDown]
         public void TearDownTestSuite()
         {
-
-            
-            string className = TestContext.CurrentContext.Test.ClassName.Split('.').ToList().LastOrDefault();
-
-            var onCIEnv = Environment.GetEnvironmentVariable(WebOptions.AGENT_MACHINENAME) != null;
-            var fixturePassed = TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Passed;
-
-            NUnit.Framework.Internal.TestResult result = NUnit.Framework.Internal.TestExecutionContext.CurrentContext.CurrentResult;
-
-            IEnumerable<ITestResult> resultList = result.Children.ToList();
-
-            List<TestResults> results = new List<TestResults>();
-
-            //foreach (ITestResult testResult in resultList)
-            //{
-            //    TestResults testResults = new TestResults();
-            //    testResults.Name = testResult.Name;
-            //    testResults.ResultStatus = testResult.ResultState.Status.ToString();
-            //    testResults.Message = testResult.Message;
-            //    testResults.Duration = testResult.Duration.ToString();
-            //    testResults.StartTime = testResult.StartTime;
-            //    testResults.EndTime = testResult.EndTime;
-            //    testResults.ClassName = className;
-           
-            //    results.Add(testResults);
-            //}
- 
             if (TestWebDriver != null)
             {
                 // Use WebDriverService for proper disposal
                 WebDriverService.DisposeWebDriver(TestWebDriver);
                 TestWebDriver = null;
             }
-
         }
 
 

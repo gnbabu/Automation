@@ -27,35 +27,6 @@ namespace Selenium.BaseComponents.Utilities
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
         }
 
-        public void InvokeServicePost(List<TestResults> testResults)
-        {
-            try
-            {
-                string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
-                string message = JsonConvert.SerializeObject(testResults);
-
-                using (var httpClient = new HttpClient())
-                {
-                    StringContent content = new StringContent(message, Encoding.UTF8, "application/json");
-
-                    var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"{apiUrl}api/TestResults/bulk-insert");
-
-                    requestMessage.Content = content;
-
-                    HttpResponseMessage httpResponseMessage = httpClient.SendAsync(requestMessage).Result;
-
-                    if (httpResponseMessage.IsSuccessStatusCode)
-                    {
-                        string result = httpResponseMessage.Content.ReadAsStringAsync().Result;
-                    }
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-        }
-
         public void SaveTestCaseLog(TestCaseExecutionLog testCaseExecutionLog)
         {
             try
@@ -65,6 +36,8 @@ namespace Selenium.BaseComponents.Utilities
 
                 using (var httpClient = new HttpClient())
                 {
+                    AttachAuthIfAvailable(httpClient);
+
                     StringContent content = new StringContent(message, Encoding.UTF8, "application/json");
 
                     var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"{apiUrl}api/TestCaseExecutionLogs");
@@ -73,16 +46,22 @@ namespace Selenium.BaseComponents.Utilities
 
                     HttpResponseMessage httpResponseMessage = httpClient.SendAsync(requestMessage).Result;
 
-                    if (httpResponseMessage.IsSuccessStatusCode)
+                    if (!httpResponseMessage.IsSuccessStatusCode)
                     {
-                        string result = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                        // Deliberately not throwing here - a failed step-level log upload
+                        // shouldn't fail the actual test - but this used to fail silently
+                        // with no trace at all (confirmed by direct testing: this ran
+                        // unauthenticated against an [Authorize]-protected endpoint for a
+                        // long time with nobody noticing). TestContext.WriteLine surfaces
+                        // it in the test's own output instead.
+                        NUnit.Framework.TestContext.WriteLine(
+                            $"SaveTestCaseLog failed: {(int)httpResponseMessage.StatusCode} {httpResponseMessage.ReasonPhrase}");
                     }
                 }
-                ;
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                NUnit.Framework.TestContext.WriteLine($"SaveTestCaseLog failed: {ex.Message}");
             }
         }
 
@@ -96,6 +75,8 @@ namespace Selenium.BaseComponents.Utilities
 
                 using (var httpClient = new HttpClient())
                 {
+                    AttachAuthIfAvailable(httpClient);
+
                     StringContent content = new StringContent(message, Encoding.UTF8, "application/json");
 
                     var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"{apiUrl}api/TestScreenshots/bulk");
@@ -104,15 +85,16 @@ namespace Selenium.BaseComponents.Utilities
 
                     HttpResponseMessage httpResponseMessage = httpClient.SendAsync(requestMessage).Result;
 
-                    if (httpResponseMessage.IsSuccessStatusCode)
+                    if (!httpResponseMessage.IsSuccessStatusCode)
                     {
-                        string result = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                        NUnit.Framework.TestContext.WriteLine(
+                            $"SaveMethodScreenShots failed: {(int)httpResponseMessage.StatusCode} {httpResponseMessage.ReasonPhrase}");
                     }
-                };
+                }
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                NUnit.Framework.TestContext.WriteLine($"SaveMethodScreenShots failed: {ex.Message}");
             }
         }
 
@@ -145,33 +127,6 @@ namespace Selenium.BaseComponents.Utilities
                 throw new Exception(ex.Message);
             }
             return AutomationData;
-        }
-
-        public async Task<bool> UpdateQueue(string Id, string status)
-        {
-            try
-            {
-
-                using (var httpClient = new HttpClient())
-                {
-                    httpClient.BaseAddress = new Uri("https://localhost:44390");
-                    httpClient.DefaultRequestHeaders.Accept.Clear();
-                    httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
-                    HttpResponseMessage response = await httpClient.GetAsync($"/api/Queue/{Id}/UpdateQueueStatus/{status}");
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        return true;
-                    }
-                };
-
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-            return false;
         }
     }
 }

@@ -3,6 +3,7 @@
     public class PendingExecutionQueue
     {
         public Guid QueueId { get; set; }
+        public int AssignmentId { get; set; }
         public int AssignmentTestCaseId { get; set; }
         public int? ReleaseId { get; set; }
         public string? LibraryName { get; set; }

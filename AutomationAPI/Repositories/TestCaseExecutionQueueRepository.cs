@@ -116,6 +116,7 @@ namespace AutomationAPI.Repositories
                 reader => new PendingExecutionQueue
                 {
                     QueueId = reader.GetGuid("QueueId"),
+                    AssignmentId = reader.GetInt32("AssignmentId"),
                     AssignmentTestCaseId = reader.GetInt32("AssignmentTestCaseId"),
                     ReleaseId = reader.GetNullableInt("ReleaseId"),
                     LibraryName = reader.GetNullableString("LibraryName"),

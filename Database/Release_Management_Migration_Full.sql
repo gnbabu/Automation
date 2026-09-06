@@ -980,6 +980,10 @@ GO
 
 -- 7.12 usp_GetPendingExecutionQueues  (add ReleaseId so the worker can resolve which
 --      Release folder to load DLLs from at execution time, instead of a global path)
+-- 7.13 also select AssignmentId (via ATC), threaded into TestParameters alongside
+--      AssignmentTestCaseId so an isolated test can populate both on itself for
+--      step-level log/screenshot uploads (e.g. TC.PriorAuthSearch's SaveTestCaseLog/
+--      SaveMethodScreenShots) - see Phase 3 in AGENTS.md.
 CREATE OR ALTER PROCEDURE aut.usp_GetPendingExecutionQueues
 AS
 BEGIN
@@ -988,6 +992,7 @@ BEGIN
     SELECT
         Q.QueueId,
         Q.AssignmentTestCaseId,
+        ATC.AssignmentId,
         ATC.LibraryName,
         ATC.ClassName,
         ATC.MethodName,
