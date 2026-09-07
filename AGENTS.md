@@ -1155,6 +1155,51 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: renamed TC.SubmitClaims's placeholder SampleTest/SampleTestCase
+Confirmed via grep no other references anywhere. Renamed to match the established
+convention every other project's test class/file already follows
+(`SearchRATest.SearchRA()`, `SearchPATest.NavigateToSeachPAPage()`):
+`Tests/SampleTest.cs` -> `Tests/SubmitClaimsTest.cs`, class `SampleTest` ->
+`SubmitClaimsTest`, method `SampleTestCase()` -> `SubmitClaims()`. Verified via a real
+discovery call (`GET /api/TestSuites/libraries?releaseId=...`) that it's still correctly
+discoverable under the new names with its `[Property(...)]` metadata intact.
+
+## Follow-up: added step-level logs/screenshots to TC.SearchRA and TC.SubmitClaims too
+Asked directly whether Phase 1 had added log/screenshot capture to the newly-consolidated
+projects - it hadn't (Phase 1 only touched `Utilities/*.cs`, not test methods). Neither
+project's test method called `SaveTestCaseLog`/`SaveMethodScreenShots` before this at all
+(unlike `TC.PriorAuthSearch`, which already had these calls baked in from before this
+whole effort started - Phase 3 made those *existing* calls work, it didn't add new ones).
+Added the same pattern to both, mirroring `SearchPATest.cs` exactly (`[Property(...)]`
+metadata, a `TestCaseExecutionLog`/`Screeshots` per step, `SaveLog(...)`, a `[TearDown]`
+that uploads via `APIGateway.SaveMethodScreenShots`).
+
+- **`TC.SearchRA`**: real step-by-step logs added throughout `SearchRA()` (login, self
+  service, medicaid search, RA search, search submitted, success).
+- **`TC.SubmitClaims`**: `SampleTestCase()`'s body was **completely empty** before this -
+  no login flow, no navigation, nothing to log step-by-step around meaningfully. Added
+  minimal start/complete logging + one screenshot instead of fabricating fake
+  intermediate steps, so the mechanism is proven and ready the moment real test content
+  gets added here.
+- **Avoided a real ambiguity** in both: a blanket `using Selenium.BaseComponents.
+  Utilities;` makes `TestWebDriver.FindElement(...)` ambiguous (`SdetToolbox.Pages.
+  PageHelper` vs. `Selenium.BaseComponents.Utilities.PageHelper` have identical extension
+  method signatures - confirmed by direct testing, a real `CS0121` build error). Used
+  targeted type aliases (`using TestCaseExecutionLog = Selenium.BaseComponents.Utilities.
+  TestCaseExecutionLog;` etc.) instead of a blanket import.
+- **Verified for real**, including the real "multi-project, one Release folder"
+  architecture from the CPM work earlier - deployed `TC.SearchRA.dll` +
+  `TC.SubmitClaims.dll` + one shared `Selenium.BaseComponents.dll` + `appSettings.json`
+  together in a single Release, discovery correctly found both
+  (`totalDiscoveredTests: 2`), and ran both for real:
+  - `TC.SubmitClaims`: **Passed**, `hasLogs`/`hasScreenshots` both `true`, exactly 2 log
+    entries (start + success) - the full run completed.
+  - `TC.SearchRA`: still **Failed** at the same pre-existing `SelfService` selector bug
+    documented below (unrelated, untouched by this) - but `hasLogs`/`hasScreenshots` are
+    now `true` too, with exactly 1 log entry ("Login to PNM") - confirms the logging
+    itself fired correctly right up until the point of the real failure, not before and
+    not after.
+
 ## Phase 1 (rollout, projects 2-3 of 7): TC.SearchRA and TC.SubmitClaims
 Continuing the consolidation from `TC.PriorAuthSearch`, into the same
 `Selenium.BaseComponents.Utilities.AutomationDataRepository`/`Mapper`.
