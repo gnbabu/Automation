@@ -192,7 +192,10 @@ namespace TC.MemberEligibilitySearch.Tests
         {
             get
             {
-                return TestWebDriver.CreateSmartElement(By.XPath($"//a[@title='Self Service']")).Element;
+                // Was `//a[@title='Self Service']` - confirmed by direct testing (real
+                // NoSuchElementException) this doesn't match the real page; matches
+                // TC.PriorAuthSearch's already-working selector for the same element.
+                return TestWebDriver.CreateSmartElement(By.XPath($"//a[normalize-space()='Self Service']")).Element;
 
             }
         }

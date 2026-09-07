@@ -1155,6 +1155,79 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Fixed: the widespread `SelfService` selector bug (confirmed against the real page, not just by comparison)
+Real execution of `TC.PriorAuthoriztion` (once its own consolidation/logging work was
+done) reproduced the exact same `NoSuchElementException` already seen for
+`TC.SearchRA`/`TC.SearchEligibility` - confirmed via the real stack trace this affects
+(at least) 3 of the 7 projects. Rather than fix it by assumption (copying
+`TC.PriorAuthSearch`'s already-working selector without checking why), used Playwright
+(installed fresh via npm for this - not previously part of the toolchain) to actually log
+into the real `E2EP3` environment (`autotechadmin`/real password) and inspect the live
+DOM:
+- The real "Self Service" link is `<a href="..." title="">Self Service</a>` - **`title`
+  is empty**, not `"Self Service"` as the broken selector (`//a[@title='Self Service']`,
+  present in 3 of the 7 projects) assumed. `TC.PriorAuthSearch`'s selector
+  (`//a[normalize-space()='Self Service']`, matching the link's *text*, not its `title`)
+  was correct by coincidence of using the right attribute, not because anyone had
+  verified the real markup at the time.
+- Also confirmed via the same real session that the very next page's elements
+  (`FinancialProviderInformationPage`'s `lblTitle`/`txtMedicaidNumber`/
+  `lnkBtnPriorAuth`) all still match correctly on the real page - no further selector
+  fixes needed there.
+- Fixed `TC.SearchRA`, `TC.SearchEligibility`, and `TC.PriorAuthoriztion`'s `SelfService`
+  property to use the confirmed-correct `normalize-space()`-based selector.
+- **Verified for real, end-to-end, through the actual test framework** (not just the
+  Playwright inspection): re-ran `TC.SearchRA` for real after the fix - **Passed**, ~29s
+  real duration, all 6 expected log entries now captured (previously only 1, "Login to
+  PNM", before hitting the bug) - confirms the fix genuinely resolves the failure, not
+  just that the selector looks right in isolation.
+
+## Phase 1 (rollout, project 6 of 7): TC.PriorAuthoriztion - genuinely different DataRepository shape
+Unlike every other project so far, `DataRepository.GetAutomationData("DentalPA")` maps
+**10 different sections into 10 different sub-properties** of one composite `DentalPA`
+model (`DentalInformation`, `DentalRecipientInformation`, `DentalContactInformation`,
+`DentalServiceInformation`, `DentalServiceProviderInformation`,
+`DentalOrderingProviderInformation`, `DentalDiagnosisInformation`, `DentalServiceDetails`,
+`DentalProviderNotes`, `DentalAttachments`) - not the "one section -> one flat model"
+shape `AutomationDataRepository.GetAutomationData<T>(flowName, sectionName)` was built
+for. Consolidating this into that generic method would mean either inventing a more
+complex generic multi-section-binding helper (bigger scope, unclear value for one
+project) or forcing a bad fit - correctly left as bespoke, project-specific
+orchestration, not duplicated boilerplate.
+- **Still consolidated**: `Mapper.BindData<T>` itself - confirmed unused elsewhere,
+  deleted the local `Mapper.cs` entirely. **Zero code changes needed** in
+  `DataRepository.cs` - it already had `using Selenium.BaseComponents.Utilities;` at the
+  top, so its existing (unmodified) `Mapper.BindData<T>(...)` calls automatically resolved
+  to the shared one the moment the local copy was gone. Also deleted the confirmed-dead
+  `Helper.cs`/`PageConstants.cs`.
+- **Logging**: asked how much detail given this project's real size/complexity - two
+  `[Test]` methods (`DentalPA_Submit`/`DentalPA_Save`) plus a ~250-line
+  `FillDentalPAFields` helper filling 9 distinct form sections with real popups/alerts/
+  file uploads - much larger than anything else in this rollout. Went with full
+  per-section logging (not just start/success) per explicit direction. Added a shared
+  `LogStep(stepName, message)` helper (mutates one `_testCaseExecutionLog`/`_screenshots`
+  instance-field pair) since both `[Test]` methods and the shared `FillDentalPAFields`
+  helper all need to log against the same run's log/screenshot state - logs after each of
+  the 9 `#region` blocks in `FillDentalPAFields`, plus login/self-service/medicaid-search/
+  submit-prior-auth/final-success-or-failure in each `[Test]` method, with distinct
+  `[Property(TestCaseId=...)]` values (`TCDentalPASubmit`/`TCDentalPASave`) since these
+  are two genuinely separate test cases sharing one class.
+- Confirmed no `TestWebDriver.FindElement(...)` ambiguity here despite the existing
+  blanket `using Selenium.BaseComponents.Utilities;` (unlike `TC.SearchRA`/
+  `TC.SubmitClaims`/`TC.PriorAuthInquiry`, which needed type aliases) - this file's
+  `FindElement(By)` calls use the single-argument built-in `IWebDriver.FindElement`
+  method, not the ambiguous 2-arg extension method overload both `SdetToolbox.Pages.
+  PageHelper` and `Selenium.BaseComponents.Utilities.PageHelper` separately define.
+- Verified via a full solution rebuild (0 errors) only - **not** via a real queued
+  execution this time (the user had their own `AutomationAPI` instance actively running
+  with a live connection; asked before using it for a verification run that would add
+  test data to the shared DB, and was told to skip it this round rather than risk
+  disrupting that session). Confidence here comes from the build succeeding plus this
+  using the exact same `LogStep`/`SaveLog`/screenshot mechanism already proven working via
+  real execution in `TC.PriorAuthSearch`/`TC.SearchRA`/`TC.SearchEligibility`/
+  `TC.PriorAuthInquiry` - not a first-time-unproven mechanism, just applied to more call
+  sites in one file. Worth a real run when convenient/non-disruptive.
+
 ## Phase 1 (rollout, project 5 of 7): TC.SearchEligibility
 Active project (unlike `TC.PriorAuthInquiry`) - `DataRepository.GetAutomationData("SearchMemberEligiblity")` and `Mapper.BindData` are genuinely called by
 `SearchEligiblityTest.SearchMemberEligibility()`. Consolidated the same way as

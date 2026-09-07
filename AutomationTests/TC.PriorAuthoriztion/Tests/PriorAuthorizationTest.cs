@@ -28,6 +28,8 @@ namespace TC.PriorAuthoriztion.Tests
     public class PriorAuthorizationTest : BaseFeatureFixture
     {
         private PriorAuthorizationService _priorAuthService;
+        private TestCaseExecutionLog _testCaseExecutionLog;
+        private Screeshots? _screenshots;
 
         public PriorAuthorizationTest(string profile) : base(profile)
         {
@@ -45,29 +47,63 @@ namespace TC.PriorAuthoriztion.Tests
             return APIGateway;
         }
 
+        // Shared by both [Test] methods and FillDentalPAFields - logs+screenshots one
+        // step, matching the pattern already proven in TC.PriorAuthSearch/TC.SearchRA/
+        // TC.SearchEligibility, but factored into one helper since this project has two
+        // separate test methods (DentalPA_Submit/DentalPA_Save) plus a large shared
+        // multi-section form-filling helper, all needing to log against the same
+        // _testCaseExecutionLog/_screenshots instance.
+        private void LogStep(string stepName, string message)
+        {
+            _testCaseExecutionLog.StepName = stepName;
+            _testCaseExecutionLog.LogMessage = message;
+            SaveLog(_testCaseExecutionLog);
+            _screenshots?.screenShot.Add(Common.PrintScreenShot(TestWebDriver, stepName));
+        }
 
         [Test]
         [Author("Vishnuvardhan Reddy")]
         [Category("IntegrationTests")]
         [System.ComponentModel.Description("Verify new provider creation flow")]
+        [Property("Description", "Submit Dental Prior Authorization")]
+        [Property("Priority", "High")]
+        [Property("TestCaseId", "TCDentalPASubmit")]
         //[CustomRetry(5)]
         [CancelAfter(600000)]
         public void DentalPA_Submit()
         {
+            _testCaseExecutionLog = new TestCaseExecutionLog
+            {
+                AssignmentId = AssignmentId,
+                AssignmentTestCaseId = AssignmentTestCaseId,
+                LogLevel = TestCaseLogLevel.Info,
+                ExecutionStatus = ExecutionStatus.Running,
+                TestCaseId = "TCDentalPASubmit",
+                TestCaseDescription = "Submit Dental Prior Authorization"
+            };
+            _screenshots = new Screeshots { AssignmentTestCaseId = AssignmentTestCaseId, screenShot = new List<byte[]>() };
+
+            LogStep("Login to PNM", "Login to PNM succesfully...!");
+
             DentalPA dentalPA = (DentalPA)DataRepository.GetAutomationData("DentalPA");
 
             SidebarMenu.Click();
             NavigateToSelfService();
+
+            LogStep("Self Service", "Navigating to self service...!");
 
             FinancialProviderInformationPage financialProviderInformationPage = new FinancialProviderInformationPage(TestWebDriver);
             financialProviderInformationPage.WaitUntilElementIsVisible();
             financialProviderInformationPage.TxtMedicaid.Set(dentalPA.DentalInformation.RegID);
             financialProviderInformationPage.lnkBtnPriorAuth.Click();
 
+            LogStep("Medicaid Search", $"Entered {dentalPA.DentalInformation.RegID} for search");
+
             SearchPriorAuthorizationPage searchPriorAuthorizationPage = new SearchPriorAuthorizationPage(TestWebDriver);
             searchPriorAuthorizationPage.WaitUntilElementIsVisible();
             searchPriorAuthorizationPage.lnkBtnSubmitPriorAuth.Click();
 
+            LogStep("Submit Prior Auth", "Navigated to Submit Prior Authorization page");
 
             IJavaScriptExecutor jsExecutor;
 
@@ -118,12 +154,13 @@ namespace TC.PriorAuthoriztion.Tests
 
             if (trnxSuccess)
             {
-
+                LogStep("Test case executed successfully...!", "Success");
             }
             else if (tXNFailure)
             {
                 string failureMessage = TestWebDriver.CreateSmartElement(By.XPath("//*[@id='ctl00_MainContent_uc1SubmitPriorAuthorization_grdTXNResponse']/tbody/tr/td[2]")).Element.Text;
                 TestWebDriver.CreateSmartElement(By.Id("ctl00_MainContent_uc1SubmitPriorAuthorization_btnCloseFailure")).Element.Click();
+                LogStep("Submission failed", failureMessage);
                NUnit.Framework.Assert.Fail(failureMessage);
             }
         }
@@ -132,14 +169,32 @@ namespace TC.PriorAuthoriztion.Tests
         [Author("Vishnuvardhan Reddy")]
         [Category("IntegrationTests")]
         [System.ComponentModel.Description("Verify new provider creation flow")]
+        [Property("Description", "Save Dental Prior Authorization")]
+        [Property("Priority", "High")]
+        [Property("TestCaseId", "TCDentalPASave")]
         //[CustomRetry(5)]
         [CancelAfter(600000)]
         public void DentalPA_Save()
         {
+            _testCaseExecutionLog = new TestCaseExecutionLog
+            {
+                AssignmentId = AssignmentId,
+                AssignmentTestCaseId = AssignmentTestCaseId,
+                LogLevel = TestCaseLogLevel.Info,
+                ExecutionStatus = ExecutionStatus.Running,
+                TestCaseId = "TCDentalPASave",
+                TestCaseDescription = "Save Dental Prior Authorization"
+            };
+            _screenshots = new Screeshots { AssignmentTestCaseId = AssignmentTestCaseId, screenShot = new List<byte[]>() };
+
+            LogStep("Login to PNM", "Login to PNM succesfully...!");
+
              DentalPA dentalPA = (DentalPA)DataRepository.GetAutomationData("DentalPA");
 
             SidebarMenu.Click();
             NavigateToSelfService();
+
+            LogStep("Self Service", "Navigating to self service...!");
 
             FinancialProviderInformationPage financialProviderInformationPage = new FinancialProviderInformationPage(TestWebDriver);
             financialProviderInformationPage.WaitUntilElementIsVisible();
@@ -150,6 +205,7 @@ namespace TC.PriorAuthoriztion.Tests
             searchPriorAuthorizationPage.WaitUntilElementIsVisible();
             searchPriorAuthorizationPage.lnkBtnSubmitPriorAuth.Click();
 
+            LogStep("Submit Prior Auth", "Navigated to Submit Prior Authorization page");
 
             IJavaScriptExecutor jsExecutor;
 
@@ -168,6 +224,7 @@ namespace TC.PriorAuthoriztion.Tests
 
             if (!textMessage.Equals("Your unsubmitted prior authorization will be saved in the system for 72 hours."))
             {
+                LogStep("Save failed", "Something went wrong while saving the Dental PA");
                 NUnit.Framework.Assert.Fail("Something went wrong while saving the Dental PA");
             }
 
@@ -181,6 +238,7 @@ namespace TC.PriorAuthoriztion.Tests
             if (messagrWarning.Displayed && messagrWarning.Text.Equals("PA request has been saved."))
             {
                 NUnit.Framework.TestContext.WriteLine($"PA request has been saved with Patient Tracking Number::{dentalPA.DentalRecipientInformation.PatientTrackingNumber}");
+                LogStep("Test case executed successfully...!", $"PA request has been saved with Patient Tracking Number::{dentalPA.DentalRecipientInformation.PatientTrackingNumber}");
             }
         }
 
@@ -228,6 +286,8 @@ namespace TC.PriorAuthoriztion.Tests
 
             #endregion
 
+            LogStep("Recipient Information", "Recipient Information filled");
+
             #region Requestor Contact Information
 
             submitPriorAuthorizationPage.txtContactName.Set(dentalPA.DentalContactInformation.ContactFirstName);
@@ -245,6 +305,8 @@ namespace TC.PriorAuthoriztion.Tests
 
             #endregion
 
+            LogStep("Requestor Contact Information", "Requestor Contact Information filled");
+
             #region  SERVICE INFORMATION
 
             submitPriorAuthorizationPage.txtpalceofservice.Set(dentalPA.DentalServiceInformation.PlaceOfService);
@@ -255,6 +317,8 @@ namespace TC.PriorAuthoriztion.Tests
 
             #endregion
 
+            LogStep("Service Information", "Service Information filled");
+
             #region Service Provider Information
 
             submitPriorAuthorizationPage.txtSPNPI.Set(dentalPA.DentalServiceProviderInformation.ServiceProviderNPI);
@@ -262,6 +326,8 @@ namespace TC.PriorAuthoriztion.Tests
             submitPriorAuthorizationPage.WaitUntilMedicaidIsFetched();
 
             #endregion
+
+            LogStep("Service Provider Information", "Service Provider Information filled");
 
             #region Ordering Provider Information
 
@@ -280,6 +346,8 @@ namespace TC.PriorAuthoriztion.Tests
 
 
             #endregion
+
+            LogStep("Ordering Provider Information", "Ordering Provider Information filled");
 
             #region Diagnosis Information
             try
@@ -312,6 +380,8 @@ namespace TC.PriorAuthoriztion.Tests
             Thread.Sleep(5000);
 
             #endregion
+
+            LogStep("Diagnosis Information", "Diagnosis Information filled");
 
             #region Service Details
 
@@ -367,6 +437,8 @@ namespace TC.PriorAuthoriztion.Tests
 
             #endregion
 
+            LogStep("Service Details", "Service Details filled");
+
             #region Provider Notes
 
             string providerNotesExp = submitPriorAuthorizationPage.lblsepProvidersNotes.Text;
@@ -384,6 +456,8 @@ namespace TC.PriorAuthoriztion.Tests
             BasePageHelper.WaitUntilElementIsVisible(TestWebDriver, By.Id("btnprovNoteEdit"), TimeoutConfiguration.Element);
 
             #endregion
+
+            LogStep("Provider Notes", "Provider Notes filled");
 
             #region Attachments
 
@@ -414,6 +488,36 @@ namespace TC.PriorAuthoriztion.Tests
             BasePageHelper.WaitUntilDocumentIsReady(TestWebDriver, TimeoutConfiguration.Element);
 
             #endregion
+
+            LogStep("Attachments", "Attachments filled");
+        }
+
+        [TearDown]
+        public void AfterTest()
+        {
+            if (_screenshots?.screenShot == null || !_screenshots.screenShot.Any())
+                return;
+
+            if (_screenshots.AssignmentTestCaseId == 0)
+                return;
+
+            var screenshots = _screenshots.screenShot
+                .Select((screen, index) => new TestScreenshot
+                {
+                    ID = index + 1,
+                    AssignmentTestCaseId = Convert.ToInt32(_screenshots.AssignmentTestCaseId),
+                    Caption = $"Screenshot_{index + 1}",
+                    Screenshot = $"data:image/png;base64,{Convert.ToBase64String(screen)}",
+                    TakenAt = DateTime.Now,
+                })
+                .ToList();
+
+            APIGateway.SaveMethodScreenShots(screenshots);
+        }
+
+        public void SaveLog(TestCaseExecutionLog testCaseExecutionLog)
+        {
+            APIGateway.SaveTestCaseLog(testCaseExecutionLog);
         }
 
         private void DiagnosisPopupSearch(string diagnosisCode)
@@ -439,7 +543,10 @@ namespace TC.PriorAuthoriztion.Tests
         {
             get
             {
-                return TestWebDriver.CreateSmartElement(By.XPath($"//a[@title='Self Service']")).Element;
+                // Was `//a[@title='Self Service']` - confirmed by direct testing (real
+                // NoSuchElementException) this doesn't match the real page; matches
+                // TC.PriorAuthSearch's already-working selector for the same element.
+                return TestWebDriver.CreateSmartElement(By.XPath($"//a[normalize-space()='Self Service']")).Element;
 
             }
         }

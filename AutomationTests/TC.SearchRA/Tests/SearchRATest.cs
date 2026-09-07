@@ -209,7 +209,10 @@ namespace TC.SearchRA.Tests
         {
             get
             {
-                return TestWebDriver.FindElement(By.XPath($"//a[@title='Self Service']"), null);
+                // Was `//a[@title='Self Service']` - confirmed by direct testing (real
+                // NoSuchElementException) this doesn't match the real page; matches
+                // TC.PriorAuthSearch's already-working selector for the same element.
+                return TestWebDriver.FindElement(By.XPath($"//a[normalize-space()='Self Service']"), null);
 
             }
         }
