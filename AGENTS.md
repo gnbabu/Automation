@@ -1155,6 +1155,49 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Phase 1 (rollout, project 5 of 7): TC.SearchEligibility
+Active project (unlike `TC.PriorAuthInquiry`) - `DataRepository.GetAutomationData("SearchMemberEligiblity")` and `Mapper.BindData` are genuinely called by
+`SearchEligiblityTest.SearchMemberEligibility()`. Consolidated the same way as
+`TC.PriorAuthSearch`/`TC.SearchRA`:
+- `DataRepository.cs` now delegates to `AutomationDataRepository.GetAutomationData<
+  Models.SearchEligibility>(flowName, "SearchMemberEligiblity")`.
+- Deleted the confirmed-dead `Mapper.cs`/`Helper.cs`/`PageConstants.cs` (zero call sites
+  for `Helper.PrintScreenShot`/`Roles`/`Tasks`/`Pages` anywhere in this project).
+- Added the same step-by-step logging/screenshot pattern as `TC.SearchRA` throughout
+  `SearchMemberEligibility()` (login, self service, medicaid search, eligibility search,
+  success) plus `[Property(...)]` metadata. **No type aliases needed here** - this file
+  already had a working blanket `using Selenium.BaseComponents.Utilities;` (uses
+  `.CreateSmartElement(...)`, not the ambiguous `.FindElement(...)` `TC.SearchRA`/
+  `TC.PriorAuthSearch` use), confirmed by the file already compiling successfully before
+  this change with that import in place.
+- **Verified for real**: full solution rebuild (0 errors), then a real queued execution -
+  confirmed the consolidated `DataRepository -> AutomationDataRepository -> Mapper` chain
+  works (proceeded past that call cleanly), and confirmed the logging fired correctly
+  (exactly 1 log entry, "Login to PNM", `hasLogs`/`hasScreenshots` both `true`). The run
+  then failed at the **same pre-existing, unrelated** `SelfService` selector bug already
+  documented for `TC.SearchRA` (`//a[@title='Self Service']` doesn't match the real page)
+  - confirms this selector bug is more widespread across projects than just one, but
+  still untouched/pre-existing, not a regression from this work.
+
+## Phase 1 (rollout, project 4 of 7): TC.PriorAuthInquiry - simplest remaining project
+Confirmed identical shape to `TC.SubmitClaims` before this: empty `SampleTest`/
+`SampleTestCase` stub, a broken/unused `DataRepository.GetAutomationData` (checks
+`"SearchPA"`, wrong for this project regardless, empty if-body), and confirmed via grep
+zero call sites anywhere for `Mapper.BindData`/`Helper.PrintScreenShot`/`Roles`/`Tasks`/
+`Pages`. Applied the exact same treatment as `TC.SubmitClaims`:
+- Deleted the confirmed-dead `Mapper.cs`/`Helper.cs`/`PageConstants.cs`; left
+  `DataRepository.cs`'s broken-but-harmless stub as-is (same reasoning - no Model type
+  exists to consolidate against without inventing new behavior).
+- Renamed `Tests/SampleTest.cs`/`SampleTest`/`SampleTestCase()` ->
+  `Tests/PriorAuthInquiryTest.cs`/`PriorAuthInquiryTest`/`PriorAuthInquiry()`, matching
+  the established naming convention.
+- Added the same minimal start/complete logging + one screenshot (no real steps exist
+  yet to log around meaningfully, same as `TC.SubmitClaims`), using the same targeted
+  type aliases (not a blanket `using Selenium.BaseComponents.Utilities;`) to avoid the
+  `TestWebDriver.FindElement(...)` ambiguity already documented above.
+- Verified via a full solution rebuild (0 errors) and a real queued execution -
+  **Passed**, `hasLogs`/`hasScreenshots` both `true`.
+
 ## Follow-up: renamed TC.SubmitClaims's placeholder SampleTest/SampleTestCase
 Confirmed via grep no other references anywhere. Renamed to match the established
 convention every other project's test class/file already follows
