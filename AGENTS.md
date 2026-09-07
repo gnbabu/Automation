@@ -1155,6 +1155,75 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Phase 1 (rollout, projects 2-3 of 7): TC.SearchRA and TC.SubmitClaims
+Continuing the consolidation from `TC.PriorAuthSearch`, into the same
+`Selenium.BaseComponents.Utilities.AutomationDataRepository`/`Mapper`.
+
+- **`TC.SearchRA`**: same pattern as `TC.PriorAuthSearch` - `DataRepository.cs` now
+  delegates to `AutomationDataRepository.GetAutomationData<Models.SearchRA>(flowName,
+  "SearchRAParams")` (note: its section-name string genuinely differs from its flow name,
+  unlike `TC.PriorAuthSearch` where both happened to be `"SearchPA"` - confirms the
+  generic method's two separate parameters were the right call). Deleted its own
+  `Mapper.cs`/`Helper.cs`/`PageConstants.cs` (all confirmed unused via grep, same as
+  `TC.PriorAuthSearch`'s).
+  - **Verified for real** via a genuine queued execution - confirmed the consolidated
+    `DataRepository -> AutomationDataRepository -> Mapper` chain works correctly (test
+    proceeded past that call with no error). The run then failed, but at a **later,
+    unrelated, pre-existing** step: `SearchRATest.cs`'s own `SelfService` element uses
+    `By.XPath("//a[@title='Self Service']")`, which doesn't match anything in the real
+    page (unlike `TC.PriorAuthSearch`'s different, working selector for the same login
+    landing element, `//a[normalize-space()='Self Service']`). This selector lives
+    entirely in `SearchRATest.cs`, untouched by this phase - a genuine pre-existing bug in
+    this project's own page-interaction code, not a Phase 1 regression. Flagged here for
+    whoever does this project's Phase 4 real-execution rollout; not fixed now (out of
+    scope for boilerplate consolidation).
+- **`TC.SubmitClaims`**: confirmed its `DataRepository.GetAutomationData`/`Mapper.
+  BindData` are **not called anywhere at all** (not even from each other - the
+  `DataRepository`'s own `if` block that would call `Mapper.BindData` is empty, and it
+  checks `flowName.Equals("SearchPA")`, which is wrong for this project regardless -
+  looks like never-finished copy-paste scaffolding). Its `Models`/`Pages` folders are
+  also still empty (confirmed via the `.csproj`'s own `<Folder Include=.../>` entries) -
+  there's no Model type to parameterize a generic call with, so **not** consolidated -
+  doing so would mean inventing new working behavior, not deduplicating existing
+  behavior. Deleted the confirmed-fully-dead `Mapper.cs`/`Helper.cs`/`PageConstants.cs`
+  (same dead-scaffolding pattern as the other projects' copies) but left the
+  broken-but-harmless `DataRepository.cs` stub as-is - fixing real business logic here is
+  a different, later task, not this consolidation phase.
+- Verified via a full solution rebuild (0 errors) after each project.
+
+## Phase 1 (rollout, project 1 of 7): consolidated duplicated boilerplate for TC.PriorAuthSearch
+Confirmed (hashed/diffed) `Utilities/Helper.cs`, `Mapper.cs`, and `PageConstants.cs` were
+byte-for-byte identical between `TC.PriorAuthSearch` and `TC.SearchRA` except namespace;
+`DataRepository.cs` differed only in Model type + section-name string. Moved the reusable
+parts into `Selenium.BaseComponents.Utilities`:
+- New `Mapper.cs` (both `BindData<T>` overloads, moved verbatim).
+- New `AutomationDataRepository.cs` - generic `GetAutomationData<T>(flowName,
+  sectionName)`. **Deliberately not named `DataRepository`** - every `TC.*` project
+  already has its own `DataRepository` class in its own `Utilities` namespace, and
+  several already have both that namespace and `Selenium.BaseComponents.Utilities` in
+  scope via `using` in their test files - confirmed by direct testing that naming this
+  class `DataRepository` made a full solution build fail with `CS0104` (ambiguous
+  reference) in the 3 *other*, not-yet-migrated projects that already call their own
+  local `DataRepository.GetAutomationData(...)` unqualified - not just in the one project
+  actually being touched this phase.
+- `TC.PriorAuthSearch`'s own `DataRepository.cs` now just delegates:
+  `Selenium.BaseComponents.Utilities.AutomationDataRepository.GetAutomationData<Models.
+  SearchPA>(flowName, "SearchPA")` - keeps its exact original public signature
+  (`object GetAutomationData(string flowName)`), since other already-migrated-style
+  callers elsewhere cast the return value themselves (confirmed this exact pattern in
+  `TC.SearchRA`/`TC.SearchEligibility`/`TC.Registration`/`TC.PriorAuthoriztion` - none of
+  those were touched this phase, this is just why the signature had to stay identical).
+- Deleted `TC.PriorAuthSearch`'s own now-redundant `Mapper.cs`, plus `Helper.cs` and
+  `PageConstants.cs` entirely - confirmed via grep both were **already fully dead code**
+  in this project before this change (`Helper.PrintScreenShot` - a no-op with its actual
+  body commented out - and `PageConstants`'s `Roles`/`Tasks`/`Pages` classes had zero call
+  sites anywhere in `TC.PriorAuthSearch`). Not deleted from the other 6 projects - e.g.
+  `TC.Registration` has 58 real call sites into its own `PageConstants`'s `Pages`/`Tasks`,
+  so that project's copy is load-bearing and stays untouched until its own turn.
+- Verified via a full solution rebuild (0 errors) and a real queued execution afterward -
+  **Passed**, ~55s real duration, same as before this change - confirms the consolidation
+  didn't alter behavior for the one project actually touched.
+
 ## Follow-up: bare-DLL deployment enabled for the real Selenium framework too (accepted tradeoff)
 After the CPM work below, explicitly asked to make bare-DLL (no full publish) deployment
 work for the real `TC.*` projects too - the same convention `SeleniumSmokeTests`/`REL-14`
