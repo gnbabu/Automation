@@ -22,32 +22,12 @@ namespace Selenium.BaseComponents.Data
             public const string PROD = "PROD";
 
         }
-        public static string TestURL(string environment)
-        {
-            if (environment == "DEV")
-            {
-                return "https://ohpnm-dev.omes.maximus.com/OH_PNM_DEV/Account/Login.aspx";
-            }
-            if (environment == "INT01")
-            {
-                return "https://ohpnm-dev.omes.maximus.com/OH_PNM_INT01/Account/Login.aspx";
-            }
-            if (environment == "INT01P3")
-            {
-                return "https://ohpnm-dev.omes.maximus.com/OH_PNM_INT01P3/Account/Login.aspx";
-            }
-            if (environment == "DEV01P3")
-            {
-                return "https://ohpnm-dev.omes.maximus.com/OH_PNM_DEVP3/Account/Login.aspx";
-            }
-            if (environment == "E2EP3")
-            {
-                return "https://ohpnm-e2ep3.omes.maximus.com/OH_PNM_E2EP3/Account/Login.aspx";
-            }
-            return null;
-        }
-
-
+        // TestURL(string) - a hard-coded per-environment URL switch, deleted per
+        // "getting rid of hardcoded test project values" (see AGENTS.md). Confirmed
+        // via a full-solution grep it had zero call sites anywhere - dead code even
+        // before this change. The real, live equivalent is
+        // aut.Environment.EnvironmentUrl, configured via Environment Management and
+        // resolved by BaseFeatureFixture.Url.
 
 
 

@@ -99,5 +99,27 @@ namespace AutomationAPI.Repositories
 
             return results.FirstOrDefault();
         }
+
+        public async Task<LoginUserCredentials?> ResolveByRoleAsync(int environmentId, string userRole)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@EnvironmentId", environmentId),
+                new SqlParameter("@UserRole", userRole)
+            };
+
+            var results = await _db.ExecuteReaderAsync(SqlDbConstants.LoginUserResolveByRole, parameters, reader =>
+            {
+                var encrypted = reader.GetString(reader.GetOrdinal("EncryptedPassword"));
+                return new LoginUserCredentials
+                {
+                    LoginUserId = reader.GetInt32(reader.GetOrdinal("LoginUserId")),
+                    UserName = reader.GetString(reader.GetOrdinal("UserName")),
+                    Password = CredentialCipher.Decrypt(encrypted) ?? string.Empty
+                };
+            });
+
+            return results.FirstOrDefault();
+        }
     }
 }

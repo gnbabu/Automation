@@ -26,29 +26,21 @@ namespace Selenium.BaseComponents.Services
         }
 
         /// <summary>
-        /// Gets the login URL based on environment
+        /// Was a hard-coded per-environment URL switch (confirmed at least one entry -
+        /// E2EP3 - was outright wrong, pointing at the E2E domain instead). Removed per
+        /// "getting rid of hardcoded test project values" - see AGENTS.md.
+        /// BaseFeatureFixture.Url always prefers its own API-resolved EnvironmentUrl
+        /// (aut.Environment.EnvironmentUrl, configured via Environment Management) and
+        /// only falls back to calling this when that's unavailable - so reaching this
+        /// method at all means no EnvironmentUrl is configured for the target
+        /// environment. Fails clearly instead of silently guessing.
         /// </summary>
         public string GetLoginUrl()
         {
-            switch (_environment)
-            {
-                case Users.Environment.INT01P3:
-                    return "https://ohpnm-dev.omes.maximus.com/OH_PNM_INT01P3/Account/Login.aspx";
-                case Users.Environment.INT01:
-                    return "https://ohpnm-dev.omes.maximus.com/OH_PNM_INT01/Account/Login.aspx";
-                case Users.Environment.DEV01:
-                    return "https://ohpnm-dev.omes.maximus.com/OH_PNM_DEV/Account/Login.aspx";
-                case Users.Environment.DEV01P3:
-                    return "https://ohpnm-dev.omes.maximus.com/OH_PNM_DEVP3/Account/Login.aspx";
-                case Users.Environment.E2E:
-                    return "https://ohpnm-e2e.omes.maximus.com/OH_PNM_E2E/Account/Login.aspx";
-                case Users.Environment.E2EP3:
-                    return "https://ohpnm-e2e.omes.maximus.com/OH_PNM_E2E/Account/Login.aspx";
-                case Users.Environment.PROD:
-                    return "https://ohpnm.omes.maximus.com/OH_PNM_PROD/Account/Login.aspx";
-                default:
-                    return "https://ohpnm-dev.omes.maximus.com/OH_PNM_DEV/Account/Login.aspx";
-            }
+            throw new InvalidOperationException(
+                $"No EnvironmentUrl is configured for environment '{_environment}'. " +
+                "Set it via Environment Management, or run this test via the Portal " +
+                "against an environment that has one configured.");
         }
 
         /// <summary>

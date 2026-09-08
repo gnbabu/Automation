@@ -188,6 +188,53 @@ namespace Selenium.BaseComponents.Utilities
             }
         }
 
+        // Used only by BaseFeatureFixture.LoginByProfile's mid-test role-switch (e.g.
+        // TC.Registration logging in as a different role partway through a test) - a
+        // genuinely different, unattended use case from the initial Run Now/Schedule
+        // login (which uses GetLoginUserCredentials, keyed by an explicitly-picked
+        // LoginUserId, not a role). Role-keyed lookup is appropriate here specifically,
+        // since there's no human picking from a dropdown mid-test. Returns null on any
+        // failure/absence (no EnvironmentId supplied, no login user configured for that
+        // role in that environment, API unreachable, etc.) so the caller can fail
+        // clearly rather than silently falling back to removed hard-coded data.
+        public async Task<LoginUserCredentials?> GetLoginUserCredentialsByRole(string role)
+        {
+            string? environmentId = NUnit.Framework.TestContext.Parameters["EnvironmentId"];
+            if (string.IsNullOrWhiteSpace(environmentId) || string.IsNullOrWhiteSpace(role))
+                return null;
+
+            try
+            {
+                string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
+
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.BaseAddress = new Uri(apiUrl);
+                    httpClient.DefaultRequestHeaders.Accept.Clear();
+                    httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    AttachAuthIfAvailable(httpClient);
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        $"api/LoginUser/resolve?environmentId={Uri.EscapeDataString(environmentId)}&role={Uri.EscapeDataString(role)}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        NUnit.Framework.TestContext.WriteLine(
+                            $"GetLoginUserCredentialsByRole failed: {(int)response.StatusCode} {response.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string data = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<LoginUserCredentials>(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                NUnit.Framework.TestContext.WriteLine($"GetLoginUserCredentialsByRole failed: {ex.Message}");
+                return null;
+            }
+        }
+
         public async Task<List<AutomationData>> GetAutomationData(string flowName)
         {
             List<AutomationData> AutomationData = new List<AutomationData>();

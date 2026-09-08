@@ -109,6 +109,7 @@
         public const string LoginUserHardDelete = "[aut].[usp_LoginUserHardDelete]";
         public const string LoginUserGetByEnvironment = "[aut].[usp_LoginUserGetByEnvironment]";
         public const string LoginUserGetCredentials = "[aut].[usp_LoginUserGetCredentials]";
+        public const string LoginUserResolveByRole = "[aut].[usp_LoginUserResolveByRole]";
 
     }
 }

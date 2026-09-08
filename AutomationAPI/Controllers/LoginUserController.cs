@@ -132,6 +132,25 @@ namespace AutomationAPI.Controllers
             return credentials == null ? NotFound() : Ok(credentials);
         }
 
+        // GET: api/LoginUser/resolve?environmentId={id}&role={role}
+        // Used only by BaseFeatureFixture.LoginByProfile's mid-test role-switch (e.g.
+        // TC.Registration logging in as a different role partway through a test) - a
+        // genuinely different, unattended use case from the initial Run Now/Schedule
+        // login. Same service-token-only protection as GetCredentials, since this also
+        // returns a decrypted password.
+        [HttpGet("resolve")]
+        public async Task<IActionResult> ResolveByRole([FromQuery] int environmentId, [FromQuery] string role)
+        {
+            if (environmentId <= 0 || string.IsNullOrWhiteSpace(role))
+                return BadRequest("environmentId and role are required");
+
+            if (!IsServiceToken())
+                return Forbid();
+
+            var credentials = await _repo.ResolveByRoleAsync(environmentId, role);
+            return credentials == null ? NotFound() : Ok(credentials);
+        }
+
         // ---- helpers ----
 
         private bool IsServiceToken()

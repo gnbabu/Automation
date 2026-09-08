@@ -281,6 +281,32 @@ BEGIN
 END
 GO
 
+-- Resolves the shared "default" login user for a given Environment+Role, used only by
+-- BaseFeatureFixture.LoginByProfile's mid-test role-switch (e.g. TC.Registration logging
+-- in as a different role partway through a test) - a genuinely different use case from
+-- the initial Run Now/Schedule login (an unattended in-test call, not a human picking
+-- from a dropdown), so a role-keyed lookup is appropriate here specifically. Returns the
+-- most-recently-created active match for that Environment+Role, or no rows if none
+-- configured - caller falls back to a clear failure, never silently to hard-coded data.
+CREATE OR ALTER PROCEDURE [aut].[usp_LoginUserResolveByRole]
+(
+    @EnvironmentId INT,
+    @UserRole NVARCHAR(50)
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 1
+        LoginUserId,
+        UserName,
+        EncryptedPassword
+    FROM aut.LoginUser
+    WHERE EnvironmentId = @EnvironmentId AND UserRole = @UserRole AND IsActive = 1
+    ORDER BY CreatedOn DESC;
+END
+GO
+
 -- Guarded like usp_EnvironmentHardDelete - a LoginUserId that's already been used by a
 -- real queued/scheduled/executed run (aut.TestCaseExecutionQueue.LoginUserId, FK'd to
 -- this table) can't be hard-deleted without violating that FK; raise a clear error

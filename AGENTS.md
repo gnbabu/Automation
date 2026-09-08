@@ -1155,6 +1155,67 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: removed all remaining hardcoded credentials/URLs from the test projects
+Asked to "get rid of hardcoded from test projects" now that the API-driven Environment
+URL/LoginUser system was proven working for real. Recommended and implemented full
+removal (not just emptying the data while leaving dead fallback code in place, which
+would only replace a clear failure with a confusing raw dictionary `KeyNotFoundException`)
+- with one addition needed first: **`TC.Registration` actively calls `BaseFeatureFixture.
+LoginByProfile(...)` for a mid-test role switch** (`RegistrationTest.cs` - logging in as
+`StateAdmin` then later as `EnrollementSpecialist` partway through one test), which
+called straight into `UserCredentials` directly, bypassing the whole new system entirely.
+Confirmed via a full grep this was the *only* other real call site beyond the two already
+replaced in a previous session (`ResolveCredentialsAndUrlAsync`'s fallback,
+`LoginByProfile` itself).
+
+Since `LoginByProfile` is a genuinely different use case from the initial Run Now/
+Schedule login (an unattended in-test call, not a human picking from a dropdown), a
+role-keyed lookup is the right fit here specifically - it doesn't contradict the earlier
+"explicit selection, not automatic matching" decision, which was about the *initial*
+login only:
+- New `usp_LoginUserResolveByRole(@EnvironmentId, @UserRole)` - most-recently-created
+  active match for that Environment+Role, or no rows if none configured.
+- New `ILoginUserRepository.ResolveByRoleAsync`/`LoginUserRepository.ResolveByRoleAsync`,
+  `GET api/LoginUser/resolve?environmentId={id}&role={role}` - same service-token-only
+  protection as `GetCredentials` (confirmed by direct testing: a real Admin-role
+  Portal-user token got 403, the service-token shape got 200 with the correct decrypted
+  password, and a role with no configured data correctly got 404).
+- New `APIGatway.GetLoginUserCredentialsByRole(string role)` (Selenium.BaseComponents),
+  same fail-gracefully-return-null pattern as the other two API methods.
+- `BaseFeatureFixture.LoginByProfile` now calls this API first; **no more hard-coded
+  fallback** - throws a clear `InvalidOperationException` naming the missing role/
+  environment and pointing at the Login Users screen, instead of silently using a
+  removed dictionary (which would have thrown an opaque `KeyNotFoundException`).
+
+Then the actual removal:
+- **Deleted `Selenium.BaseComponents/Data/UserCredentials.cs` entirely** (confirmed via a
+  full-solution grep zero live call sites remained anywhere - only its own declaration
+  and one already-commented-out reference in `TC.Registration/Pages/Registration/
+  Agreements.cs`).
+- **`LoginService.GetLoginUrl()`'s hard-coded per-environment URL switch removed** -
+  confirmed at least one entry (`E2EP3`) was outright wrong (pointed at the `E2E` domain,
+  not `E2EP3` - this exact bug was the root cause investigated, then ruled out in favor of
+  a VPN issue, in an earlier debugging session). Now throws a clear exception naming the
+  environment, since reaching this method at all means `BaseFeatureFixture.Url` had
+  nothing else to resolve from (no API-provided `EnvironmentUrl` configured). Fixed a
+  latent bug this uncovered: `LoginByProfile` used to call `LoginService`'s 2-arg
+  `Login(userName, password)` overload, which always calls this method directly with no
+  way to see `BaseFeatureFixture`'s own resolved `_resolvedLoginUrl` - switched to the
+  3-arg overload with the fixture's own `Url` property instead.
+- **Deleted the dead `Users.TestURL(string)` method** (confirmed zero call sites anywhere
+  even before this change - already-dead hard-coded URLs). Left `Users.CurrentEnvironment`/
+  `Users.Environment`'s alias constants in place - still structurally referenced by
+  `CurrentEnvironment`'s own definition, and they're plain enum-like string labels, not
+  secrets.
+
+**Verified for real**: full solution + `AutomationAPI` both build clean (`TC.Registration`
+included, despite depending on the changed `LoginByProfile` signature-compatible
+rewrite). The new resolve-by-role endpoint's three cases were each confirmed by direct
+testing (403/200/404 as described above). Re-ran the exact same real `TC.PriorAuthSearch`
+happy-path flow (real `LoginUserId`, real environment, real login) after removing all the
+hard-coded fallback data - still **Passed**, ~32s, real logs/screenshots - confirming the
+removal didn't regress the now-proven-working API-driven path at all.
+
 ## Follow-up: root-caused a real test failure - VPN, not the LoginUser feature
 Reported as "test cases failing, not picking up username/password properly despite
 `[TestFixture("TechAdmin")]` being present." Investigated via the real DB/API data first

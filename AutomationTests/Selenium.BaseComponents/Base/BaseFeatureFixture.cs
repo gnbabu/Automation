@@ -138,12 +138,14 @@ namespace Selenium.BaseComponents.Pages
         //      - RequiresAuthentication == true and a LoginUserId was supplied (the
         //        person running/scheduling it explicitly picked one): use its
         //        username/password + the resolved EnvironmentUrl.
-        //   2. Fallback, on any failure/absence (API unreachable, no EnvironmentId/
-        //      LoginUserId supplied, local Test Explorer run outside the queue
-        //      pipeline, an environment not yet migrated to EnvironmentUrl/LoginUser
-        //      data, etc.): today's exact hard-coded UserCredentials.UserNameGenerator/
-        //      PasswordGenerator/LoginService.GetLoginUrl() behavior via _profile -
-        //      unchanged from before this feature existed.
+        //   2. If a profile was declared (e.g. [TestFixture("TechAdmin")]) but nothing
+        //      above resolved (no EnvironmentId/LoginUserId supplied, a local Test
+        //      Explorer run outside the queue pipeline, an environment with no
+        //      EnvironmentUrl/LoginUser data configured yet, API unreachable, etc.):
+        //      fail clearly instead of silently logging in with hard-coded credentials
+        //      (removed - see AGENTS.md "getting rid of hardcoded test project values").
+        //      No profile at all means this fixture was never meant to log in (matches
+        //      today's existing "Username stays null" no-op behavior for that case).
         private async Task ResolveCredentialsAndUrlAsync()
         {
             var environmentDetails = await APIGateway.GetEnvironmentDetails();
@@ -172,11 +174,13 @@ namespace Selenium.BaseComponents.Pages
                 }
             }
 
-            // Fallback: today's exact hard-coded behavior, unchanged.
             if (_profile != null)
             {
-                Username = UserCredentials.UserNameGenerator.GetUserName(_profile, environment);
-                pswd = UserCredentials.PasswordGenerator.GetPassword(environment);
+                throw new InvalidOperationException(
+                    $"Could not resolve login credentials for profile '{_profile}'. " +
+                    "Run this test via the Portal with a Login User selected for the target " +
+                    "environment (Environment Management > Login Users), or configure " +
+                    "EnvironmentUrl/RequiresAuthentication for this environment.");
             }
         }
 
@@ -229,10 +233,30 @@ namespace Selenium.BaseComponents.Pages
 
 
 
+        // Used for a mid-test role switch (e.g. TC.Registration logging in as a
+        // different role partway through a test) - a genuinely different, unattended
+        // use case from the initial OneTimeSetUp login (an explicitly-picked
+        // LoginUserId, resolved once up front). Resolves via the API first
+        // (Environment + role, see APIGatway.GetLoginUserCredentialsByRole); no more
+        // hard-coded UserCredentials fallback - fails clearly instead, since silently
+        // logging in with the wrong (or no) credentials for a role switch is worse than
+        // a clear error.
         public void LoginByProfile(string profile)
         {
-            var uname = UserCredentials.UserNameGenerator.GetUserName(profile, Users.CurrentEnvironment);
-            LoginService.Login(uname, UserCredentials.PasswordGenerator.GetPassword(Users.CurrentEnvironment));
+            var credentials = APIGateway.GetLoginUserCredentialsByRole(profile).GetAwaiter().GetResult();
+            if (credentials == null || string.IsNullOrWhiteSpace(credentials.UserName))
+            {
+                throw new InvalidOperationException(
+                    $"No login user is configured for role '{profile}' in this environment. " +
+                    "Add one via the Environment Management > Login Users screen.");
+            }
+
+            // 3-arg overload with this fixture's own resolved Url (API-backed, falls
+            // back to LoginService.GetLoginUrl() only if nothing else resolved it) -
+            // deliberately not the 2-arg Login(userName, password), which always calls
+            // LoginService.GetLoginUrl() directly and has no way to see this fixture's
+            // own _resolvedLoginUrl.
+            LoginService.Login(Url, credentials.UserName, credentials.Password);
         }
 
         public bool IsActive()

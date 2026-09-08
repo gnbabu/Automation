@@ -11,7 +11,12 @@ namespace AutomationAPI.Repositories.Interfaces
 
         Task<IEnumerable<LoginUserModel>> GetByEnvironmentAsync(int environmentId);
 
-        // The only method that ever returns a decrypted password.
+        // The only methods that ever return a decrypted password.
         Task<LoginUserCredentials?> GetCredentialsAsync(int loginUserId);
+
+        // Used only by BaseFeatureFixture.LoginByProfile's mid-test role-switch - a
+        // genuinely different, unattended use case from the initial Run Now/Schedule
+        // login (see usp_LoginUserResolveByRole).
+        Task<LoginUserCredentials?> ResolveByRoleAsync(int environmentId, string userRole);
     }
 }
