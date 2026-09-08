@@ -17,7 +17,9 @@ namespace Selenium.BaseComponents.Utilities
         public const string HeadLess = "--headless";
         public const string AGENT_MACHINENAME = "AGENT_MACHINENAME";
         public const string Disable_notifications = "--disable-notifications";
-        public const string LoginUrl = "https://ohpnm-dev.omes.maximus.com/OH_PNM_INT01/Account/Login.aspx";
-
+        // LoginUrl (hard-coded INT01 login page) removed - confirmed via a full-solution
+        // grep it had zero call sites anywhere, same as the other dead hard-coded values
+        // already removed (Users.TestURL, UserCredentials.cs). The real, live equivalent
+        // is aut.Environment.EnvironmentUrl, resolved by BaseFeatureFixture.Url.
     }
 }
