@@ -1155,6 +1155,237 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: root-caused a real test failure - VPN, not the LoginUser feature
+Reported as "test cases failing, not picking up username/password properly despite
+`[TestFixture("TechAdmin")]` being present." Investigated via the real DB/API data first
+(not by assumption): confirmed a real `aut.LoginUser` row existed (`LoginUserId=4`,
+`EnvironmentId=21`, `UserName=autotechadmin` - the correct real credential),
+`aut.Environment`'s `EnvironmentUrl`/`RequiresAuthentication` were both correct, and the
+live API returned exactly the right values for both `GET api/Environment/21` and
+`GET api/LoginUser/environment/21`. The real queued failure was always the same
+`NoSuchElementException` for the login page's *username* field specifically - not a
+wrong-password failure (which would fail one field later, at the *password* field, as
+`TCLoginUserWrong`'s deliberately-fake-credential run from the original decisive proof
+correctly did) - meaning the browser never actually reached a working real login page at
+all, regardless of which credential path resolved.
+
+Added a permanent, generally useful diagnostic while investigating: `NUnitEngineTestRunner.
+ParseRunResults` now also appends each `<test-case>`'s `<output>` node (captured
+`TestContext.WriteLine`/`Console.Write` calls) to the stored `ErrorMessage` when present -
+previously this was silently invisible everywhere once the isolated child process exited,
+making a failure like a silently-caught API-resolution fallback effectively undiagnosable
+from the Portal/DB alone.
+
+**Root cause confirmed by direct testing**: the user's VPN was off. Re-ran the exact same
+failing test case, unchanged, immediately after turning the VPN on (built and ran a
+temporary diagnostic `AutomationAPI` instance on a separate port to avoid disturbing the
+user's own live VS-debugged instance on 7147) - **Passed**, ~35s real duration, real
+logs/screenshots captured, using the real `LoginUserId=4` (`autotechadmin`) credential via
+the new API-driven resolution path. Confirms the LoginUser selection feature itself was
+correct all along - the real OHPNM environment is simply unreachable without VPN, which
+manifests as "username field not found" (the page never loads at all) rather than a
+credential-specific error, regardless of which credential-resolution path is used.
+
+## Follow-up: real Delete (not just Disable) for Login Users
+Asked why a login user showed as Inactive after adding one - checked the actual DB data
+directly (`SELECT ... FROM aut.LoginUser`) and confirmed the only 3 rows in the table
+were leftover verification test rows from earlier, deliberately soft-deleted
+(`IsActive = 0`) as part of that verification's own cleanup - **not** a bug. New rows
+correctly default to `IsActive = 1` via the table's own `DEFAULT 1` constraint,
+untouched by any code path (confirmed by re-reading `LoginUserRepository.CreateAsync`/
+`usp_LoginUserCreate` - neither ever sets it to anything else).
+
+Also asked to replace "Disable" with a real "Delete" option:
+- New `usp_LoginUserHardDelete` - guarded the same way `usp_EnvironmentHardDelete`
+  already is: checks `aut.TestCaseExecutionQueue.LoginUserId` (FK'd to this table) for
+  existing usage first and raises a clear error instead of a raw FK-violation if a
+  login user has already been used by a real queued/scheduled run - **confirmed this
+  guard is load-bearing, not defensive-for-no-reason**: directly queried the DB first
+  and found one of the 3 leftover test rows (the "deliberate wrong credentials" one from
+  the earlier decisive proof) genuinely is referenced by a real queue row.
+- New `ILoginUserRepository.HardDeleteAsync`/`LoginUserRepository.HardDeleteAsync`,
+  `LoginUserController`'s `DELETE api/LoginUser/{id}/hard` (mirrors
+  `EnvironmentController.HardDelete`'s exact shape), `LoginUserService.hardDelete()`.
+- `environment-login-users.component.*`: the "Disable" button/`disable()` method
+  (soft-delete) replaced with "Delete"/`delete()` (hard-delete, with a
+  permanently-deletes confirmation prompt matching `EnvironmentManagementComponent.
+  delete()`'s wording). The soft-delete endpoint/procedure/service method are left in
+  place (unused from the UI now, not removed) - it's exactly the fallback path the new
+  hard-delete's own error message points to when deletion is blocked by real usage.
+- Verified the build compiles cleanly end to end (DB migration re-applied, `AutomationAPI`
+  and the Angular app both build with 0 errors) - could not do a fresh live-process
+  verification this time because port 7147 was occupied by the user's own
+  `AutomationAPI.exe`, running under Visual Studio's debugger (`VsDebugConsole.exe`) -
+  confirmed via `Win32_Process` that this session's shell does not have permission to
+  terminate it (`Access is denied`). Needs a debug-session restart on the user's side to
+  pick up and verify this specific change live.
+
+## Follow-up: Portal User is now a required selection in the Login Users form
+Per direction, dropped the "Default (all users)" option from the Add/Edit form's Portal
+User dropdown - every *new* login user must now be tied to a specific Portal User
+(`environment-login-users.component.html`'s select gets `required` + a disabled
+placeholder instead of a selectable `null` option; `isInvalid` now also checks
+`model.portalUserId`). `PortalUserId` remains nullable in `aut.LoginUser` itself (no DB
+migration needed) - any pre-existing row with a null `PortalUserId` still displays/
+works correctly (shown as "Default (all users)" in read-only contexts, e.g. the Run
+Now/Schedule dropdowns' labels), this only changes what the *form* allows going forward.
+
+## Per-environment login users, selected explicitly at Run Now/Schedule time
+Replaces the hard-coded `Selenium.BaseComponents.Data.UserCredentials`/`Users.CurrentEnvironment`-driven
+login flow with API/database-driven Environment URLs and per-environment login
+credentials - **explicitly picked by the person queuing/scheduling a run**, not
+automatically matched by role/assigned-user. Full backward compatibility preserved: any
+environment/role without configured data falls back to today's exact hard-coded
+behavior.
+
+### Database (`Database/LoginUser_And_Environment_Auth_Migration.sql`, idempotent)
+- `aut.Environment` gains `EnvironmentUrl` (nullable) and `RequiresAuthentication`
+  (`BIT NOT NULL DEFAULT 1` - matches every existing environment's actual behavior
+  today, so nothing regresses). `usp_EnvironmentCreate/Update/GetAll/GetById` updated to
+  accept/return both.
+- New `aut.LoginUser` table: `EnvironmentId`, optional `PortalUserId` (label only -
+  "whose credential is this", not a matching key), `UserRole` (free-text label matching
+  whatever a test's own `[TestFixture("...")]` declares, e.g. "TechAdmin"/"CredSpec" -
+  not enforced/auto-matched), `UserName`, `EncryptedPassword`, `IsActive`, audit
+  columns. No uniqueness constraints on Role/PortalUserId - an environment can have any
+  number of login users, each individually selectable.
+- New stored procs: `usp_LoginUserCreate/Update/SoftDelete`,
+  `usp_LoginUserGetByEnvironment` (list, never returns the password - used by both the
+  management screen and the Run Now/Schedule dropdowns), `usp_LoginUserGetCredentials`
+  (by id - the **only** procedure that ever returns the encrypted password).
+- `aut.TestCaseExecutionQueue` gains a nullable `LoginUserId` (the specific login user
+  selected at Run Now/Schedule time - one shared value for the whole batch on bulk
+  actions, since those are already scoped to a single assignment/environment) and the
+  existing `usp_SingleRunTestCaseNow`/`usp_BulkRunTestCasesNow`/
+  `usp_ScheduleSingleTestCase`/`usp_BulkScheduleTestCases`/`usp_GetPendingExecutionQueues`
+  (also gains `EnvironmentId`, sourced from `aut.TestCaseAssignment`, already present
+  there) were updated in place to thread it through - all live definitions were queried
+  directly from the database first (`OBJECT_DEFINITION`) rather than trusted from the
+  many overlapping historical migration `.sql` files in `Database/`, to guarantee the
+  updated procs matched exactly what's actually running.
+- Seed data deliberately narrow: only `E2EP3`/`PROD` get `EnvironmentUrl` populated
+  (matching `LoginService.GetLoginUrl()`'s hard-coded switch) - no new `aut.Environment`
+  rows created for aliases (`DEV01`/`INT01`/etc.) that don't already exist as real rows.
+  No `aut.LoginUser` rows are seeded via raw SQL at all - real login users get added
+  through the new screen/API (which encrypts via the real `CredentialCipher`), not via
+  hand-computed ciphertext literals in a migration script.
+
+### Backend (`AutomationAPI`)
+- New `CredentialCipher` (`Repositories/Helpers/`) - a self-contained mirror of
+  `Selenium.BaseComponents.Utilities.EncryptDycrypt`'s exact algorithm (MD5-derived key +
+  TripleDES-ECB, same salt), reused for consistency rather than switching to AES.
+  Separate copy, not a shared reference, because `AutomationAPI` deliberately never
+  references `AutomationTests`/`Selenium.BaseComponents` (avoids pulling Selenium/
+  WebDriver dependencies into the API's own deployable).
+- New `LoginUserController`/`ILoginUserRepository`/`LoginUserRepository`/
+  `LoginUserModel` mirroring `EnvironmentController`'s exact conventions.
+  `GET api/LoginUser/{id}/credentials` is the only endpoint that ever returns a
+  decrypted password - protected by an extra check beyond the usual `[Authorize]`
+  (`IsServiceToken()`, checking for `ServiceTokenGenerator`'s exact claim shape -
+  `NameIdentifier == "0"` and `Name == "TestRunner"`) so a normal Portal user's valid,
+  `[Authorize]`-satisfying token (even with the Admin role) gets a 403, not just any
+  authenticated caller - **confirmed by direct testing**: a real Admin-role portal token
+  got 403, the real service-token shape got 200 with the correct decrypted password.
+- `EnvironmentModel`/`EnvironmentRequestDto` extended with `EnvironmentUrl`/
+  `RequiresAuthentication`, threaded through `EnvironmentRepository`/
+  `EnvironmentController` unchanged otherwise.
+- `SingleRunNowRequest`/`BulkRunNowRequest`/`SingleScheduleRequest`/
+  `BulkScheduleRequest` gain an optional `LoginUserId`, threaded through
+  `TestCaseExecutionQueueController` -> `ITestCaseExecutionQueueRepository`/
+  `TestCaseExecutionQueueRepository` -> the queue insert stored procs -> (via
+  `usp_GetPendingExecutionQueues`, alongside the new `EnvironmentId`) ->
+  `PendingExecutionQueue` -> `TestRunRequest` -> `NUnitEngineTestRunner`'s
+  `TestParameters` (`LoginUserId`/`EnvironmentId`, alongside the existing `Browser`/
+  `AccessToken`/`AssignmentId`/`AssignmentTestCaseId` - identical threading mechanism,
+  already proven).
+
+### Test framework (`Selenium.BaseComponents`)
+- `APIGatway` gains `GetEnvironmentDetails()` (`GET api/Environment/{id}`) and
+  `GetLoginUserCredentials()` (`GET api/LoginUser/{id}/credentials`), both reading their
+  id from `TestContext.Parameters` and reusing the existing `AttachAuthIfAvailable` -
+  both fail gracefully (return `null`, logged via `TestContext.WriteLine`) rather than
+  throwing, matching `SaveTestCaseLog`'s established pattern.
+- `BaseFeatureFixture`: credential/URL resolution moved from the constructor into
+  `[OneTimeSetUp]` (now `async Task InitializeTestSuite()` - NUnit supports async
+  `[OneTimeSetUp]` natively; confirmed no overrides existed anywhere before changing the
+  signature) - `TestContext.Parameters` isn't reliably populated during construction,
+  the same reasoning already established for `AssignmentId`/`AssignmentTestCaseId`. The
+  constructor now only stashes `profile` (still exactly the `[TestFixture("...")]`
+  string) for the fallback path. Resolution order in `ResolveCredentialsAndUrlAsync()`:
+  1. `EnvironmentId` available -> call `GetEnvironmentDetails()`.
+  2. `RequiresAuthentication == false` -> leave `Username`/`pswd` null, so
+     `InitializeChromeAndLogin`'s existing `if (Username != null)` guard skips login
+     entirely - **no behavior change** for any environment that doesn't need auth.
+  3. `RequiresAuthentication == true` and a `LoginUserId` was supplied (the person
+     running/scheduling it explicitly picked one) -> `GetLoginUserCredentials()`,
+     use its username/password + the resolved `EnvironmentUrl`.
+  4. **Fallback** on any failure/absence (API unreachable, no `EnvironmentId`/
+     `LoginUserId` supplied, a local Test Explorer run outside the queue pipeline, an
+     environment not yet configured with `EnvironmentUrl`/`LoginUser` data, etc.):
+     today's exact hard-coded `UserCredentials.UserNameGenerator`/`PasswordGenerator`/
+     `LoginService.GetLoginUrl()` behavior via the stashed `profile` - unchanged.
+
+### Frontend (`ohpnm-test-portal`)
+- Environment create/edit form gains an "Environment URL" field and an "Authentication
+  Required" checkbox (default checked).
+- New dedicated screen (not a modal) `environment-login-users.component.*`, routed at
+  `environment-management/:id/login-users` (same `authGuard`+`adminGuard` pattern as
+  every other environment-management route) - one page: a flat table (Role | Portal
+  User or blank | Username | Active | Edit | Disable) plus an Add/Edit form section on
+  the same page. Password is write-only - never pre-filled/shown on edit; leaving it
+  blank on update keeps the existing password unchanged (`usp_LoginUserUpdate`'s
+  `COALESCE(@EncryptedPassword, EncryptedPassword)`). New "Login Users" action button
+  added to each environment card.
+- **"Run Now" had no dialog at all before this** (confirmed by reading the code -
+  `onRunNow`/`onBulkRunNow` went straight from a plain `confirm()` to a hardcoded
+  `browser: 'Chrome'`) - new `RunNowDialogComponent` (mirrors
+  `ScheduleTestcasesDialogComponent`'s `ModalService` `open(callback)`/`submit()`
+  pattern) is shown **only** when the target environment's `RequiresAuthentication` is
+  `true` (checked via a new `resolveLoginUserForRunNow` helper in
+  `test-case-execution-panel.component.ts`, using `selectedAssignmentRelease.
+  environmentId` - already resolved there) - a flat, required "Login User" dropdown,
+  sourced from `GET api/LoginUser/environment/{id}`. When `RequiresAuthentication` is
+  `false` (or the environment/its login users can't be resolved), no dialog appears at
+  all and execution proceeds exactly as before this feature existed.
+- `ScheduleTestcasesDialogComponent` extended the same way - a conditionally-shown
+  Login User dropdown (only rendered when login users were actually passed to `open()`).
+- Bulk actions (`onBulkRunNow`/`onBulkSchedule`) use **one shared** Login User selection
+  for the whole batch - confirmed via `selectedTestCases`/`testCases` always being
+  scoped to a single `selectedAssignment`, meaning bulk actions are already inherently
+  single-environment.
+- New `LoginUserService`, `ILoginUserModel`/`ILoginUserRequestDto` interfaces,
+  `environmentUrl`/`requiresAuthentication` added to `IEnvironmentModel`/
+  `IEnvironmentRequestDto`, `loginUserId?` added to the 4 run-now/schedule request
+  interfaces.
+
+### Verified for real, end-to-end (not just build success)
+Used the real, already-running `AutomationAPI` instance (stopped and rebuilt fresh first
+to pick up all these backend changes) against `TC.PriorAuthSearch` in the real `E2EP3`
+environment:
+- `GET api/Environment/21` correctly returns the new `environmentUrl`/
+  `requiresAuthentication` fields.
+- `GET api/LoginUser/environment/21` never includes a password field.
+- `GET api/LoginUser/{id}/credentials`: a real Admin-role Portal-user JWT got **403**; a
+  JWT with `ServiceTokenGenerator`'s exact claim shape got **200** with the correct
+  decrypted password (round-tripped through `CredentialCipher` correctly).
+- `usp_LoginUserUpdate` with no password supplied correctly left the existing
+  (different) encrypted password unchanged - confirmed via a follow-up credentials
+  fetch.
+- **The decisive end-to-end proof**: queued the same real test twice - once with a
+  `LoginUserId` pointing at a row with a **deliberately fake** username/password, once
+  with no `LoginUserId` at all. The no-`LoginUserId` run **Passed** (fell back to the
+  real hard-coded credentials, logged in for real). The fake-credential run **Failed**
+  at `OneTimeSetUp` specifically because the fake username was actually submitted to the
+  real OHPNM login page (which never advances to the password field for a nonexistent
+  account) - conclusive proof the API-resolved credential was genuinely used, not
+  silently ignored in favor of the hard-coded fallback.
+- Also verified `RequiresAuthentication = false` on the real `E2EP3` environment (then
+  restored back to `true` afterward): the resulting run failed in a **completely
+  different way** - 0.28s duration, failing at the actual test method's first UI
+  interaction (the hamburger menu, only present when logged in) rather than at
+  `OneTimeSetUp`'s login step - confirming login was skipped entirely rather than
+  attempted and failing silently.
+
 ## Fixed: the widespread `SelfService` selector bug (confirmed against the real page, not just by comparison)
 Real execution of `TC.PriorAuthoriztion` (once its own consolidation/logging work was
 done) reproduced the exact same `NoSuchElementException` already seen for

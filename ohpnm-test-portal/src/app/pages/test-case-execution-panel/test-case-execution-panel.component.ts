@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import {
   GridColumn,
   IAssignedTestCase,
+  ILoginUserModel,
   IReleaseModel,
   ITestCaseAssignmentEntity,
   ITestScreenshot,
@@ -18,6 +19,8 @@ import {
   AuthService,
   CommonToasterService,
   ConfirmService,
+  EnvironmentService,
+  LoginUserService,
   ReleaseService,
   ScreenshotService,
   TestCaseAssignmentService,
@@ -28,6 +31,7 @@ import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropd
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 import { ConfirmDialogComponent } from 'app/core/modals/confirm-dialog/confirm-dialog.component';
 import { ScheduleTestcasesDialogComponent } from './schedule-testcases-dialog/schedule-testcases-dialog.component';
+import { RunNowDialogComponent } from './run-now-dialog/run-now-dialog.component';
 import { TestScreenshotGalleryComponent } from './test-screenshot-gallery/test-screenshot-gallery.component';
 import { ExecutionLogsDialogComponent } from 'app/common-modals/execution-logs-dialog/execution-logs-dialog.component';
 import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
@@ -41,6 +45,7 @@ import { forkJoin } from 'rxjs';
     FormsModule,
     DataGridComponent,
     ScheduleTestcasesDialogComponent,
+    RunNowDialogComponent,
     TestScreenshotGalleryComponent,
     ExecutionLogsDialogComponent,
   ],
@@ -57,7 +62,9 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
     private testCaseExecutionService: TestCaseExecutionService,
     private screenshotService: ScreenshotService,
     private executionLogsService: TestCaseExecutionLogsService,
-    private releaseService: ReleaseService
+    private releaseService: ReleaseService,
+    private environmentService: EnvironmentService,
+    private loginUserService: LoginUserService
   ) {}
 
   @ViewChild('testCaseIdTemplate', { static: true })
@@ -76,6 +83,9 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
   @ViewChild('scheduleDialog')
   scheduleDialog!: ScheduleTestcasesDialogComponent;
+
+  @ViewChild('runNowDialog')
+  runNowDialog!: RunNowDialogComponent;
 
   @ViewChild(TestScreenshotGalleryComponent)
   gallery!: TestScreenshotGalleryComponent;
@@ -399,21 +409,67 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const payload = {
-      assignmentId: this.selectedAssignment?.assignmentId!,
-      assignmentTestCaseId: testCase.assignmentTestCaseId,
-      browser: 'Chrome',
-    };
+    // Only shows a Login User selection dialog when the target environment requires
+    // authentication - otherwise proceeds exactly as before this feature existed (no
+    // dialog, no loginUserId, hardcoded 'Chrome').
+    this.resolveLoginUserForRunNow((loginUserId) => {
+      const payload = {
+        assignmentId: this.selectedAssignment?.assignmentId!,
+        assignmentTestCaseId: testCase.assignmentTestCaseId,
+        browser: 'Chrome',
+        loginUserId,
+      };
 
-    this.testCaseExecutionService.singleRunNow(payload).subscribe({
-      next: () => {
-        this.toaster.success('Test case added to execution queue.');
-        this.loadAssignedTestCases();
-        this.isUserPerformingAction = false; // resume refresh
+      this.testCaseExecutionService.singleRunNow(payload).subscribe({
+        next: () => {
+          this.toaster.success('Test case added to execution queue.');
+          this.loadAssignedTestCases();
+          this.isUserPerformingAction = false; // resume refresh
+        },
+        error: () => {
+          this.toaster.error('Failed to queue test case.');
+          this.isUserPerformingAction = false;
+        },
+      });
+    });
+  }
+
+  // Checks the selected assignment's Release's environment - if it requires
+  // authentication, opens runNowDialog to let the person pick which configured login
+  // user to use, then calls onProceed with the chosen id. If it doesn't (or the
+  // environment/its login users can't be resolved), calls onProceed with no id at all -
+  // matches today's behavior exactly for any environment that doesn't need auth.
+  private resolveLoginUserForRunNow(
+    onProceed: (loginUserId?: number) => void
+  ): void {
+    const environmentId = this.selectedAssignmentRelease?.environmentId;
+    if (!environmentId) {
+      onProceed(undefined);
+      return;
+    }
+
+    this.environmentService.getById(environmentId).subscribe({
+      next: (env) => {
+        if (!env.requiresAuthentication) {
+          onProceed(undefined);
+          return;
+        }
+
+        this.loginUserService.getByEnvironment(environmentId).subscribe({
+          next: (loginUsers) => {
+            this.runNowDialog.open(loginUsers, (data) =>
+              onProceed(data.loginUserId)
+            );
+          },
+          error: (err) => {
+            console.error('Failed to load login users:', err);
+            onProceed(undefined);
+          },
+        });
       },
-      error: () => {
-        this.toaster.error('Failed to queue test case.');
-        this.isUserPerformingAction = false;
+      error: (err) => {
+        console.error('Failed to load environment:', err);
+        onProceed(undefined);
       },
     });
   }
@@ -453,27 +509,30 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
     this.isUserPerformingAction = true;
 
-    this.scheduleDialog.open((data: any) => {
-      const scheduleDate = this.combineDateAndTime(data.date, data.time);
+    this.resolveLoginUsersForSchedule((loginUsers) => {
+      this.scheduleDialog.open((data: any) => {
+        const scheduleDate = this.combineDateAndTime(data.date, data.time);
 
-      const payload = {
-        assignmentId: this.selectedAssignment?.assignmentId!,
-        assignmentTestCaseId: testCase.assignmentTestCaseId,
-        scheduleDate: this.formatLocalDateTime(scheduleDate),
-        browser: data.browser,
-      };
+        const payload = {
+          assignmentId: this.selectedAssignment?.assignmentId!,
+          assignmentTestCaseId: testCase.assignmentTestCaseId,
+          scheduleDate: this.formatLocalDateTime(scheduleDate),
+          browser: data.browser,
+          loginUserId: data.loginUserId,
+        };
 
-      this.testCaseExecutionService.singleSchedule(payload).subscribe({
-        next: () => {
-          this.toaster.success('Test case scheduled successfully.');
-          this.loadAssignedTestCases();
-          this.isUserPerformingAction = false;
-        },
-        error: () => {
-          this.toaster.error('Failed to schedule test case.');
-          this.isUserPerformingAction = false;
-        },
-      });
+        this.testCaseExecutionService.singleSchedule(payload).subscribe({
+          next: () => {
+            this.toaster.success('Test case scheduled successfully.');
+            this.loadAssignedTestCases();
+            this.isUserPerformingAction = false;
+          },
+          error: () => {
+            this.toaster.error('Failed to schedule test case.');
+            this.isUserPerformingAction = false;
+          },
+        });
+      }, loginUsers);
     });
   }
 
@@ -504,24 +563,30 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const payload = {
-      assignmentId: this.selectedAssignment?.assignmentId!,
-      assignmentTestCaseIds: this.selectedTestCases.map(
-        (t) => t.assignmentTestCaseId
-      ),
-      browser: 'Chrome',
-    };
+    // Bulk actions are already scoped to a single selectedAssignment/
+    // selectedAssignmentRelease (one environment) - one shared Login User selection is
+    // applied to every queued item in the batch.
+    this.resolveLoginUserForRunNow((loginUserId) => {
+      const payload = {
+        assignmentId: this.selectedAssignment?.assignmentId!,
+        assignmentTestCaseIds: this.selectedTestCases.map(
+          (t) => t.assignmentTestCaseId
+        ),
+        browser: 'Chrome',
+        loginUserId,
+      };
 
-    this.testCaseExecutionService.bulkRunNow(payload).subscribe({
-      next: () => {
-        this.toaster.success('Selected test cases queued successfully.');
-        this.loadAssignedTestCases();
-        this.isUserPerformingAction = false;
-      },
-      error: () => {
-        this.toaster.error('Failed to queue test cases.');
-        this.isUserPerformingAction = false;
-      },
+      this.testCaseExecutionService.bulkRunNow(payload).subscribe({
+        next: () => {
+          this.toaster.success('Selected test cases queued successfully.');
+          this.loadAssignedTestCases();
+          this.isUserPerformingAction = false;
+        },
+        error: () => {
+          this.toaster.error('Failed to queue test cases.');
+          this.isUserPerformingAction = false;
+        },
+      });
     });
   }
 
@@ -538,29 +603,70 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.scheduleDialog.open((data: any) => {
-      const scheduleDate = this.combineDateAndTime(data.date, data.time);
+    // One shared Login User selection for the whole batch - see comment on
+    // onBulkRunNow above.
+    this.resolveLoginUsersForSchedule((loginUsers) => {
+      this.scheduleDialog.open((data: any) => {
+        const scheduleDate = this.combineDateAndTime(data.date, data.time);
 
-      const payload = {
-        assignmentId: this.selectedAssignment?.assignmentId!,
-        assignmentTestCaseIds: this.selectedTestCases.map(
-          (t) => t.assignmentTestCaseId
-        ),
-        scheduleDate: this.formatLocalDateTime(scheduleDate),
-        browser: data.browser,
-      };
+        const payload = {
+          assignmentId: this.selectedAssignment?.assignmentId!,
+          assignmentTestCaseIds: this.selectedTestCases.map(
+            (t) => t.assignmentTestCaseId
+          ),
+          scheduleDate: this.formatLocalDateTime(scheduleDate),
+          browser: data.browser,
+          loginUserId: data.loginUserId,
+        };
 
-      this.testCaseExecutionService.bulkSchedule(payload).subscribe({
-        next: () => {
-          this.toaster.success('Bulk schedule created successfully.');
-          this.loadAssignedTestCases();
-          this.isUserPerformingAction = false;
-        },
-        error: () => {
-          this.toaster.error('Failed to bulk schedule test cases.');
-          this.isUserPerformingAction = false;
-        },
-      });
+        this.testCaseExecutionService.bulkSchedule(payload).subscribe({
+          next: () => {
+            this.toaster.success('Bulk schedule created successfully.');
+            this.loadAssignedTestCases();
+            this.isUserPerformingAction = false;
+          },
+          error: () => {
+            this.toaster.error('Failed to bulk schedule test cases.');
+            this.isUserPerformingAction = false;
+          },
+        });
+      }, loginUsers);
+    });
+  }
+
+  // Checks the selected assignment's Release's environment - if it requires
+  // authentication, resolves its active login users for the Schedule dialog's dropdown.
+  // Returns an empty array otherwise (or on any failure), in which case
+  // ScheduleTestcasesDialogComponent shows no Login User field at all - matches today's
+  // behavior exactly for any environment that doesn't need auth.
+  private resolveLoginUsersForSchedule(
+    onReady: (loginUsers: ILoginUserModel[]) => void
+  ): void {
+    const environmentId = this.selectedAssignmentRelease?.environmentId;
+    if (!environmentId) {
+      onReady([]);
+      return;
+    }
+
+    this.environmentService.getById(environmentId).subscribe({
+      next: (env) => {
+        if (!env.requiresAuthentication) {
+          onReady([]);
+          return;
+        }
+
+        this.loginUserService.getByEnvironment(environmentId).subscribe({
+          next: (loginUsers) => onReady(loginUsers),
+          error: (err) => {
+            console.error('Failed to load login users:', err);
+            onReady([]);
+          },
+        });
+      },
+      error: (err) => {
+        console.error('Failed to load environment:', err);
+        onReady([]);
+      },
     });
   }
 

@@ -144,6 +144,10 @@ namespace AutomationAPI.Repositories.TestRunner
                 testParameters["AssignmentId"] = request.AssignmentId.ToString();
             if (request.AssignmentTestCaseId > 0)
                 testParameters["AssignmentTestCaseId"] = request.AssignmentTestCaseId.ToString();
+            if (request.LoginUserId.HasValue)
+                testParameters["LoginUserId"] = request.LoginUserId.Value.ToString();
+            if (request.EnvironmentId.HasValue)
+                testParameters["EnvironmentId"] = request.EnvironmentId.Value.ToString();
 
             if (testParameters.Count > 0)
             {
@@ -203,6 +207,18 @@ namespace AutomationAPI.Repositories.TestRunner
                     message = failureNode.InnerText;
                 else if (reasonNode != null)
                     message = reasonNode.InnerText;
+
+                // Surfaces TestContext.WriteLine output (e.g. APIGatway's
+                // "GetEnvironmentDetails failed: ..."/"GetLoginUserCredentials failed:
+                // ..." diagnostics on a best-effort API call failure) into the stored
+                // ErrorMessage - previously invisible anywhere once the isolated child
+                // process exited, making failures like a silent API-resolution fallback
+                // impossible to diagnose from the Portal/DB alone.
+                var outputNode = testCase.SelectSingleNode("output");
+                if (outputNode != null && !string.IsNullOrWhiteSpace(outputNode.InnerText))
+                    message = string.IsNullOrEmpty(message)
+                        ? outputNode.InnerText
+                        : $"{message}\n--- Test output ---\n{outputNode.InnerText}";
 
                 DateTime? startTime = ParseXmlDateTime(testCase.Attributes?["start-time"]?.Value);
                 DateTime? endTime = ParseXmlDateTime(testCase.Attributes?["end-time"]?.Value);

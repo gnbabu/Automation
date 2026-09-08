@@ -1,0 +1,155 @@
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="mb-1">
+        Login Users
+        <span class="text-muted" *ngIf="environment"> - {{ environment.environmentName }}</span>
+      </h4>
+      <small class="text-muted">
+        Manage per-environment login credentials, selected explicitly when running or
+        scheduling a test.
+      </small>
+    </div>
+    <button class="btn btn-outline-secondary" (click)="back()">
+      Back to Environments
+    </button>
+  </div>
+
+  <div class="brand-underline mb-3"></div>
+
+  <!-- Loading / empty states -->
+  <div *ngIf="loading" class="text-center py-4">
+    <div class="spinner-border text-danger mb-2" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="text-muted">Loading login users...</div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-responsive mb-4" *ngIf="!loading">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Role</th>
+          <th>Portal User</th>
+          <th>Username</th>
+          <th>Active</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let lu of loginUsers">
+          <td>{{ lu.userRole }}</td>
+          <td>{{ lu.portalUserName || '\u2014 (Default - all users)' }}</td>
+          <td>{{ lu.userName }}</td>
+          <td>
+            <span
+              class="badge"
+              [ngClass]="lu.isActive ? 'bg-success' : 'bg-secondary'"
+            >
+              {{ lu.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="text-end">
+            <button
+              class="btn btn-outline-secondary btn-sm me-2"
+              (click)="startEdit(lu)"
+            >
+              Edit
+            </button>
+            <button
+              class="btn btn-outline-danger btn-sm"
+              (click)="delete(lu)"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="loginUsers.length === 0">
+          <td colspan="5" class="text-center text-muted py-3">
+            No login users configured for this environment yet.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Add / Edit form -->
+  <div class="card p-4">
+    <h5 class="mb-3">{{ isEditing ? 'Edit Login User' : 'Add Login User' }}</h5>
+
+    <form #luForm="ngForm" (ngSubmit)="save()">
+      <div class="row gy-3">
+        <div class="col-md-3">
+          <label class="form-label">Portal User *</label>
+          <select
+            name="portalUserId"
+            class="form-select"
+            [(ngModel)]="model.portalUserId"
+            required
+          >
+            <option [ngValue]="null" disabled>Select a portal user...</option>
+            <option *ngFor="let u of portalUsers" [ngValue]="u.userId">
+              {{ u.userName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Role *</label>
+          <input
+            name="userRole"
+            class="form-control"
+            [(ngModel)]="model.userRole"
+            required
+            maxlength="50"
+            placeholder="e.g. TechAdmin"
+          />
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Username *</label>
+          <input
+            name="userName"
+            class="form-control"
+            [(ngModel)]="model.userName"
+            required
+            maxlength="100"
+          />
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">
+            Password {{ isEditing ? '' : '*' }}
+          </label>
+          <input
+            type="password"
+            name="password"
+            class="form-control"
+            [(ngModel)]="model.password"
+            autocomplete="new-password"
+            [placeholder]="isEditing ? 'Leave blank to keep current password' : ''"
+          />
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          *ngIf="isEditing"
+          (click)="cancelEdit()"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn-purple"
+          [disabled]="isInvalid || isSaving"
+        >
+          {{ isEditing ? 'Update Login User' : 'Add Login User' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

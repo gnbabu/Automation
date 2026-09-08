@@ -26,6 +26,17 @@
         // process successfully starting.
         public int AssignmentId { get; set; }
         public int AssignmentTestCaseId { get; set; }
+
+        // Set only when the environment required authentication and a specific login
+        // user was explicitly picked at Run Now/Schedule time (see AGENTS.md) - resolved
+        // by BaseFeatureFixture via a service-JWT-only API call. Null when the
+        // environment doesn't require authentication, or for runs outside the queue
+        // pipeline (falls back to today's hard-coded UserCredentials behavior).
+        public int? LoginUserId { get; set; }
+
+        // The Release's environment - resolved by BaseFeatureFixture via
+        // GET api/Environment/{id} to get EnvironmentUrl/RequiresAuthentication.
+        public int? EnvironmentId { get; set; }
     }
 
     public interface ITestRunner

@@ -9,6 +9,15 @@ namespace AutomationAPI.Repositories.Models
         public string Description { get; set; }
         public bool IsActive { get; set; }
 
+        // Nullable - falls back to Selenium.BaseComponents.Data.Users/LoginService's
+        // hard-coded URL switch when not set (see AGENTS.md).
+        public string? EnvironmentUrl { get; set; }
+
+        // Defaults true (matches every existing environment's actual behavior today).
+        // When false, Selenium tests skip the login step entirely rather than resolving
+        // credentials.
+        public bool RequiresAuthentication { get; set; } = true;
+
         public int CreatedBy { get; set; }
         public DateTime CreatedOn { get; set; }
 
@@ -39,6 +48,11 @@ namespace AutomationAPI.Repositories.Models
 
         [MaxLength(255)]
         public string Description { get; set; }
+
+        [MaxLength(500)]
+        public string? EnvironmentUrl { get; set; }
+
+        public bool? RequiresAuthentication { get; set; }
 
         [Required]
         public int CreatedBy { get; set; }   // FK → aut.User(UserID)

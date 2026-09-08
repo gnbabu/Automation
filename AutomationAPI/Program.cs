@@ -57,6 +57,7 @@ builder.Services.AddScoped<IReleaseFileService, ReleaseFileService>();
 builder.Services.AddScoped<IReleaseReadinessService, ReleaseReadinessService>();
 builder.Services.AddScoped<IReleaseNotificationService, ReleaseNotificationService>();
 builder.Services.AddScoped<IEnvironmentRepository, EnvironmentRepository>();
+builder.Services.AddScoped<ILoginUserRepository, LoginUserRepository>();
 
 // Email providers - all plain SMTP, so every one of them (Brevo, Mailgun, Amazon SES's
 // SMTP interface, and any future SMTP-based vendor - Office365, Zoho, Postmark, etc.)

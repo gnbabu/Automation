@@ -67,7 +67,9 @@ namespace AutomationAPI.Repositories.TestRunner
                             Browser = queue.Browser,
                             AccessToken = tokenGenerator.GenerateTestRunnerToken(),
                             AssignmentId = queue.AssignmentId,
-                            AssignmentTestCaseId = queue.AssignmentTestCaseId
+                            AssignmentTestCaseId = queue.AssignmentTestCaseId,
+                            LoginUserId = queue.LoginUserId,
+                            EnvironmentId = queue.EnvironmentId
                         });
 
                         foreach (var result in results)

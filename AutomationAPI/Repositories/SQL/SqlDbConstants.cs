@@ -101,5 +101,14 @@
         public const string EnvironmentSoftDelete = "[aut].[usp_EnvironmentSoftDelete]";
         public const string EnvironmentHardDelete = "[aut].[usp_EnvironmentHardDelete]";
 
+        // Login User Management (per-environment credentials, selected explicitly at Run
+        // Now/Schedule time - see AGENTS.md)
+        public const string LoginUserCreate = "[aut].[usp_LoginUserCreate]";
+        public const string LoginUserUpdate = "[aut].[usp_LoginUserUpdate]";
+        public const string LoginUserSoftDelete = "[aut].[usp_LoginUserSoftDelete]";
+        public const string LoginUserHardDelete = "[aut].[usp_LoginUserHardDelete]";
+        public const string LoginUserGetByEnvironment = "[aut].[usp_LoginUserGetByEnvironment]";
+        public const string LoginUserGetCredentials = "[aut].[usp_LoginUserGetCredentials]";
+
     }
 }

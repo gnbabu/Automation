@@ -22,6 +22,8 @@ export class EnvironmentFormComponent implements OnInit {
     description: '',
     isActive: true,
     createdBy: 0,
+    environmentUrl: '',
+    requiresAuthentication: true,
   };
 
   isEdit = false;
@@ -55,6 +57,8 @@ export class EnvironmentFormComponent implements OnInit {
           description: env.description,
           isActive: env.isActive,
           createdBy: env.createdBy,
+          environmentUrl: env.environmentUrl ?? '',
+          requiresAuthentication: env.requiresAuthentication,
         };
       },
       error: (err) => {

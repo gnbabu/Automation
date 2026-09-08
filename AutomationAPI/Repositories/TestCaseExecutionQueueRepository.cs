@@ -17,13 +17,14 @@ namespace AutomationAPI.Repositories
         }
 
 
-        public async Task<(int Id, Guid QueueId)> SingleRunNowAsync(int assignmentId, int assignmentTestCaseId, string browser)
+        public async Task<(int Id, Guid QueueId)> SingleRunNowAsync(int assignmentId, int assignmentTestCaseId, string browser, int? loginUserId = null)
         {
             var parameters = new[]
             {
                 new SqlParameter("@AssignmentId", assignmentId),
                 new SqlParameter("@AssignmentTestCaseId", assignmentTestCaseId),
-                new SqlParameter("@Browser", browser)
+                new SqlParameter("@Browser", browser),
+                new SqlParameter("@LoginUserId", (object?)loginUserId ?? DBNull.Value)
             };
 
             var result = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.SingleRunTestCaseNow, parameters,
@@ -40,7 +41,7 @@ namespace AutomationAPI.Repositories
             return (row.Id, row.QueueId);
         }
 
-        public async Task<bool> BulkRunNowAsync(int assignmentId, List<int> assignmentTestCaseIds, string browser)
+        public async Task<bool> BulkRunNowAsync(int assignmentId, List<int> assignmentTestCaseIds, string browser, int? loginUserId = null)
         {
             var table = new DataTable();
             table.Columns.Add("AssignmentTestCaseId", typeof(int));
@@ -55,7 +56,8 @@ namespace AutomationAPI.Repositories
                     SqlDbType = SqlDbType.Structured,
                     TypeName = "aut.AssignmentTestCaseIdList"
                 },
-                new SqlParameter("@Browser", browser)
+                new SqlParameter("@Browser", browser),
+                new SqlParameter("@LoginUserId", (object?)loginUserId ?? DBNull.Value)
             };
 
             var result = await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.BulkRunTestCasesNow, parameters);
@@ -63,14 +65,15 @@ namespace AutomationAPI.Repositories
             return result == 1;
         }
 
-        public async Task<(int Id, Guid QueueId)> SingleScheduleAsync(int assignmentId, int assignmentTestCaseId, DateTime scheduleDate, string browser)
+        public async Task<(int Id, Guid QueueId)> SingleScheduleAsync(int assignmentId, int assignmentTestCaseId, DateTime scheduleDate, string browser, int? loginUserId = null)
         {
             var parameters = new[]
             {
                 new SqlParameter("@AssignmentId", assignmentId),
                 new SqlParameter("@AssignmentTestCaseId", assignmentTestCaseId),
                 new SqlParameter("@ScheduleDate", scheduleDate),
-                new SqlParameter("@Browser", browser)
+                new SqlParameter("@Browser", browser),
+                new SqlParameter("@LoginUserId", (object?)loginUserId ?? DBNull.Value)
             };
 
             var result = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.ScheduleSingleTestCase, parameters,
@@ -87,7 +90,7 @@ namespace AutomationAPI.Repositories
             return (row.Id, row.QueueId);
         }
 
-        public async Task<bool> BulkScheduleAsync(int assignmentId, List<int> assignmentTestCaseIds, DateTime scheduleDate, string browser)
+        public async Task<bool> BulkScheduleAsync(int assignmentId, List<int> assignmentTestCaseIds, DateTime scheduleDate, string browser, int? loginUserId = null)
         {
             var table = new DataTable();
             table.Columns.Add("AssignmentTestCaseId", typeof(int));
@@ -102,7 +105,8 @@ namespace AutomationAPI.Repositories
                 SqlDbType = SqlDbType.Structured,
                 TypeName = "aut.AssignmentTestCaseIdList"
             },
-            new SqlParameter("@ScheduleDate", scheduleDate)
+            new SqlParameter("@ScheduleDate", scheduleDate),
+            new SqlParameter("@LoginUserId", (object?)loginUserId ?? DBNull.Value)
         };
 
             var result = await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.BulkScheduleTestCases, parameters);
@@ -119,11 +123,13 @@ namespace AutomationAPI.Repositories
                     AssignmentId = reader.GetInt32("AssignmentId"),
                     AssignmentTestCaseId = reader.GetInt32("AssignmentTestCaseId"),
                     ReleaseId = reader.GetNullableInt("ReleaseId"),
+                    EnvironmentId = reader.GetNullableInt("EnvironmentId"),
                     LibraryName = reader.GetNullableString("LibraryName"),
                     ClassName = reader.GetNullableString("ClassName"),
                     MethodName = reader.GetNullableString("MethodName"),
                     Environment = reader.GetNullableString("Environment"),
                     Browser = reader.GetNullableString("Browser"),
+                    LoginUserId = reader.GetNullableInt("LoginUserId"),
                     QueueStatus = reader.GetNullableString("QueueStatus"),
                     ExecutionDateTime = reader.GetNullableDateTime("ExecutionDateTime")
                 }

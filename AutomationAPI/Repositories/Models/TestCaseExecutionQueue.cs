@@ -19,6 +19,10 @@
         public int AssignmentId { get; set; }
         public int AssignmentTestCaseId { get; set; }
         public string? Browser { get; set; }
+
+        // Set only when the environment requires authentication - the specific login
+        // user explicitly picked at Run Now time (see AGENTS.md). Null otherwise.
+        public int? LoginUserId { get; set; }
     }
 
     public class BulkRunNowRequest
@@ -26,6 +30,10 @@
         public int AssignmentId { get; set; }
         public List<int> AssignmentTestCaseIds { get; set; } = new();
         public string? Browser { get; set; }
+
+        // One shared selection applied to every test case in the batch - bulk actions
+        // are already scoped to a single assignment/environment.
+        public int? LoginUserId { get; set; }
     }
 
     public class SingleScheduleRequest
@@ -35,6 +43,7 @@
 
         public DateTime ScheduleDate { get; set; }
         public string Browser { get; set; }
+        public int? LoginUserId { get; set; }
     }
     public class BulkScheduleRequest
     {
@@ -42,6 +51,7 @@
         public List<int> AssignmentTestCaseIds { get; set; } = new();
         public DateTime ScheduleDate { get; set; }
         public string Browser { get; set; }
+        public int? LoginUserId { get; set; }
     }
 
     public class QueueCreateResponse

@@ -229,12 +229,16 @@ export interface ISingleRunNowRequest {
   assignmentId: number;
   assignmentTestCaseId: number;
   browser: string;
+  // Set only when the target environment requires authentication - the login user
+  // explicitly picked at Run Now time (see AGENTS.md).
+  loginUserId?: number;
 }
 
 export interface IBulkRunNowRequest {
   assignmentId: number;
   assignmentTestCaseIds: number[];
   browser: string;
+  loginUserId?: number;
 }
 
 export interface ISingleScheduleRequest {
@@ -242,6 +246,7 @@ export interface ISingleScheduleRequest {
   assignmentTestCaseId: number;
   scheduleDate: string; // ISO string
   browser: string;
+  loginUserId?: number;
 }
 
 export interface IBulkScheduleRequest {
@@ -249,6 +254,7 @@ export interface IBulkScheduleRequest {
   assignmentTestCaseIds: number[];
   scheduleDate: string; // ISO string
   browser: string;
+  loginUserId?: number;
 }
 
 export interface IQueueCreateResponse {
@@ -315,6 +321,13 @@ export interface IEnvironmentModel {
   // this environment" and to gate the Delete button client-side (server-side guard
   // already enforces this in usp_EnvironmentHardDelete).
   releaseCount: number;
+  // Nullable - falls back to the Selenium framework's own hard-coded URL switch when
+  // not set.
+  environmentUrl?: string | null;
+  // Defaults true (matches every existing environment's actual behavior today). When
+  // false, Run Now/Schedule show no Login User selection at all and the test skips the
+  // login step entirely.
+  requiresAuthentication: boolean;
 }
 
 // models/environment-request.dto.ts
@@ -323,6 +336,40 @@ export interface IEnvironmentRequestDto {
   environmentName: string;
   description?: string;
   createdBy: number;
+  isActive?: boolean;
+  environmentUrl?: string | null;
+  requiresAuthentication?: boolean;
+}
+
+// ============ Login User Management ============
+// A per-environment login credential, selected explicitly at Run Now/Schedule time -
+// never carries a password (see AGENTS.md).
+export interface ILoginUserModel {
+  loginUserId: number;
+  environmentId: number;
+  // Optional label: "whose credential is this" - not a matching key.
+  portalUserId?: number | null;
+  portalUserName?: string | null;
+  // Free text label, e.g. "TechAdmin", "CredSpec" - matches whatever string a test's
+  // own [TestFixture("...")] declares. Not auto-enforced; shown so the person picking a
+  // login user can tell which credential is meant for which role.
+  userRole: string;
+  userName: string;
+  isActive: boolean;
+  createdOn: string;
+  modifiedOn?: string | null;
+}
+
+export interface ILoginUserRequestDto {
+  loginUserId?: number;
+  environmentId: number;
+  portalUserId?: number | null;
+  userRole: string;
+  userName: string;
+  // Plaintext, write-only - encrypted server-side. Optional on update: leaving it
+  // blank keeps the existing password unchanged (the UI never pre-fills/shows an
+  // existing password to re-submit).
+  password?: string;
   isActive?: boolean;
 }
 

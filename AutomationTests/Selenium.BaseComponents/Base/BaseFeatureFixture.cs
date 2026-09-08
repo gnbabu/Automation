@@ -24,6 +24,17 @@ namespace Selenium.BaseComponents.Pages
         private string pswd;
         private string environment = Users.CurrentEnvironment;
 
+        // Stashed from the constructor, resolved in OneTimeSetUp instead (see
+        // InitializeTestSuite) - TestContext.Parameters (EnvironmentId/LoginUserId,
+        // needed for the API-backed resolution below) isn't reliably available yet
+        // during construction, same reasoning already established for AssignmentId/
+        // AssignmentTestCaseId.
+        private string? _profile;
+
+        // Set once resolved via the API in OneTimeSetUp; Url below prefers this over
+        // LoginService's hard-coded GetLoginUrl() switch when present.
+        private string? _resolvedLoginUrl;
+
         // Service provider for dependency injection
         protected IServiceProvider ServiceProvider;
 
@@ -53,7 +64,7 @@ namespace Selenium.BaseComponents.Pages
         {
             get
             {
-                return LoginService.GetLoginUrl();
+                return _resolvedLoginUrl ?? LoginService.GetLoginUrl();
             }
         }
 
@@ -66,11 +77,13 @@ namespace Selenium.BaseComponents.Pages
 
         public BaseFeatureFixture(string profile = null)
         {
-            if (profile != null)
-            {
-                Username = UserCredentials.UserNameGenerator.GetUserName(profile, environment);
-                pswd = UserCredentials.PasswordGenerator.GetPassword(environment);
-            }
+            // Deliberately NOT resolving Username/pswd here anymore - see
+            // ResolveCredentialsAndUrl, called from OneTimeSetUp once TestContext.
+            // Parameters is actually available. profile is still exactly what
+            // [TestFixture("...")] declares (e.g. "TechAdmin") - stashed for the
+            // hard-coded fallback path, and also used as the human-readable Role label
+            // when looking up an API-resolved login user.
+            _profile = profile;
             InitializeServices();
         }
 
@@ -91,7 +104,7 @@ namespace Selenium.BaseComponents.Pages
         }
 
         [OneTimeSetUp]
-        public virtual void InitializeTestSuite()
+        public virtual async Task InitializeTestSuite()
         {
             // Read here, not in the constructor - confirmed by direct testing that
             // TestContext.Parameters isn't reliably populated yet during fixture
@@ -111,7 +124,60 @@ namespace Selenium.BaseComponents.Pages
             // launch at all) and needs no API call/auth from the test's side. See
             // AGENTS.md "Phase 3" for the reasoning; this used to push queueId/"InProgress"
             // via APIGatway.UpdateQueue, now retired.
+            await ResolveCredentialsAndUrlAsync();
+
             InitializeChromeAndLogin();
+        }
+
+        // Resolution order (see AGENTS.md - "per-environment login users, selected
+        // explicitly at Run Now/Schedule time"):
+        //   1. Environment + LoginUserId available (queue-driven run): call the API.
+        //      - RequiresAuthentication == false: skip login entirely (Username stays
+        //        null, matching InitializeChromeAndLogin's existing guard) - no behavior
+        //        change from today for any environment that doesn't need auth.
+        //      - RequiresAuthentication == true and a LoginUserId was supplied (the
+        //        person running/scheduling it explicitly picked one): use its
+        //        username/password + the resolved EnvironmentUrl.
+        //   2. Fallback, on any failure/absence (API unreachable, no EnvironmentId/
+        //      LoginUserId supplied, local Test Explorer run outside the queue
+        //      pipeline, an environment not yet migrated to EnvironmentUrl/LoginUser
+        //      data, etc.): today's exact hard-coded UserCredentials.UserNameGenerator/
+        //      PasswordGenerator/LoginService.GetLoginUrl() behavior via _profile -
+        //      unchanged from before this feature existed.
+        private async Task ResolveCredentialsAndUrlAsync()
+        {
+            var environmentDetails = await APIGateway.GetEnvironmentDetails();
+
+            if (environmentDetails != null)
+            {
+                if (!string.IsNullOrWhiteSpace(environmentDetails.EnvironmentUrl))
+                    _resolvedLoginUrl = environmentDetails.EnvironmentUrl;
+
+                if (!environmentDetails.RequiresAuthentication)
+                {
+                    // Environment explicitly doesn't need a login step - leave
+                    // Username/pswd null so InitializeChromeAndLogin's existing
+                    // `if (Username != null)` guard skips login entirely.
+                    Username = null;
+                    pswd = null;
+                    return;
+                }
+
+                var credentials = await APIGateway.GetLoginUserCredentials();
+                if (credentials != null && !string.IsNullOrWhiteSpace(credentials.UserName))
+                {
+                    Username = credentials.UserName;
+                    pswd = credentials.Password;
+                    return;
+                }
+            }
+
+            // Fallback: today's exact hard-coded behavior, unchanged.
+            if (_profile != null)
+            {
+                Username = UserCredentials.UserNameGenerator.GetUserName(_profile, environment);
+                pswd = UserCredentials.PasswordGenerator.GetPassword(environment);
+            }
         }
 
         private void InitializeChromeAndLogin()

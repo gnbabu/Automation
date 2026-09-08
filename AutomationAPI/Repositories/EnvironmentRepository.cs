@@ -21,7 +21,9 @@ namespace AutomationAPI.Repositories
             {
                 new SqlParameter("@EnvironmentName", request.EnvironmentName),
                 new SqlParameter("@Description", request.Description ?? (object)DBNull.Value),
-                new SqlParameter("@CreatedBy", request.CreatedBy)
+                new SqlParameter("@CreatedBy", request.CreatedBy),
+                new SqlParameter("@EnvironmentUrl", (object?)request.EnvironmentUrl ?? DBNull.Value),
+                new SqlParameter("@RequiresAuthentication", request.RequiresAuthentication ?? true)
             };
 
             return await _db.ExecuteScalarAsync<int>(SqlDbConstants.EnvironmentCreate, parameters);
@@ -35,7 +37,9 @@ namespace AutomationAPI.Repositories
                 new SqlParameter("@EnvironmentName", request.EnvironmentName),
                 new SqlParameter("@Description", request.Description ?? (object)DBNull.Value),
                 new SqlParameter("@IsActive", request.IsActive ?? true),
-                new SqlParameter("@ModifiedBy", (object?)request.ModifiedBy ?? DBNull.Value)
+                new SqlParameter("@ModifiedBy", (object?)request.ModifiedBy ?? DBNull.Value),
+                new SqlParameter("@EnvironmentUrl", (object?)request.EnvironmentUrl ?? DBNull.Value),
+                new SqlParameter("@RequiresAuthentication", request.RequiresAuthentication ?? true)
             };
 
             await _db.ExecuteNonQueryAsync(SqlDbConstants.EnvironmentUpdate, parameters);
@@ -79,6 +83,8 @@ namespace AutomationAPI.Repositories
                 EnvironmentName = reader.GetString(reader.GetOrdinal("EnvironmentName")),
                 Description = reader.GetNullableString("Description") ?? string.Empty,
                 IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
+                EnvironmentUrl = reader.GetNullableString("EnvironmentUrl"),
+                RequiresAuthentication = reader.GetBoolean(reader.GetOrdinal("RequiresAuthentication")),
                 CreatedOn = reader.GetDateTime(reader.GetOrdinal("CreatedOn")),
                 UserName = reader.GetString(reader.GetOrdinal("UserName")),
                 Email = reader.GetString(reader.GetOrdinal("Email")),

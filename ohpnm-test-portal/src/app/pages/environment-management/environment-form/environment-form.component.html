@@ -56,6 +56,41 @@
             Status is required.
           </div>
         </div>
+
+        <!-- Environment URL -->
+        <div class="mb-3">
+          <label class="form-label">Environment URL</label>
+
+          <input
+            name="environmentUrl"
+            class="form-control"
+            [(ngModel)]="model.environmentUrl"
+            maxlength="500"
+            placeholder="e.g. https://ohpnm-e2ep3.omes.maximus.com/OH_PNM_E2EP3/Account/Login.aspx"
+          />
+
+          <div class="form-text">
+            Falls back to the Selenium framework's own hard-coded URL if left blank.
+          </div>
+        </div>
+
+        <!-- Authentication Required -->
+        <div class="mb-3 form-check">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            id="requiresAuthentication"
+            name="requiresAuthentication"
+            [(ngModel)]="model.requiresAuthentication"
+          />
+          <label class="form-check-label" for="requiresAuthentication">
+            Authentication Required
+          </label>
+          <div class="form-text">
+            When unchecked, Run Now/Schedule won't ask for a login user and Selenium
+            tests will skip the login step entirely for this environment.
+          </div>
+        </div>
       </div>
 
       <!-- Right Column -->

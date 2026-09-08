@@ -62,7 +62,8 @@ namespace AutomationAPI.Controllers
                 var result = await _repo.SingleRunNowAsync(
                     request.AssignmentId,
                     request.AssignmentTestCaseId,
-                    request.Browser
+                    request.Browser,
+                    request.LoginUserId
                 );
 
                 return Ok(new QueueCreateResponse
@@ -105,7 +106,8 @@ namespace AutomationAPI.Controllers
                 var success = await _repo.BulkRunNowAsync(
                     request.AssignmentId,
                     request.AssignmentTestCaseIds,
-                    request.Browser
+                    request.Browser,
+                    request.LoginUserId
                 );
 
                 return Ok(new { Success = success });
@@ -145,7 +147,8 @@ namespace AutomationAPI.Controllers
                     request.AssignmentId,
                     request.AssignmentTestCaseId,
                     request.ScheduleDate,
-                    request.Browser
+                    request.Browser,
+                    request.LoginUserId
                 );
 
                 return Ok(new QueueCreateResponse
@@ -192,7 +195,8 @@ namespace AutomationAPI.Controllers
                     request.AssignmentId,
                     request.AssignmentTestCaseIds,
                     request.ScheduleDate,
-                    request.Browser
+                    request.Browser,
+                    request.LoginUserId
                 );
 
                 return Ok(new { Success = success });

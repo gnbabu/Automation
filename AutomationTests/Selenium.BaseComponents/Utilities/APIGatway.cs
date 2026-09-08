@@ -99,6 +99,95 @@ namespace Selenium.BaseComponents.Utilities
         }
 
 
+        // Resolves the Environment's URL/RequiresAuthentication flag - read by
+        // BaseFeatureFixture in OneTimeSetUp using EnvironmentId from TestContext.
+        // Parameters (threaded through by TestQueueWorker/NUnitEngineTestRunner, same
+        // mechanism as Browser/AccessToken). Returns null on any failure/absence (API
+        // unreachable, no EnvironmentId supplied - e.g. a local Test Explorer run outside
+        // the queue pipeline) so the caller can fall back to today's hard-coded
+        // UserCredentials/LoginService behavior, matching SaveTestCaseLog's pattern of
+        // never throwing out of a best-effort call.
+        public async Task<EnvironmentDetails?> GetEnvironmentDetails()
+        {
+            string? environmentId = NUnit.Framework.TestContext.Parameters["EnvironmentId"];
+            if (string.IsNullOrWhiteSpace(environmentId))
+                return null;
+
+            try
+            {
+                string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
+
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.BaseAddress = new Uri(apiUrl);
+                    httpClient.DefaultRequestHeaders.Accept.Clear();
+                    httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    AttachAuthIfAvailable(httpClient);
+
+                    HttpResponseMessage response = await httpClient.GetAsync($"api/Environment/{environmentId}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        NUnit.Framework.TestContext.WriteLine(
+                            $"GetEnvironmentDetails failed: {(int)response.StatusCode} {response.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string data = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<EnvironmentDetails>(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                NUnit.Framework.TestContext.WriteLine($"GetEnvironmentDetails failed: {ex.Message}");
+                return null;
+            }
+        }
+
+        // Resolves the specific login user explicitly picked at Run Now/Schedule time
+        // (LoginUserId from TestContext.Parameters) - the only call that ever receives a
+        // decrypted password, only reachable with the service JWT this process already
+        // carries as AccessToken (see LoginUserController.GetCredentials). Returns null
+        // on any failure/absence (no LoginUserId supplied - e.g. the environment doesn't
+        // require authentication, or a local Test Explorer run) so the caller falls back
+        // to today's hard-coded UserCredentials behavior.
+        public async Task<LoginUserCredentials?> GetLoginUserCredentials()
+        {
+            string? loginUserId = NUnit.Framework.TestContext.Parameters["LoginUserId"];
+            if (string.IsNullOrWhiteSpace(loginUserId))
+                return null;
+
+            try
+            {
+                string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
+
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.BaseAddress = new Uri(apiUrl);
+                    httpClient.DefaultRequestHeaders.Accept.Clear();
+                    httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    AttachAuthIfAvailable(httpClient);
+
+                    HttpResponseMessage response = await httpClient.GetAsync($"api/LoginUser/{loginUserId}/credentials");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        NUnit.Framework.TestContext.WriteLine(
+                            $"GetLoginUserCredentials failed: {(int)response.StatusCode} {response.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string data = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<LoginUserCredentials>(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                NUnit.Framework.TestContext.WriteLine($"GetLoginUserCredentials failed: {ex.Message}");
+                return null;
+            }
+        }
+
         public async Task<List<AutomationData>> GetAutomationData(string flowName)
         {
             List<AutomationData> AutomationData = new List<AutomationData>();

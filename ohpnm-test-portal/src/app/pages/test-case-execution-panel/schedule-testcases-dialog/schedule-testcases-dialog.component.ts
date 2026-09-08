@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ILoginUserModel } from '@interfaces';
 import { ModalService } from '@services';
 
 @Component({
@@ -24,6 +25,13 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
   date: string = '';
   time: string = '';
 
+  // Populated by the caller only when the target environment's RequiresAuthentication
+  // is true (see test-case-execution-panel.component.ts's onSchedule/onBulkSchedule) -
+  // empty otherwise, in which case no Login User field is shown at all, unchanged from
+  // before this feature existed.
+  loginUsers: ILoginUserModel[] = [];
+  loginUserId: number | null = null;
+
   private callback!: (data: any) => void;
 
   constructor(private modalService: ModalService) {}
@@ -37,9 +45,12 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
     });
   }
 
-  /** Open modal and pass callback */
-  open(cb: (data: any) => void) {
+  /** Open modal and pass callback - loginUsers empty when the environment doesn't
+   * require authentication. */
+  open(cb: (data: any) => void, loginUsers: ILoginUserModel[] = []) {
     this.callback = cb;
+    this.loginUsers = loginUsers.filter((lu) => lu.isActive);
+    this.loginUserId = null;
     this.modalService.open('scheduleTestcasesModal');
   }
 
@@ -48,16 +59,28 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
     this.modalService.close('scheduleTestcasesModal');
   }
 
+  get requiresLoginUser(): boolean {
+    return this.loginUsers.length > 0;
+  }
+
+  loginUserLabel(lu: ILoginUserModel): string {
+    return lu.portalUserName
+      ? `${lu.userRole} - ${lu.userName} (${lu.portalUserName})`
+      : `${lu.userRole} - ${lu.userName}`;
+  }
+
   /** Submit form back to parent */
   submit() {
     if (!this.browser || !this.date || !this.time) return;
     if (this.isDateTimeInvalid) return;
+    if (this.requiresLoginUser && !this.loginUserId) return;
 
     if (this.callback) {
       this.callback({
         browser: this.browser,
         date: this.date,
         time: this.time,
+        loginUserId: this.loginUserId ?? undefined,
       });
     }
 
@@ -65,6 +88,7 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
     this.browser = 'Chrome';
     this.date = '';
     this.time = '';
+    this.loginUserId = null;
 
     this.close();
   }
