@@ -431,16 +431,21 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
           this.isUserPerformingAction = false;
         },
       });
-    });
+    }, () => this.blockNoCredential());
   }
 
   // Checks the selected assignment's Release's environment - if it requires
-  // authentication, opens runNowDialog to let the person pick which configured login
-  // user to use, then calls onProceed with the chosen id. If it doesn't (or the
-  // environment/its login users can't be resolved), calls onProceed with no id at all -
-  // matches today's behavior exactly for any environment that doesn't need auth.
+  // authentication, opens runNowDialog to let the person pick which of their own
+  // configured login credentials to use (self-service - only ever their own, never
+  // someone else's, see AGENTS.md), then calls onProceed with the chosen id. If it
+  // doesn't require auth, calls onProceed with no id at all - matches today's behavior
+  // exactly for any environment that doesn't need auth. If it does require auth but the
+  // current user has no credential configured for it yet, calls onBlocked instead of
+  // ever opening the dialog - there is nothing to select, so a soft/disabled dialog
+  // would just be confusing.
   private resolveLoginUserForRunNow(
-    onProceed: (loginUserId?: number) => void
+    onProceed: (loginUserId?: number) => void,
+    onBlocked: () => void
   ): void {
     const environmentId = this.selectedAssignmentRelease?.environmentId;
     if (!environmentId) {
@@ -455,15 +460,19 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.loginUserService.getByEnvironment(environmentId).subscribe({
+        this.loginUserService.getMineForEnvironment(environmentId).subscribe({
           next: (loginUsers) => {
+            if (!loginUsers.some((lu) => lu.isActive)) {
+              onBlocked();
+              return;
+            }
             this.runNowDialog.open(loginUsers, (data) =>
               onProceed(data.loginUserId)
             );
           },
           error: (err) => {
             console.error('Failed to load login users:', err);
-            onProceed(undefined);
+            onBlocked();
           },
         });
       },
@@ -472,6 +481,13 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
         onProceed(undefined);
       },
     });
+  }
+
+  private blockNoCredential(): void {
+    this.isUserPerformingAction = false;
+    this.toaster.error(
+      "You don't have a login credential configured for this environment yet. Add one via Credential Configuration first."
+    );
   }
 
   combineDateAndTime(date: string, time: string): Date {
@@ -533,7 +549,7 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
           },
         });
       }, loginUsers);
-    });
+    }, () => this.blockNoCredential());
   }
 
   async onBulkRunNow() {
@@ -587,7 +603,7 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
           this.isUserPerformingAction = false;
         },
       });
-    });
+    }, () => this.blockNoCredential());
   }
 
   onBulkSchedule() {
@@ -631,16 +647,21 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
           },
         });
       }, loginUsers);
-    });
+    }, () => this.blockNoCredential());
   }
 
   // Checks the selected assignment's Release's environment - if it requires
-  // authentication, resolves its active login users for the Schedule dialog's dropdown.
-  // Returns an empty array otherwise (or on any failure), in which case
-  // ScheduleTestcasesDialogComponent shows no Login User field at all - matches today's
-  // behavior exactly for any environment that doesn't need auth.
+  // authentication, resolves the current user's own configured login credentials
+  // (self-service, see AGENTS.md) for the Schedule dialog's dropdown. Returns an empty
+  // array via onReady otherwise, in which case ScheduleTestcasesDialogComponent shows no
+  // Login User field at all - matches today's behavior exactly for any environment that
+  // doesn't need auth. If auth is required but the current user has no credential
+  // configured for it yet, calls onBlocked instead - never opens the Schedule dialog
+  // with an empty list, since ScheduleTestcasesDialogComponent would otherwise silently
+  // let the schedule proceed without ever asking for a Login User at all.
   private resolveLoginUsersForSchedule(
-    onReady: (loginUsers: ILoginUserModel[]) => void
+    onReady: (loginUsers: ILoginUserModel[]) => void,
+    onBlocked: () => void
   ): void {
     const environmentId = this.selectedAssignmentRelease?.environmentId;
     if (!environmentId) {
@@ -655,11 +676,17 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.loginUserService.getByEnvironment(environmentId).subscribe({
-          next: (loginUsers) => onReady(loginUsers),
+        this.loginUserService.getMineForEnvironment(environmentId).subscribe({
+          next: (loginUsers) => {
+            if (!loginUsers.some((lu) => lu.isActive)) {
+              onBlocked();
+              return;
+            }
+            onReady(loginUsers);
+          },
           error: (err) => {
             console.error('Failed to load login users:', err);
-            onReady([]);
+            onBlocked();
           },
         });
       },

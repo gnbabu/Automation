@@ -133,12 +133,12 @@ export const routes: Routes = [
         canActivate: [authGuard, adminGuard],
       },
       {
-        path: 'environment-management/:id/login-users',
+        path: 'credential-configuration',
         loadComponent: () =>
-          import('./pages/environment-management/environment-login-users/environment-login-users.component').then(
-            (m) => m.EnvironmentLoginUsersComponent,
+          import('./pages/credential-configuration/credential-configuration.component').then(
+            (m) => m.CredentialConfigurationComponent,
           ),
-        canActivate: [authGuard, adminGuard],
+        canActivate: [authGuard],
       },
       {
         path: 'settings',

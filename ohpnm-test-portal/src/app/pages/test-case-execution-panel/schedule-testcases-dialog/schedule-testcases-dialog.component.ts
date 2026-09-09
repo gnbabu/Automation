@@ -63,10 +63,11 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
     return this.loginUsers.length > 0;
   }
 
+  // Self-service - every entry is always the current user's own credential, so no
+  // portalUserName suffix is needed anymore (was previously used to distinguish whose
+  // credential was whose when everyone's credentials were shown together).
   loginUserLabel(lu: ILoginUserModel): string {
-    return lu.portalUserName
-      ? `${lu.userRole} - ${lu.userName} (${lu.portalUserName})`
-      : `${lu.userRole} - ${lu.userName}`;
+    return `${lu.userRole} - ${lu.userName}`;
   }
 
   /** Submit form back to parent */

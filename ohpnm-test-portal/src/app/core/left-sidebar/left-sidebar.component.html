@@ -93,6 +93,15 @@
       <span class="hide-on-collapse">Environment Management</span>
     </a>
     <a
+      [routerLink]="['/credential-configuration']"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="sidebar-link text-decoration-none p-3"
+    >
+      <i class="fas fa-key me-3"></i>
+      <span class="hide-on-collapse">Credential Configuration</span>
+    </a>
+    <a
       [routerLink]="['/settings']"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"

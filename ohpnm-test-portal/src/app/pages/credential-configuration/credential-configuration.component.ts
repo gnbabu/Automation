@@ -1,35 +1,35 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   IEnvironmentModel,
   ILoginUserModel,
   ILoginUserRequestDto,
-  IUser,
 } from '@interfaces';
 import {
-  AuthService,
   CommonToasterService,
   ConfirmService,
   EnvironmentService,
   LoginUserService,
-  UsersService,
 } from '@services';
 
+// Self-service: every user manages only their own login credential per environment -
+// no Portal User picker, no visibility into other users' credentials (see AGENTS.md).
+// Reached from its own top-level sidebar tab ("Credential Configuration") - not nested
+// under a specific environment anymore, hence the on-page Environment dropdown below
+// (mirrors TestDataManagementComponent's exact "pick an environment first" pattern).
 @Component({
-  selector: 'app-environment-login-users',
+  selector: 'app-credential-configuration',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
-  templateUrl: './environment-login-users.component.html',
-  styleUrl: './environment-login-users.component.css',
+  imports: [CommonModule, FormsModule],
+  templateUrl: './credential-configuration.component.html',
+  styleUrl: './credential-configuration.component.css',
 })
-export class EnvironmentLoginUsersComponent implements OnInit {
-  environmentId!: number;
-  environment: IEnvironmentModel | null = null;
+export class CredentialConfigurationComponent implements OnInit {
+  environments: IEnvironmentModel[] = [];
+  selectedEnvironment?: IEnvironmentModel;
 
   loginUsers: ILoginUserModel[] = [];
-  portalUsers: IUser[] = [];
   loading = false;
   isSaving = false;
 
@@ -41,34 +41,22 @@ export class EnvironmentLoginUsersComponent implements OnInit {
   model: ILoginUserRequestDto = this.emptyModel();
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router,
     private envService: EnvironmentService,
     private loginUserService: LoginUserService,
-    private usersService: UsersService,
-    private authService: AuthService,
     private toaster: CommonToasterService,
     private confirmService: ConfirmService,
   ) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      this.router.navigate(['/environment-management']);
-      return;
-    }
-
-    this.environmentId = +id;
-    this.model.environmentId = this.environmentId;
-    this.loadEnvironment();
-    this.loadLoginUsers();
-    this.loadPortalUsers();
+    this.envService.getAll().subscribe({
+      next: (res) => (this.environments = res || []),
+      error: (err) => console.error('Failed to load environments:', err),
+    });
   }
 
   private emptyModel(): ILoginUserRequestDto {
     return {
-      environmentId: this.environmentId,
-      portalUserId: null,
+      environmentId: this.selectedEnvironment?.environmentId ?? 0,
       userRole: '',
       userName: '',
       password: '',
@@ -76,41 +64,33 @@ export class EnvironmentLoginUsersComponent implements OnInit {
     };
   }
 
-  loadEnvironment(): void {
-    this.envService.getById(this.environmentId).subscribe({
-      next: (env) => (this.environment = env),
-      error: (err) => {
-        console.error('Failed to load environment:', err);
-        this.toaster.error(
-          err?.error?.message ?? err?.error ?? 'Environment not found.'
-        );
-        this.router.navigate(['/environment-management']);
-      },
-    });
+  onEnvironmentChange(): void {
+    this.startAdd();
+    this.loginUsers = [];
+    if (this.selectedEnvironment) {
+      this.loadLoginUsers();
+    }
   }
 
   loadLoginUsers(): void {
-    this.loading = true;
-    this.loginUserService.getByEnvironment(this.environmentId).subscribe({
-      next: (res) => {
-        this.loginUsers = res || [];
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Failed to load login users:', err);
-        this.loading = false;
-        this.toaster.error(
-          err?.error?.message ?? err?.error ?? 'Failed to load login users.'
-        );
-      },
-    });
-  }
+    if (!this.selectedEnvironment) return;
 
-  loadPortalUsers(): void {
-    this.usersService.getAll().subscribe({
-      next: (res) => (this.portalUsers = res || []),
-      error: (err) => console.error('Failed to load portal users:', err),
-    });
+    this.loading = true;
+    this.loginUserService
+      .getMineForEnvironment(this.selectedEnvironment.environmentId)
+      .subscribe({
+        next: (res) => {
+          this.loginUsers = res || [];
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Failed to load login users:', err);
+          this.loading = false;
+          this.toaster.error(
+            err?.error?.message ?? err?.error ?? 'Failed to load login users.'
+          );
+        },
+      });
   }
 
   startAdd(): void {
@@ -122,8 +102,7 @@ export class EnvironmentLoginUsersComponent implements OnInit {
     this.editingLoginUserId = loginUser.loginUserId;
     this.model = {
       loginUserId: loginUser.loginUserId,
-      environmentId: this.environmentId,
-      portalUserId: loginUser.portalUserId ?? null,
+      environmentId: this.selectedEnvironment!.environmentId,
       userRole: loginUser.userRole,
       userName: loginUser.userName,
       password: '', // never pre-filled - blank keeps the existing password unchanged
@@ -136,10 +115,11 @@ export class EnvironmentLoginUsersComponent implements OnInit {
   }
 
   save(): void {
-    if (this.isInvalid) return;
+    if (this.isInvalid || !this.selectedEnvironment) return;
 
     this.isSaving = true;
     const isNew = this.editingLoginUserId == null;
+    this.model.environmentId = this.selectedEnvironment.environmentId;
 
     if (isNew) {
       this.model.isActive = true;
@@ -190,15 +170,11 @@ export class EnvironmentLoginUsersComponent implements OnInit {
   }
 
   get isInvalid(): boolean {
-    return !this.model.portalUserId || !this.model.userRole?.trim() || !this.model.userName?.trim() ||
+    return !this.model.userRole?.trim() || !this.model.userName?.trim() ||
       (this.editingLoginUserId == null && !this.model.password?.trim());
   }
 
   get isEditing(): boolean {
     return this.editingLoginUserId != null;
-  }
-
-  back(): void {
-    this.router.navigate(['/environment-management']);
   }
 }

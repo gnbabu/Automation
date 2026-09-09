@@ -21,8 +21,10 @@ namespace AutomationAPI.Controllers
         }
 
         // GET: api/LoginUser/environment/{environmentId}
-        // Used by both the Login Users management screen and the Run Now/Schedule
-        // dropdowns. Never returns a password.
+        // Unfiltered - every login user for the environment, any owner. No longer
+        // called by the Portal's own UI after the self-service change (Run Now/Schedule
+        // and the management screen both use the ownership-filtered endpoints below
+        // instead) - left in place/unused rather than removed (see AGENTS.md).
         [HttpGet("environment/{environmentId:int}")]
         public async Task<IActionResult> GetByEnvironment(int environmentId)
         {
@@ -30,6 +32,24 @@ namespace AutomationAPI.Controllers
                 return BadRequest("Invalid EnvironmentId");
 
             return Ok(await _repo.GetByEnvironmentAsync(environmentId));
+        }
+
+        // GET: api/LoginUser/environment/{environmentId}/mine
+        // Self-service: only the caller's own login user(s) for this environment. Used
+        // by the Credential Configuration screen and by Run Now/Schedule's dropdown
+        // resolution - every user manages/selects only their own credential, never
+        // someone else's (see AGENTS.md).
+        [HttpGet("environment/{environmentId:int}/mine")]
+        public async Task<IActionResult> GetMineForEnvironment(int environmentId)
+        {
+            if (environmentId <= 0)
+                return BadRequest("Invalid EnvironmentId");
+
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized();
+
+            return Ok(await _repo.GetByEnvironmentAndPortalUserAsync(environmentId, currentUserId.Value));
         }
 
         // POST: api/LoginUser
@@ -42,7 +62,14 @@ namespace AutomationAPI.Controllers
             if (string.IsNullOrWhiteSpace(request.Password))
                 return BadRequest("Password is required when creating a login user.");
 
-            request.CreatedBy = GetCurrentUserId();
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized();
+
+            // Self-service: a credential is always created for the caller themselves,
+            // regardless of anything the client sends - never trust the client for this.
+            request.PortalUserId = currentUserId;
+            request.CreatedBy = currentUserId;
 
             int id;
             try
@@ -68,17 +95,25 @@ namespace AutomationAPI.Controllers
             if (!request.LoginUserId.HasValue || request.LoginUserId <= 0)
                 return BadRequest("LoginUserId is required for update");
 
-            request.ModifiedBy = GetCurrentUserId();
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized();
 
+            request.ModifiedBy = currentUserId;
+
+            bool updated;
             try
             {
-                await _repo.UpdateAsync(request);
+                updated = await _repo.UpdateAsync(request, currentUserId.Value);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to update login user {LoginUserId}", request.LoginUserId);
                 return Conflict(GetUserMessage(ex, "Failed to update login user."));
             }
+
+            if (!updated)
+                return Forbid();
 
             return Ok();
         }
@@ -90,7 +125,14 @@ namespace AutomationAPI.Controllers
             if (id <= 0)
                 return BadRequest("Invalid LoginUserId");
 
-            await _repo.SoftDeleteAsync(id, GetCurrentUserId());
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized();
+
+            var disabled = await _repo.SoftDeleteAsync(id, currentUserId.Value, currentUserId);
+            if (!disabled)
+                return Forbid();
+
             return Ok(new { Message = "Login user disabled successfully" });
         }
 
@@ -101,15 +143,23 @@ namespace AutomationAPI.Controllers
             if (id <= 0)
                 return BadRequest("Invalid LoginUserId");
 
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
+                return Unauthorized();
+
+            bool deleted;
             try
             {
-                await _repo.HardDeleteAsync(id);
+                deleted = await _repo.HardDeleteAsync(id, currentUserId.Value);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Delete blocked for login user {LoginUserId}", id);
                 return Conflict(GetUserMessage(ex, "This login user could not be deleted."));
             }
+
+            if (!deleted)
+                return Forbid();
 
             return Ok(new { Message = "Login user permanently deleted" });
         }

@@ -1155,6 +1155,85 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Login Users moved to a self-service "Credential Configuration" tab
+Asked to move Login Users out from under Environment Management into its own top-level
+sidebar tab named "Credential Configuration", with an on-page Environment dropdown
+(since it's no longer reached via a specific environment's card) - and, in follow-up
+clarification, made fully self-service: every logged-in user manages only their own
+login credential per environment, never someone else's, with no Portal User picker at
+all. This also had to reach into Run Now/Schedule - previously that dropdown showed
+*every* configured login user for the target environment (any owner); now it only shows
+the current user's own, and blocks with a clear message (before ever opening the dialog)
+if they have none configured yet for that environment.
+
+**Key design point discovered while implementing**: `GET api/LoginUser/environment/{id}`
+(`usp_LoginUserGetByEnvironment`) was used by the old management screen *and* by Run Now/
+Schedule. Rather than changing that endpoint/proc (which would have been a breaking
+change for anyone else potentially relying on its unfiltered semantics), left it
+completely untouched and added a new, separate, ownership-filtered
+`GET api/LoginUser/environment/{id}/mine` (`usp_LoginUserGetByEnvironmentAndPortalUser`)
+for both the new self-service screen and the reworked Run Now/Schedule resolution -
+`getByEnvironment`/its proc are unused-by-the-Portal-now but deliberately not removed.
+
+Ownership enforcement:
+- New `@PortalUserId` parameter on `usp_LoginUserUpdate`/`SoftDelete`/`HardDelete` - each
+  adds `AND PortalUserId = @PortalUserId` to its `WHERE`, so a non-owner's call affects 0
+  rows; the repository surfaces this as a `bool` (rows-affected > 0) rather than throwing,
+  and `LoginUserController` translates `false` into `Forbid()`. **Verified by direct
+  testing** with two different real users' JWTs: user 20 attempting to UPDATE or HARD
+  DELETE user 1's row both correctly returned 403 and left the row completely unchanged
+  in the DB; user 1 (the real owner) doing the same succeeded normally.
+- `usp_LoginUserCreate`'s signature is unchanged (still just inserts whatever
+  `@PortalUserId` it's given) - enforcement happens in `LoginUserController.Create`
+  instead, which now always overwrites `request.PortalUserId` with the caller's own id
+  from the JWT before calling the repository, regardless of what the client sends.
+  **Verified by direct testing**: sent a `Create` request with a deliberately wrong
+  `portalUserId: 999` in the body as user 1 - the resulting DB row's `PortalUserId` was
+  `1` (the real caller), not `999`.
+- A pre-existing row with `PortalUserId IS NULL` (old seed/verification data) now matches
+  nobody - it's simply not self-service-manageable *or* selectable in Run Now/Schedule
+  anymore (both now filter to "mine"). Flagged as an accepted, known consequence of the
+  self-service model, not a bug - every user who wants to run tests against an
+  authenticated environment now needs their own credential added via Credential
+  Configuration, even if one already existed there (added by someone else, e.g. an
+  admin, under the old model).
+
+Frontend:
+- New top-level route `credential-configuration` -> `CredentialConfigurationComponent`
+  (`pages/credential-configuration/`, renamed/relocated from
+  `pages/environment-management/environment-login-users/`), guarded by `authGuard` only
+  (no admin gate - self-service, any logged-in user). Old nested route
+  `environment-management/:id/login-users` and its per-card "Login Users" button are
+  both removed.
+- New sidebar nav link "Credential Configuration", visible to every logged-in user.
+- The component now has its own Environment `<select>` (mirrors
+  `TestDataManagementComponent`'s exact "pick an environment first" pattern via
+  `EnvironmentService.getAll()`) instead of a route param; the Portal User `<select>` and
+  its table column are removed entirely; the table only ever shows the caller's own
+  credential row(s) for the selected environment (via the new "mine" endpoint).
+- `test-case-execution-panel.component.ts`'s `resolveLoginUserForRunNow`/
+  `resolveLoginUsersForSchedule` (the two centralized helpers already feeding all 4 of
+  single/bulk Run Now/Schedule) now call `getMineForEnvironment` instead of
+  `getByEnvironment`, and take a new `onBlocked` callback - if the target environment
+  requires authentication and the current user has no *active* credential configured for
+  it, the Run Now/Schedule dialog is never opened at all; a toaster explains why and
+  points at Credential Configuration, and the run/schedule action is aborted outright
+  (not a soft/disabled dialog state). `RunNowDialogComponent`/
+  `ScheduleTestcasesDialogComponent`'s `loginUserLabel()` no longer appends a
+  `portalUserName` suffix (every entry is now always the viewer's own credential, so it
+  would just be redundant).
+
+**Verified for real, end-to-end**: full solution/API both build clean. Direct API tests
+proved ownership isolation (`/mine` for two different real users' JWTs against the same
+environment - correctly disjoint results), ownership enforcement on write endpoints (403
++ unchanged DB row for a non-owner, success for the real owner), and that `Create` never
+trusts a client-supplied `PortalUserId`. Queued a real test through the actual pipeline
+with a real, self-owned `LoginUserId` selected (simulating exactly what the reworked
+Run Now flow now sends) - the queue/credential-resolution path worked correctly all the
+way through to launching a real Chrome session; the run itself then failed with a
+WebDriver navigation timeout, the same VPN-off symptom already root-caused in an earlier
+session, unrelated to this change.
+
 ## Follow-up: removed all remaining hardcoded credentials/URLs from the test projects
 Asked to "get rid of hardcoded from test projects" now that the API-driven Environment
 URL/LoginUser system was proven working for real. Recommended and implemented full

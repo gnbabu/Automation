@@ -9,9 +9,20 @@ import { map, Observable } from 'rxjs';
 export class LoginUserService {
   constructor(private httpService: HttpService) {}
 
+  // Unfiltered - every login user for the environment, any owner. No longer called by
+  // any part of the Portal's UI after the self-service change (kept, unused, rather
+  // than removed - see AGENTS.md).
   getByEnvironment(environmentId: number): Observable<ILoginUserModel[]> {
     return this.httpService.get<ILoginUserModel[]>(
       `LoginUser/environment/${environmentId}`
+    );
+  }
+
+  // Self-service: only the caller's own login user(s) for this environment. Used by
+  // Credential Configuration and by Run Now/Schedule's dropdown resolution.
+  getMineForEnvironment(environmentId: number): Observable<ILoginUserModel[]> {
+    return this.httpService.get<ILoginUserModel[]>(
+      `LoginUser/environment/${environmentId}/mine`
     );
   }
 
