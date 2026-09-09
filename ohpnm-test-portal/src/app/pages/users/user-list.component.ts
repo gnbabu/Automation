@@ -31,6 +31,9 @@ export class UserListComponent implements OnInit {
   @ViewChild('statusTemplate', { static: true })
   statusTemplate!: TemplateRef<any>;
 
+  @ViewChild('activeStatusTemplate', { static: true })
+  activeStatusTemplate!: TemplateRef<any>;
+
   @ViewChild('actionsTemplate', { static: true })
   actionsTemplate!: TemplateRef<any>;
 
@@ -74,6 +77,12 @@ export class UserListComponent implements OnInit {
         header: 'Status',
         sortable: false,
         cellTemplate: this.statusTemplate,
+      },
+      {
+        field: 'active',
+        header: 'Active',
+        sortable: true,
+        cellTemplate: this.activeStatusTemplate,
       },
       {
         field: 'lastLogin',

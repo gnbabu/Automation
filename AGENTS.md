@@ -1155,6 +1155,38 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: new users default to Active status; Users grid gets a dedicated Active/Inactive badge
+Asked for "new user registrations should be Active by default" + "add an Active/Inactive
+indicator to the Users grid." Investigation (queried the live `usp_RegisterUser`
+definition directly) found `aut.User` already has **two separate status concepts**:
+- `Active` (bit) - the field that actually gates login (`AuthService.Login`:
+  `if (!user.Active) return "User is inactive"`) - was already hard-coded to `1` on
+  registration.
+- `Status` (FK to `aut.UserStatus`: Active/Suspended/Pending) - a separate, purely
+  informational lookup shown as a colored badge in the Users grid - defaulted to
+  **"Suspended"** on registration.
+
+So a newly registered user could already log in fine, but showed up in the Users grid
+with a misleading "Suspended" badge. Confirmed with the user this dual-defaulting
+wasn't an intentional approval gate - fixed `usp_RegisterUser` (new migration
+`Database/UserRegistration_DefaultActiveStatus_Migration.sql`) to look up `'Active'`
+instead of `'Suspended'` for the default `Status`, leaving the `Active` bit's own
+`1` unchanged (it was already correct). **Verified for real**: registered a real test
+user through the actual `/api/Authentication/register` endpoint end-to-end, confirmed
+in the DB that both `Active = 1` and `Status` now resolve to `StatusName = 'Active'`
+(previously would have been `'Suspended'`), then cleaned up the test row.
+
+Added a new, dedicated Active/Inactive badge column to the Users grid
+(`user-list.component.ts`/`.html`) - a clear green/gray badge reflecting the `Active`
+bit specifically, distinct from the existing `Status` badge column (Active/Suspended/
+Pending) and the existing bare, unlabeled checkbox toggle in the Actions column (which
+is unchanged - still the mechanism to flip `Active`; the new column just makes the
+current state unambiguous at a glance, next to `Status`).
+
+Note: existing users registered before this migration keep whatever `Status` they
+already have - this only changes the default for *future* registrations, not a
+retroactive data fix (not requested).
+
 ## Follow-up: Login Users moved to a self-service "Credential Configuration" tab
 Asked to move Login Users out from under Environment Management into its own top-level
 sidebar tab named "Credential Configuration", with an on-page Environment dropdown

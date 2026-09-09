@@ -26,6 +26,15 @@
   <button *ngIf="row.status === 3" class="btn btn-danger">Pending</button>
 </ng-template>
 
+<!-- Dedicated Active/Inactive indicator for the Active bit specifically (distinct from
+     the Status lookup above) - lets an admin see at a glance whether a user can log in
+     at all, without having to interpret the bare checkbox toggle in the Actions column. -->
+<ng-template #activeStatusTemplate let-row let-value="value">
+  <span class="badge" [ngClass]="row.active ? 'bg-success' : 'bg-secondary'">
+    {{ row.active ? 'Active' : 'Inactive' }}
+  </span>
+</ng-template>
+
 <ng-template #actionsTemplate let-row let-value="value">
   <div class="actions-wrapper">
     <button class="btn-normal" (click)="editUserClicked(row)">Edit</button>
