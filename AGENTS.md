@@ -1155,6 +1155,105 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: linked the failure screenshot to its log entry + logged the URL at failure
+Asked "what else can we do better on failure" after the above - implemented the top two
+suggested improvements:
+
+1. **Linked the failure screenshot to its `TestCaseExecutionLog` row via `ScreenshotId`.**
+   `TestCaseExecutionLog.ScreenshotId` already existed but was never populated by
+   anything - the failure screenshot was uploaded via the bulk endpoint (`POST api/
+   TestScreenshots/bulk`), which doesn't return generated ids at all, so there was no
+   way to tell the Portal "this exact screenshot is what this exact failure looked
+   like." Fixed end to end:
+   - `usp_InsertTestScreenshot` (new migration `Database/TestScreenshot_
+     ReturnGeneratedId_Migration.sql`) now `SELECT`s `SCOPE_IDENTITY()` - it previously
+     returned nothing at all (`TestScreenshotRepository.InsertScreenshotAsync` used
+     `ExecuteNonQueryAsync`, i.e. rows-affected, matching the old `{ InsertedRows }`
+     controller response shape). The bulk insert path (used by every test class's own
+     success-path `TearDown`) is deliberately left untouched - those screenshots were
+     never meant to be linked to one specific log row.
+   - `TestScreenshotRepository.InsertScreenshotAsync` switched to
+     `ExecuteScalarAsync<int>`; `TestScreenshotsController`'s single-insert endpoint now
+     returns `{ ScreenshotId }` instead of `{ InsertedRows }` (confirmed via a full
+     grep this JSON shape wasn't consumed anywhere on the frontend, so safe to rename).
+   - New `APIGatway.SaveMethodScreenShot` (singular - as opposed to the existing bulk
+     `SaveMethodScreenShots`) posts to the single-insert endpoint and returns the
+     generated id (or `null` on any failure, matching every other best-effort
+     `APIGatway` method's pattern).
+   - `BaseFeatureFixture.LogFailureIfAny` now captures/uploads the screenshot *first*
+     (via this new method) and sets the resulting id on `TestCaseExecutionLog.
+     ScreenshotId` before posting the log - order matters, the log needs the id already
+     in hand.
+2. **Logs the browser's current URL at the moment of failure**, appended to
+   `LogMessage` - essentially free (`TestWebDriver.Url`, wrapped in its own inner
+   try/catch since the driver may already be in a bad state by the time this runs), but
+   very high value: immediately shows which page the browser was actually on, which is
+   often the first thing needed to diagnose a navigation-related failure (exactly the
+   kind of VPN/wrong-environment-URL issue that's come up repeatedly in this project).
+
+**Verified for real end-to-end** (not just the API contract in isolation): rebuilt/
+redeployed a real Release with a real, deliberately-wrong `LoginUserId`, temporarily
+pointed its `appSettings.json` at a throwaway diagnostic API instance (to test the
+rebuilt backend without disturbing the user's own running instance), and queued a real
+run through the full pipeline. Confirmed via the real stored log row: `screenshotId: 75`
+(a real, non-null id), and `logMessage` correctly ending with `"URL at failure: https://
+...Login.aspx"`. Cross-checked `aut.TestScreenshots` directly - row 75 genuinely exists,
+tagged `Failure_OneTimeSetUp`, `AssignmentTestCaseId` matching. Deferred (discussed but
+not implemented, lower priority/higher effort): capturing page source (HTML) on failure
+and browser console log (JS error) capture - flagged as further options if wanted later.
+
+## Follow-up: automatic SaveTestCaseLog on any exception/failure (BaseFeatureFixture)
+Asked to add `SaveTestCaseLog` calls "if any exception occurs or anything fails" in
+`Selenium.BaseComponents`. Investigation (reading every real `Tests/*.cs`) found **no
+test class ever calls `SaveTestCaseLog` on failure** - only on the success path
+(step-by-step `Info`/`Running` logs). When a test failed, the log trail
+(`GET api/TestCaseExecutionLogs`) just stopped abruptly at the last successful step,
+with no "Fail" entry showing what/why - even though the test's overall status was
+already correctly recorded elsewhere (`AssignedTestCases.ErrorMessage`, via
+`NUnitEngineTestRunner`'s result-XML parsing - a separate, unaffected mechanism).
+`TC.Registration` has ~20 `catch (Exception ex) { TestContext.Error.WriteLine(...);
+throw; }` blocks and `TC.PriorAuthoriztion` has one defensive-retry catch - neither
+ever posts a failure log to the API, only NUnit's own local console output.
+
+Added one centralized, private `BaseFeatureFixture.LogFailureIfAny(string stepName)`
+helper (no per-test-class changes needed anywhere - every real project inherits this
+automatically) that checks `TestContext.CurrentContext.Result.Outcome.Status` (the same
+proven pattern `CustomRetry.cs`'s `RetryCommand` already uses) and, if `Failed`, posts a
+`TestCaseExecutionLog` with `LogLevel.Fail`/`ExecutionStatus.Failed`, the real exception
+message + stack trace, and `TestCaseId`/`Description` read from the test's own NUnit
+`[Property(...)]` values - plus an opportunistic screenshot (`Common.PrintScreenShot`/
+`APIGateway.SaveMethodScreenShots`, the exact same mechanism every test class's own
+success-path `[TearDown]` already uses) if the browser is still alive. Wrapped in its
+own try/catch (matching `APIGatway.SaveTestCaseLog`'s own defensive pattern) so a
+failure in the logging/screenshot mechanism itself can never mask the real test failure.
+
+Called from **two** places, deliberately - not just one:
+- A new `[TearDown]` (`LogFailureAfterEachTest`) - catches a failure inside a `[Test]`
+  method itself. Runs independently of/alongside any subclass's own `[TearDown]` (e.g.
+  `SearchPATest.AfterTest()`'s success-path screenshots) - NUnit runs every `[TearDown]`
+  in the inheritance chain.
+- The existing `[OneTimeTearDown]` (`TearDownTestSuite`), extended to call it too,
+  **before** disposing `TestWebDriver` - this is the one that actually matters most in
+  practice: confirmed by direct testing that many real failures happen inside
+  `[OneTimeSetUp]` (login/credential/URL resolution) - a `[Test]`-level `[TearDown]`
+  alone would never see these at all, since NUnit doesn't run per-test `TearDown` when
+  `OneTimeSetUp` itself fails (no test ever starts). `AssignmentId`/`AssignmentTestCaseId`
+  are read from `TestContext.Parameters` at the very top of `InitializeTestSuite()`,
+  before anything that can throw - so they're reliably available for this even when
+  `OneTimeSetUp` fails partway through.
+
+**Verified for real**: queued a real run with a wrong-credential `LoginUserId` (same
+"decisive proof" pattern used earlier in this project) - failed at `OneTimeSetUp` exactly
+as expected, and for the first time ever this showed up with `hasLogs: true`/
+`hasScreenshots: true` (previously would have been `false`/`false` - nothing was ever
+logged for a pure `OneTimeSetUp` failure before this change). Fetched the actual log row
+directly: correct `stepName: "OneTimeSetUp"`, `logLevel: "Fail"`, real exception message
+and full stack trace, and `testCaseId`/`testCaseDescription` both correctly resolved.
+Then re-ran the identical test with a real, working `LoginUserId` - **Passed** normally,
+and confirmed via the log list that zero spurious Fail entries were added - only the
+expected normal success-path steps (Login to PNM/Self Service/Medicaid Search/PA Search/
+Success), proving this change is purely additive and doesn't affect a passing run at all.
+
 ## Follow-up: new users default to Active status; Users grid gets a dedicated Active/Inactive badge
 Asked for "new user registrations should be Active by default" + "add an Active/Inactive
 indicator to the Users grid." Investigation (queried the live `usp_RegisterUser`

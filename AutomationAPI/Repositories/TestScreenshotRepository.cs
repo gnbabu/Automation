@@ -37,7 +37,11 @@ namespace AutomationAPI.Repositories
                 });
             }
 
-            return await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.InsertTestScreenshot, parameters.ToArray());
+            // Returns the generated ScreenshotId (usp_InsertTestScreenshot now selects
+            // SCOPE_IDENTITY()) rather than rows-affected - lets a caller link this
+            // specific screenshot back to a specific TestCaseExecutionLog row via
+            // ScreenshotId (see BaseFeatureFixture.LogFailureIfAny).
+            return await _sqlDataAccessHelper.ExecuteScalarAsync<int>(SqlDbConstants.InsertTestScreenshot, parameters.ToArray());
         }
 
         public async Task BulkInsertScreenshotsAsync(IEnumerable<TestScreenshot> screenshots)

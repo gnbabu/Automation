@@ -29,7 +29,7 @@ namespace AutomationAPI.Controllers
                 if (screenshot == null) return BadRequest("Screenshot cannot be null");
 
                 var result = await _repository.InsertScreenshotAsync(screenshot);
-                return Ok(new { InsertedRows = result });
+                return Ok(new { ScreenshotId = result });
 
             }
             catch (Exception ex)

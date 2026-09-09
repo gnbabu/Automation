@@ -220,14 +220,114 @@ namespace Selenium.BaseComponents.Pages
 
       
 
+        [TearDown]
+        public void LogFailureAfterEachTest()
+        {
+            // Catches a failure inside a [Test] method itself. Runs independently of
+            // (and in addition to) any subclass's own [TearDown] (e.g. SearchPATest.
+            // AfterTest() for success-path screenshots) - NUnit runs every [TearDown]
+            // found across the inheritance chain.
+            LogFailureIfAny("Test Execution");
+        }
+
         [OneTimeTearDown]
         public void TearDownTestSuite()
         {
+            // Catches a failure inside [OneTimeSetUp] itself (e.g. login/credential/URL
+            // resolution - the most common real failure category in this project's
+            // history) - a [Test]-level [TearDown] alone would never see these, since
+            // NUnit doesn't run per-test TearDown when OneTimeSetUp fails (no test ever
+            // starts). Called before disposing TestWebDriver below so an opportunistic
+            // screenshot still has a live browser to capture, if one was ever launched.
+            LogFailureIfAny("OneTimeSetUp");
+
             if (TestWebDriver != null)
             {
                 // Use WebDriverService for proper disposal
                 WebDriverService.DisposeWebDriver(TestWebDriver);
                 TestWebDriver = null;
+            }
+        }
+
+        // Posts a Fail-level TestCaseExecutionLog (plus an opportunistic screenshot)
+        // whenever the current test/fixture actually failed - no existing test class
+        // does this today (confirmed by reading every real Tests/*.cs - failures are
+        // only ever caught for a defensive retry or a rethrow, never logged), so the
+        // step-log trail (GET api/TestCaseExecutionLogs) previously just stopped
+        // abruptly at the last successful step with no indication of what/why. Doesn't
+        // touch AssignedTestCases.ErrorMessage/overall status at all - that's a
+        // separate, already-working mechanism (NUnitEngineTestRunner's result-XML
+        // parsing) - this is purely an additional, more detailed log entry.
+        private void LogFailureIfAny(string stepName)
+        {
+            // Matches the existing guard already used by every test class's own
+            // [TearDown] (e.g. SearchPATest.AfterTest()) - skip entirely when not
+            // running through the queue pipeline (e.g. locally via Test Explorer).
+            if (AssignmentTestCaseId == 0)
+                return;
+
+            try
+            {
+                var result = TestContext.CurrentContext.Result;
+                if (result.Outcome.Status != TestStatus.Failed)
+                    return;
+
+                var test = TestContext.CurrentContext.Test;
+                string testCaseId = test.Properties.Get("TestCaseId")?.ToString() ?? string.Empty;
+                string description = test.Properties.Get("Description")?.ToString() ?? string.Empty;
+
+                // Captured/uploaded first (not after the log) so the log entry below can
+                // link to it via ScreenshotId - lets the Portal show exactly what the
+                // browser looked like for this specific failure, instead of an unlinked
+                // pile of screenshots per test case. Also records the current URL - the
+                // single most useful piece of context for a navigation-related failure
+                // (e.g. the VPN/wrong-environment-URL issues already seen repeatedly in
+                // this project), essentially free to capture.
+                int? screenshotId = null;
+                string? currentUrl = null;
+                if (TestWebDriver != null)
+                {
+                    try { currentUrl = TestWebDriver.Url; } catch { /* driver may already be in a bad state */ }
+
+                    var screenshotBytes = Common.PrintScreenShot(TestWebDriver, $"Failure_{stepName}");
+                    if (screenshotBytes != null && screenshotBytes.Length > 0)
+                    {
+                        screenshotId = APIGateway.SaveMethodScreenShot(new TestScreenshot
+                        {
+                            AssignmentTestCaseId = AssignmentTestCaseId,
+                            Caption = $"Failure_{stepName}",
+                            Screenshot = $"data:image/png;base64,{Convert.ToBase64String(screenshotBytes)}",
+                            TakenAt = DateTime.Now,
+                        });
+                    }
+                }
+
+                string logMessage = result.Message ?? "Test failed with no message.";
+                if (!string.IsNullOrWhiteSpace(currentUrl))
+                    logMessage = $"{logMessage}\n\nURL at failure: {currentUrl}";
+
+                var failureLog = new TestCaseExecutionLog
+                {
+                    AssignmentId = AssignmentId,
+                    AssignmentTestCaseId = AssignmentTestCaseId,
+                    TestCaseId = testCaseId,
+                    TestCaseDescription = description,
+                    StepName = stepName,
+                    LogMessage = logMessage,
+                    LogLevel = TestCaseLogLevel.Fail,
+                    ExecutionStatus = ExecutionStatus.Failed,
+                    ErrorStackTrace = result.StackTrace,
+                    ScreenshotId = screenshotId,
+                };
+
+                APIGateway.SaveTestCaseLog(failureLog);
+            }
+            catch (Exception ex)
+            {
+                // A failure in this logging/screenshot mechanism itself must never mask
+                // the original test failure or throw out of TearDown/OneTimeTearDown -
+                // same defensive reasoning as APIGatway.SaveTestCaseLog's own catch.
+                TestContext.WriteLine($"LogFailureIfAny failed: {ex.Message}");
             }
         }
 

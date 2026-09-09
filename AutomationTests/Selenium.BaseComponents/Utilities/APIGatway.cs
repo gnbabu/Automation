@@ -66,6 +66,50 @@ namespace Selenium.BaseComponents.Utilities
         }
 
 
+        // Single-screenshot insert (as opposed to SaveMethodScreenShots' bulk insert,
+        // used by every test class's own success-path TearDown) - returns the generated
+        // ScreenshotId so the caller can link it back to a specific TestCaseExecutionLog
+        // row (see BaseFeatureFixture.LogFailureIfAny). Returns null on any
+        // failure/absence, matching every other best-effort APIGatway call's pattern of
+        // never throwing.
+        public int? SaveMethodScreenShot(TestScreenshot screenshot)
+        {
+            try
+            {
+                string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
+                string message = JsonConvert.SerializeObject(screenshot);
+
+                using (var httpClient = new HttpClient())
+                {
+                    AttachAuthIfAvailable(httpClient);
+
+                    StringContent content = new StringContent(message, Encoding.UTF8, "application/json");
+
+                    var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"{apiUrl}api/TestScreenshots");
+
+                    requestMessage.Content = content;
+
+                    HttpResponseMessage httpResponseMessage = httpClient.SendAsync(requestMessage).Result;
+
+                    if (!httpResponseMessage.IsSuccessStatusCode)
+                    {
+                        NUnit.Framework.TestContext.WriteLine(
+                            $"SaveMethodScreenShot failed: {(int)httpResponseMessage.StatusCode} {httpResponseMessage.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string responseBody = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                    var parsed = JsonConvert.DeserializeAnonymousType(responseBody, new { ScreenshotId = 0 });
+                    return parsed?.ScreenshotId > 0 ? parsed.ScreenshotId : null;
+                }
+            }
+            catch (Exception ex)
+            {
+                NUnit.Framework.TestContext.WriteLine($"SaveMethodScreenShot failed: {ex.Message}");
+                return null;
+            }
+        }
+
         public void SaveMethodScreenShots(List<TestScreenshot> screenshots)
         {
             try
