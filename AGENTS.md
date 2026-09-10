@@ -1155,6 +1155,40 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: unified the Forgot Username / Reset Password emails into the same branding
+Asked "what about the login/registration email templates" - found 2 more real templates
+(`AutomationAPI/Repositories/Helpers/EmailTemplates.cs`'s `BuildForgotUsernameEmail`/
+`ResetPassword`, used by `AuthenticationController`'s `forgot-username`/`forgot-password`
+endpoints) that predated the work above and had drifted into their own separate look:
+teal `#2f7d7b` instead of the Portal's actual brand purple `#5c3c9e`, `border-radius`
+used on the card/button (Outlook doesn't render it reliably - inconsistent with the
+Outlook-safety effort elsewhere), no branded header/footer, and fully duplicated markup
+per template rather than sharing one shell. (No dedicated "registration confirmation"
+email exists at all, despite the phrase "login and registration" - these 2 are the only
+real templates in that area.)
+
+Extended `EmailTemplateBuilder`'s `BuildShell` with two small, backward-compatible
+additions needed for these: the info-card `<table>` is now omitted entirely (not just
+rendered empty) when there are no facts, and an optional `footnoteHtml` parameter renders
+a small note below the CTA button (used for "if you did not request this, ignore this
+email" and the Reset Password fallback raw link for accessibility/copy-paste, both
+carried over from the old templates' own good ideas). Added `BuildForgotUsernameEmail`/
+`BuildResetPasswordEmail` alongside the other 3 wrapper methods.
+`AuthenticationController.ForgotUsername`/`ForgotPassword` switched to call these instead
+of the old `EmailTemplates` class, which was then deleted outright (confirmed zero other
+references first) - unlike `ReflectionTestRunner`, this had no ongoing rollback/reference
+value once genuinely superseded.
+
+Same visual-preview-before-wiring-in process as before (a second throwaway scratch
+console project, deleted after use). **Verified for real** via a separate diagnostic-port
+API instance (not the user's own long-running debug session, to avoid the Hot-Reload-
+staleness gotcha noted above entirely - this particular change only touched method
+bodies, not constructor signatures, so it likely would've Hot Reloaded fine anyway, but
+using a fresh instance avoided needing to reason about that): called `forgot-username`/
+`forgot-password` for a real user - both returned a clean 200 (neither endpoint
+try/catches around the email send, so a 200 confirms the send didn't throw) - and the
+user confirmed both arrived correctly styled.
+
 ## Follow-up: branded HTML email templates (Outlook-first)
 Asked to design "beautiful" email templates - found all 3 real email call sites in the
 system (Release Activated, Release Ready to Activate, and the Scheduled Test Failure

@@ -37,17 +37,36 @@ namespace AutomationAPI.Repositories
             IEnumerable<(string Label, string Value)> facts,
             string? errorBlock,
             string ctaText,
-            string ctaUrl)
+            string ctaUrl,
+            string? footnoteHtml = null)
         {
-            var factsHtml = new StringBuilder();
+            var factsRows = new StringBuilder();
             foreach (var (label, value) in facts)
             {
-                factsHtml.Append($@"
+                factsRows.Append($@"
         <tr>
           <td style=""padding:10px 16px; font-size:13px; color:#6b6b78; font-family:{FontFamily}; width:140px; border-bottom:1px solid #e2e2ea;"">{WebUtility.HtmlEncode(label)}</td>
           <td style=""padding:10px 16px; font-size:13px; color:#1a1c2e; font-family:{FontFamily}; font-weight:bold; border-bottom:1px solid #e2e2ea;"">{WebUtility.HtmlEncode(value)}</td>
         </tr>");
             }
+
+            // Info card is entirely omitted (not just empty) when there are no facts -
+            // some templates (e.g. Forgot Username/Reset Password) don't need one.
+            var factsHtml = factsRows.Length == 0 ? "" : $@"
+        <tr>
+          <td style=""padding:20px 32px 0 32px;"">
+            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background-color:#f7f7fa; border:1px solid #e2e2ea;"">
+{factsRows}
+            </table>
+          </td>
+        </tr>";
+
+            var footnoteHtmlBlock = string.IsNullOrWhiteSpace(footnoteHtml) ? "" : $@"
+        <tr>
+          <td style=""padding:0 32px 8px 32px; font-size:12px; color:#6b6b78; font-family:{FontFamily}; line-height:1.5;"">
+            {footnoteHtml}
+          </td>
+        </tr>";
 
             var errorHtml = string.IsNullOrWhiteSpace(errorBlock) ? "" : $@"
       <tr>
@@ -99,13 +118,7 @@ table {{border-collapse:collapse;}}
             {messageHtml}
           </td>
         </tr>
-        <tr>
-          <td style=""padding:20px 32px 0 32px;"">
-            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background-color:#f7f7fa; border:1px solid #e2e2ea;"">
 {factsHtml}
-            </table>
-          </td>
-        </tr>
 {errorHtml}
         <tr>
           <td style=""padding:28px 32px;"" align=""center"">
@@ -120,6 +133,7 @@ table {{border-collapse:collapse;}}
             <!--<![endif]-->
           </td>
         </tr>
+{footnoteHtmlBlock}
         <tr>
           <td style=""background-color:#f0f0f5; padding:16px 32px; text-align:center; font-size:11px; color:#8b8b96; font-family:{FontFamily};"">
             This is an automated message from OHPNM Automation Portal. Please do not reply to this email.
@@ -165,5 +179,29 @@ table {{border-collapse:collapse;}}
                 errorBlock: errorMessage,
                 ctaText: "View in Test Case Execution Panel",
                 ctaUrl: ctaUrl);
+
+        public static string BuildForgotUsernameEmail(string username, string ctaUrl)
+            => BuildShell(
+                accentColor: "#2f6fed",
+                icon: "?",
+                heading: "Your Username",
+                messageHtml: "You requested your username for the <strong>OHPNM Automation Portal</strong>.",
+                facts: new[] { ("Username", username) },
+                errorBlock: null,
+                ctaText: "Go to Login",
+                ctaUrl: ctaUrl,
+                footnoteHtml: "If you did not request this, please ignore this email.");
+
+        public static string BuildResetPasswordEmail(string username, string resetLink)
+            => BuildShell(
+                accentColor: BrandPurple,
+                icon: "!",
+                heading: "Reset Your Password",
+                messageHtml: $"Hello <strong>{WebUtility.HtmlEncode(username)}</strong>, you requested to reset your <strong>OHPNM Automation Portal</strong> password. This link expires in <strong>30 minutes</strong>.",
+                facts: Array.Empty<(string, string)>(),
+                errorBlock: null,
+                ctaText: "Change My Password",
+                ctaUrl: resetLink,
+                footnoteHtml: $"If the button doesn't work, copy this link:<br/><a href=\"{resetLink}\" style=\"color:{BrandPurple};\">{WebUtility.HtmlEncode(resetLink)}</a>");
     }
 }

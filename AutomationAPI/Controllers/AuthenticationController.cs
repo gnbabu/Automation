@@ -1,5 +1,4 @@
 ﻿using AutomationAPI.Repositories;
-using AutomationAPI.Repositories.Helpers;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -127,7 +126,8 @@ namespace AutomationAPI.Controllers
                 });
             }
 
-            var htmlBody = EmailTemplates.BuildForgotUsernameEmail(user.UserName);
+            var loginUrl = $"{_configuration["App:FrontendUrl"]?.TrimEnd('/')}/login";
+            var htmlBody = EmailTemplateBuilder.BuildForgotUsernameEmail(user.UserName, loginUrl);
 
             await _emailService.SendAsync(
                 user.Email,
@@ -166,7 +166,7 @@ namespace AutomationAPI.Controllers
 
             var user = await _userRepository.GetUserByEmailAsync(request.Email);
             
-            var html = EmailTemplates.ResetPassword(resetLink, user.UserName);
+            var html = EmailTemplateBuilder.BuildResetPasswordEmail(user.UserName, resetLink);
 
             await _emailService.SendAsync(
                 request.Email,
