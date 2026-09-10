@@ -401,7 +401,9 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
     const confirmed = await this.confirmService.confirm(
       'Run Test Case',
-      `Are you sure you want to run Test Case "${testCase.testCaseId}" now?`
+      this.isRetry(testCase)
+        ? `This test case previously ${testCase.testCaseStatus?.toLowerCase()}. Run it again?`
+        : `Are you sure you want to run Test Case "${testCase.testCaseId}" now?`
     );
 
     if (!confirmed) {
@@ -704,26 +706,35 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   // Arrow function (not a regular method) so `this` stays bound to the component
   // instance even when DataGridComponent invokes it directly as a plain callback
   // (via [rowSelectableFn]) without preserving the calling context.
+  //
+  // Failed/Cancelled/Skipped/Inconclusive are deliberately NOT locked (unlike Passed) -
+  // confirmed the backend (usp_SingleRunTestCaseNow and its bulk/schedule equivalents)
+  // has no server-side status check at all and already unconditionally supports
+  // re-queuing regardless of current status, so this was purely a frontend restriction
+  // with no way to retry a non-passing result short of a full Assignment "Reset" (which
+  // wipes every test case in the assignment, including ones that already passed). Passed
+  // stays locked deliberately - there's no real need to casually re-run a good result,
+  // and doing so risks overwriting it with a later false failure for no benefit; a
+  // genuine, deliberate need to re-verify later is already served by the existing Reset
+  // path. Queued/Scheduled/InProgress stay locked too - a test actively in-flight
+  // shouldn't be re-queued on top of itself.
   isTestCaseSelectable = (row: any): boolean => {
-    const disabledStatuses = [
-      'Queued',
-      'Scheduled',
-      'InProgress',
-      'Passed',
-      'Failed',
-      'Cancelled',
-      // NUnit's own outcomes ([Ignore]/[Explicit] -> Skipped; an unresolved assertion ->
-      // Inconclusive), now that the runner reports these honestly instead of forcing
-      // everything into Pass/Fail - see AGENTS.md.
-      'Skipped',
-      'Inconclusive',
-    ];
+    const disabledStatuses = ['Queued', 'Scheduled', 'InProgress', 'Passed'];
 
     return (
       !disabledStatuses.includes(row.testCaseStatus ?? '') &&
       this.canExecuteTests()
     );
   };
+
+  // True for a test case that already has a non-passing result - used to adjust the
+  // confirm() wording so it's clear a "Run Now"/"Schedule" click on one of these rows is
+  // a retry, not a first run.
+  private isRetry(testCase: IAssignedTestCase): boolean {
+    return ['Failed', 'Cancelled', 'Skipped', 'Inconclusive'].includes(
+      testCase.testCaseStatus ?? ''
+    );
+  }
 
   private getBlockedExecutionMessage(): string {
     if (this.isViewer()) {

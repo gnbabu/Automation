@@ -1155,6 +1155,101 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: retry a failed test case + email notification for scheduled failures
+Asked to analyze "what should happen when a test case fails - do we need an option to run
+it again? what about a scheduled test that fails?" and propose a solution.
+
+**Found 3 real gaps by reading the actual code (not assumed):**
+1. Once a test case reached *any* terminal status - including `Failed` - the Execution
+   Panel's per-row Run Now/Schedule buttons and the bulk-selection checkbox were all
+   disabled (`isTestCaseSelectable()`). Confirmed **this was a frontend-only
+   restriction**: `usp_SingleRunTestCaseNow` (and its bulk/schedule equivalents) has zero
+   server-side status checks - it unconditionally inserts a new queue row and resets
+   `TestCaseStatus` back to `Queued` regardless of current status. The only existing
+   workaround was a full "Reset" on the Test Case Assignment screen, wiping *every* test
+   case in that Release+Library+User assignment (including ones that already passed).
+2. No automatic retry existed for a genuine test failure - only for infrastructure
+   issues (an unresolvable Release folder gets silently retried next `TestQueueWorker`
+   poll cycle).
+3. No failure notification existed anywhere - the only notification/email mechanism in
+   the system (`ReleaseNotificationService`/`IEmailService`/`SmtpEmailService`, Brevo-
+   backed, already proven working for Release activation) fired only on Release
+   activation. A **scheduled** run's failure - by definition unattended - could go
+   unnoticed indefinitely.
+
+**Decisions made (with the user, after discussion on one point):**
+- Unlock Run Now/Schedule for `Failed`/`Cancelled`/`Skipped`/`Inconclusive` specifically -
+  **not** `Passed`. Initially recommended unlocking every terminal status "for
+  consistency," but reconsidered when challenged: there's no real need to casually
+  re-run a good result (risks overwriting it with a later false failure for no benefit),
+  and the actual ask was specifically about handling failures. `Passed` stays locked,
+  unchanged; a genuine, deliberate need to re-verify a passed test later is already
+  served by the existing full Reset path. `Queued`/`Scheduled`/`InProgress` stay locked
+  too (still in-flight).
+- No new execution-history table - `TestCaseExecutionLog` rows already accumulate
+  indefinitely across re-runs of the same `AssignmentTestCaseId` (confirmed earlier this
+  session), so a de facto attempt history already exists via the existing Logs/
+  Screenshots view at zero extra schema cost. Only the summary `AssignedTestCases.
+  TestCaseStatus`/`ErrorMessage` gets overwritten, matching today's exact model.
+- No automatic retry for genuine failures - only notify, so a human decides (auto-
+  retrying a real regression risks relabeling it as "just flaky"). The existing,
+  separate infra-only auto-retry (unresolvable Release folder) is untouched.
+- Notification scoped to **Scheduled runs only** (single + bulk) - Run Now/Bulk Run Now
+  failures are already immediately visible to whoever triggered them, watching the same
+  screen. Recipients: the assigned user + all active Admins (mirrors
+  `ReleaseNotificationService`'s own Manager/Admin resolution, but explicitly includes
+  the assigned user even if they aren't a Manager/Admin themselves) - not by
+  generalizing `ReleaseNotificationService` itself (tied to `ReleaseId`, a different
+  concept), but a new, analogous `ITestExecutionNotificationService`/
+  `TestExecutionNotificationService` reusing the same generic `IEmailService`.
+
+**Implementation:**
+- `test-case-execution-panel.component.ts`'s `isTestCaseSelectable()`: `disabledStatuses`
+  reduced to `['Queued', 'Scheduled', 'InProgress', 'Passed']`. Added `isRetry()` and used
+  it to adjust `onRunNow`'s confirm() wording ("This test case previously failed. Run it
+  again?") when re-running a non-passing result, so it's clear this is a retry.
+- New `Database/TestExecutionFailureNotification_Migration.sql` - `aut.
+  TestExecutionNotification` table + `usp_TestExecutionNotification_Add`/`_MarkSent`,
+  deliberately mirroring `aut.ReleaseNotification`'s exact shape/procs rather than
+  extending that table, since this is tracking a genuinely different event.
+- New `Database/GetPendingExecutionQueues_AddTestCaseIdAndAssignedUser_Migration.sql` -
+  `usp_GetPendingExecutionQueues` needed `ATC.TestCaseId` (human-readable id for the
+  notification's subject line) and `TCA.AssignedUser` (who to notify), neither of which
+  it previously selected. Purely additive; `PendingExecutionQueue`'s model and
+  `TestCaseExecutionQueueRepository`'s mapping extended to match.
+- New `ITestExecutionNotificationService`/`TestExecutionNotificationService` -
+  `NotifyScheduledFailureAsync(assignmentTestCaseId, testCaseId, errorMessage,
+  assignedUserId)`, registered in `Program.cs`. Same defensive "must never fail the
+  caller's primary action" try/catch wrapping as `ReleaseNotificationService`.
+- `TestQueueWorker.cs`: captures `bool wasScheduled = queue.QueueStatus == "Scheduled"`
+  at the very top of each iteration, **before** `queue.QueueStatus` gets overwritten to
+  `"InProgress"` a few lines later - confirmed this is the only place the original
+  Queued-vs-Scheduled distinction is still available in-memory. After the existing
+  per-result status update, calls the new notification service only when `wasScheduled`
+  and the mapped `TestCaseStatus` is `"Failed"`.
+
+**Verified for real, decisively, via the DB and a real email:**
+- Queued a real Scheduled run with a broken login user (E2EP3's `EnvironmentUrl` had
+  also drifted back to a stale wrong-domain value from an earlier unrelated session -
+  fixed that too while here, unrelated to this feature but a real bug) - it failed, and
+  `aut.TestExecutionNotification` immediately showed exactly one row: `RecipientUserId=1`
+  (`Nareshg`, the assigned user), `Status='Sent'` - a real email genuinely went out via
+  the live Brevo relay. Confirmed there's only one Admin in the system and it's the same
+  person as the assigned user - exactly one row (not two) proves the assigned-user/admin
+  de-duplication (`u.UserId != assignedUserId` when adding admins) works correctly, not
+  just "it happened to only try once."
+- Re-queued the exact same now-`Failed` `AssignmentTestCaseId` via `single-run`
+  (immediate, not scheduled) - it failed again, and the notification count **stayed at
+  exactly 1** - confirms a Run Now failure never notifies, and (as a side effect) also
+  re-confirms the retry unlock itself: the backend accepted re-queuing an already-`Failed`
+  row exactly as expected, no server-side block encountered.
+- Did not additionally reproduce a live "Scheduled + Passed" run (an unrelated pre-
+  existing credential-resolution issue specific to the ad-hoc diagnostic API instance
+  used for this session's verification blocked getting a clean Pass at the time) -
+  confirmed instead by code inspection that the notification call is gated by a single,
+  unambiguous condition (`wasScheduled && tesrResult.TestCaseStatus == "Failed"`), and
+  both operands of that condition were each independently proven correct above.
+
 ## Follow-up: real browser selection (Chrome/Edge) for Run Now/Bulk Run Now/Schedule/Bulk Schedule
 Asked to "provide an option to select the browser when running a test case... passed to
 the Base Framework during execution... from Run Now/Schedule and Bulk in all cases."

@@ -92,6 +92,10 @@
         public const string ReleaseNotificationGetByRelease = "[aut].[usp_ReleaseNotification_GetByRelease]";
         public const string ReleaseNotificationMarkSent = "[aut].[usp_ReleaseNotification_MarkSent]";
 
+        // Test Execution Failure Notification (Scheduled runs only - see AGENTS.md)
+        public const string TestExecutionNotificationAdd = "[aut].[usp_TestExecutionNotification_Add]";
+        public const string TestExecutionNotificationMarkSent = "[aut].[usp_TestExecutionNotification_MarkSent]";
+
 
         // Environment Management
         public const string EnvironmentCreate = "[aut].[usp_EnvironmentCreate]";

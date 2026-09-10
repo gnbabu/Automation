@@ -21,6 +21,7 @@ namespace AutomationAPI.Repositories.TestRunner
                 var queueRepo = scope.ServiceProvider.GetRequiredService<ITestCaseExecutionQueueRepository>();
                 var resultsRepo = scope.ServiceProvider.GetRequiredService<ITestCaseAssignmentRepository>();
                 var releaseRepo = scope.ServiceProvider.GetRequiredService<IReleaseRepository>();
+                var testFailureNotifier = scope.ServiceProvider.GetRequiredService<ITestExecutionNotificationService>();
 
                 var pendingItems = await queueRepo.GetPendingExecutionQueuesAsync();
 
@@ -41,6 +42,13 @@ namespace AutomationAPI.Repositories.TestRunner
                         Console.WriteLine($"Skipping queue item {queue.QueueId}: unable to resolve release folder for ReleaseId {queue.ReleaseId}. Will retry.");
                         continue;
                     }
+
+                    // Captured before QueueStatus gets overwritten to "InProgress" below -
+                    // this is the only place the original Queued-vs-Scheduled distinction
+                    // is still available in-memory. Used only to decide whether a failure
+                    // notification should fire (see AGENTS.md) - Run Now/Bulk Run Now
+                    // failures are already visible immediately to whoever triggered them.
+                    bool wasScheduled = queue.QueueStatus == "Scheduled";
 
                     try
                     {
@@ -105,6 +113,14 @@ namespace AutomationAPI.Repositories.TestRunner
 
                             await resultsRepo.UpdateAssignedTestCaseStatusAsync(tesrResult);
 
+                            if (wasScheduled && tesrResult.TestCaseStatus == "Failed")
+                            {
+                                await testFailureNotifier.NotifyScheduledFailureAsync(
+                                    queue.AssignmentTestCaseId,
+                                    queue.TestCaseId ?? queue.AssignmentTestCaseId.ToString(),
+                                    tesrResult.ErrorMessage,
+                                    queue.AssignedUser);
+                            }
                         }
 
                         queue.QueueStatus = "Completed";

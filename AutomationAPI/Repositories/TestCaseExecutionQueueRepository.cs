@@ -122,6 +122,7 @@ namespace AutomationAPI.Repositories
                     QueueId = reader.GetGuid("QueueId"),
                     AssignmentId = reader.GetInt32("AssignmentId"),
                     AssignmentTestCaseId = reader.GetInt32("AssignmentTestCaseId"),
+                    TestCaseId = reader.GetNullableString("TestCaseId"),
                     ReleaseId = reader.GetNullableInt("ReleaseId"),
                     EnvironmentId = reader.GetNullableInt("EnvironmentId"),
                     LibraryName = reader.GetNullableString("LibraryName"),
@@ -129,6 +130,7 @@ namespace AutomationAPI.Repositories
                     MethodName = reader.GetNullableString("MethodName"),
                     Environment = reader.GetNullableString("Environment"),
                     Browser = reader.GetNullableString("Browser"),
+                    AssignedUser = reader.GetNullableInt("AssignedUser"),
                     LoginUserId = reader.GetNullableInt("LoginUserId"),
                     QueueStatus = reader.GetNullableString("QueueStatus"),
                     ExecutionDateTime = reader.GetNullableDateTime("ExecutionDateTime")

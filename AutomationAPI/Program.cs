@@ -56,6 +56,7 @@ builder.Services.AddScoped<IReleaseRepository, ReleaseRepository>();
 builder.Services.AddScoped<IReleaseFileService, ReleaseFileService>();
 builder.Services.AddScoped<IReleaseReadinessService, ReleaseReadinessService>();
 builder.Services.AddScoped<IReleaseNotificationService, ReleaseNotificationService>();
+builder.Services.AddScoped<ITestExecutionNotificationService, TestExecutionNotificationService>();
 builder.Services.AddScoped<IEnvironmentRepository, EnvironmentRepository>();
 builder.Services.AddScoped<ILoginUserRepository, LoginUserRepository>();
 
