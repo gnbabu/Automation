@@ -1155,6 +1155,78 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: branded HTML email templates (Outlook-first)
+Asked to design "beautiful" email templates - found all 3 real email call sites in the
+system (Release Activated, Release Ready to Activate, and the Scheduled Test Failure
+notification added earlier this session) were sending nothing but bare, unstyled `<p>`
+tags. The transport (`IEmailService`/`SmtpEmailService`, Brevo) already fully supported
+rich HTML - nobody had ever built a real template.
+
+**Outlook confirmed as the primary client**, which changed the design approach
+significantly from "generically email-safe" to specifically Outlook-desktop-safe -
+Outlook renders HTML email through Word's engine, which is far more limited than Gmail/
+Apple Mail:
+- **Solid brand colors only, no CSS gradients** - Outlook doesn't render
+  `linear-gradient()` (the Portal's own on-screen header uses one; deliberately not
+  reused here). Colors pulled directly from the Portal's actual CSS, not invented:
+  `#5c3c9e` (`.btn-purple`), `#1a1c2e` (used as a solid header band here instead of part
+  of a gradient).
+- **No `border-radius`** - square corners everywhere by design, not by accident.
+- **Table-based layout, every style inline**, web-safe fonts only (Arial/Helvetica;
+  Consolas/Courier New for the error block) - no flexbox/grid/float, no `@font-face`.
+- **MSO conditional comments** (`<!--[if mso]>...<![endif]-->`) wrapping a VML
+  `<v:roundrect>` for the CTA button specifically, so Outlook gets a real, consistent
+  click-area instead of a shrink-wrapped inline `<a>`.
+- **No external image assets** - a plain colored table-cell "badge" with an HTML-entity
+  icon character (✓/⚡/✗) instead of an image, since Outlook (like most clients) blocks
+  remote images by default.
+
+New `AutomationAPI/Repositories/EmailTemplateBuilder.cs` - one `BuildShell(...)` method
+building the shared shell from structured inputs (accent color, icon, heading, message,
+label/value "facts", optional monospace error block, CTA text + link), plus 3 thin
+wrapper methods (`BuildReleaseActivatedEmail`/`BuildReleaseReadyToActivateEmail`/
+`BuildScheduledFailureEmail`) so every caller passes real data instead of hand-building
+HTML strings. All 3 existing call sites (`ReleaseController.Activate`,
+`ReleaseDllsReadyNotificationWorker`, `TestExecutionNotificationService.
+NotifyScheduledFailureAsync`) switched to use these. CTA buttons link to a real Portal
+page via the already-existing `App:FrontendUrl` config (previously only used for
+password-reset emails, `AuthenticationController`) - Release ones to
+`/release-management`, the failure one to `/test-case-execution-panel`.
+`ITestExecutionNotificationService.NotifyScheduledFailureAsync` gained an
+`environmentName` parameter (the template's info card needed it) - sourced from
+`PendingExecutionQueue.Environment`, already available at `TestQueueWorker`'s call site.
+
+**Visual sign-off before wiring into production**: built a throwaway scratch console
+project (`_email_preview_scratch/`, referencing `EmailTemplateBuilder.cs` directly via a
+linked file, deleted after use - not part of the real solution) to render all 3 templates
+with realistic sample data to standalone `.html` files, served them locally, and had the
+user review real rendered previews in a browser before any of it touched the actual send
+path - directly matching this project's "verify for real" habit rather than describing
+the design and hoping it looks right.
+
+**Verified for real** after wiring in: triggered a real scheduled test failure (same
+mechanism as the earlier retry/notification feature's own verification) - a new
+`aut.TestExecutionNotification` row appeared with `Status='Sent'`, confirming the new
+templated HTML actually went out via the live Brevo relay, not just that it renders
+correctly in a local browser preview.
+
+**Gotcha hit immediately after (real, worth documenting for next time)**: the user has
+their own `AutomationAPI` instance running via Visual Studio's debugger on port 7147.
+Adding a new constructor parameter (`IConfiguration`) to `ReleaseController`/
+`ReleaseDllsReadyNotificationWorker`/`TestExecutionNotificationService` is exactly the
+kind of edit .NET's Hot Reload **cannot** apply (DI/constructor signature changes) - the
+Scheduled Test Failure email (verified via my own separate diagnostic-port instance
+first) looked right, but the Release Activated/Ready-to-Activate emails initially still
+looked like the old bare-`<p>` version because the user's own long-running debug-session
+process was still running pre-change code. Confirmed by checking the listening PID on
+port 7147 before/after restarting - it changed, confirming a real restart, not just a
+Hot Reload attempt - and a fresh Release activation afterward correctly produced the new
+template (confirmed via `aut.ReleaseNotification` showing `Status='Sent'` for both real
+recipients). **Any future change that adds/removes a constructor parameter on a
+DI-registered class needs a real process restart, not just Hot Reload, to actually take
+effect** - flagging this as a general gotcha for this project's dev workflow, not just
+specific to this feature.
+
 ## Follow-up: retry a failed test case + email notification for scheduled failures
 Asked to analyze "what should happen when a test case fails - do we need an option to run
 it again? what about a scheduled test that fails?" and propose a solution.

@@ -118,6 +118,7 @@ namespace AutomationAPI.Repositories.TestRunner
                                 await testFailureNotifier.NotifyScheduledFailureAsync(
                                     queue.AssignmentTestCaseId,
                                     queue.TestCaseId ?? queue.AssignmentTestCaseId.ToString(),
+                                    queue.Environment,
                                     tesrResult.ErrorMessage,
                                     queue.AssignedUser);
                             }

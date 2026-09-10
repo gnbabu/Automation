@@ -11,22 +11,26 @@ namespace AutomationAPI.Repositories
         private readonly IEmailService _emailService;
         private readonly ILogger<TestExecutionNotificationService> _logger;
         private readonly SqlDataAccessHelper _db;
+        private readonly IConfiguration _configuration;
 
         public TestExecutionNotificationService(
             IUserRepository userRepo,
             IEmailService emailService,
             SqlDataAccessHelper db,
-            ILogger<TestExecutionNotificationService> logger)
+            ILogger<TestExecutionNotificationService> logger,
+            IConfiguration configuration)
         {
             _userRepo = userRepo;
             _emailService = emailService;
             _db = db;
             _logger = logger;
+            _configuration = configuration;
         }
 
         public async Task NotifyScheduledFailureAsync(
             int assignmentTestCaseId,
             string testCaseId,
+            string? environmentName,
             string? errorMessage,
             int? assignedUserId)
         {
@@ -57,10 +61,10 @@ namespace AutomationAPI.Repositories
                     recipients.Add((admin.UserId, admin.Email, admin.UserName));
 
                 var subject = $"Test case {testCaseId} failed (scheduled run)";
-                var bodyHtml =
-                    $"<p>Scheduled test case <strong>{testCaseId}</strong> (AssignmentTestCaseId {assignmentTestCaseId}) failed.</p>" +
-                    $"<p><strong>Error:</strong><br/>{System.Net.WebUtility.HtmlEncode(errorMessage ?? "(no message)")}</p>" +
-                    "<p>You can retry it directly from the Test Case Execution Panel.</p>";
+                var frontendUrl = _configuration["App:FrontendUrl"]?.TrimEnd('/') ?? "";
+                var bodyHtml = EmailTemplateBuilder.BuildScheduledFailureEmail(
+                    testCaseId, environmentName ?? "-", DateTime.Now, errorMessage ?? "(no message)",
+                    $"{frontendUrl}/test-case-execution-panel");
 
                 foreach (var (userId, email, userName) in recipients)
                 {

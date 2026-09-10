@@ -13,6 +13,7 @@ namespace AutomationAPI.Repositories.Interfaces
         Task NotifyScheduledFailureAsync(
             int assignmentTestCaseId,
             string testCaseId,
+            string? environmentName,
             string? errorMessage,
             int? assignedUserId);
     }

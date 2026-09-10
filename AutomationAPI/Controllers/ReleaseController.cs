@@ -1,3 +1,4 @@
+using AutomationAPI.Repositories;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +19,7 @@ namespace AutomationAPI.Controllers
         private readonly IReleaseNotificationService _notificationService;
         private readonly ITestSuitesRepository _testSuitesRepository;
         private readonly ILogger<ReleaseController> _logger;
+        private readonly IConfiguration _configuration;
 
         public ReleaseController(
             IReleaseRepository repo,
@@ -26,7 +28,8 @@ namespace AutomationAPI.Controllers
             IReleaseReadinessService readinessService,
             IReleaseNotificationService notificationService,
             ITestSuitesRepository testSuitesRepository,
-            ILogger<ReleaseController> logger)
+            ILogger<ReleaseController> logger,
+            IConfiguration configuration)
         {
             _repo = repo;
             _envRepo = envRepo;
@@ -35,6 +38,7 @@ namespace AutomationAPI.Controllers
             _notificationService = notificationService;
             _testSuitesRepository = testSuitesRepository;
             _logger = logger;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -254,8 +258,10 @@ namespace AutomationAPI.Controllers
 
             // Notify Test Managers/Admins that the release is available for testing.
             var subject = $"Release available for testing: {release.ReleaseName} {release.Version}";
-            var body = $"<p>Release <strong>{release.ReleaseName}</strong> (Version {release.Version}, " +
-                       $"Environment {release.EnvironmentName}) has been activated and is now available for testing.</p>";
+            var frontendUrl = _configuration["App:FrontendUrl"]?.TrimEnd('/') ?? "";
+            var body = EmailTemplateBuilder.BuildReleaseActivatedEmail(
+                release.ReleaseName, release.Version, release.EnvironmentName,
+                $"{frontendUrl}/release-management");
             var notifyResult = await _notificationService.NotifyManagersAndAdminsAsync(
                 id, "ActivatedForTesting", subject, body);
 

@@ -1,3 +1,4 @@
+using AutomationAPI.Repositories;
 using AutomationAPI.Repositories.Interfaces;
 
 namespace AutomationAPI.Repositories.Workers
@@ -19,13 +20,16 @@ namespace AutomationAPI.Repositories.Workers
 
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<ReleaseDllsReadyNotificationWorker> _logger;
+        private readonly IConfiguration _configuration;
 
         public ReleaseDllsReadyNotificationWorker(
             IServiceProvider serviceProvider,
-            ILogger<ReleaseDllsReadyNotificationWorker> logger)
+            ILogger<ReleaseDllsReadyNotificationWorker> logger,
+            IConfiguration configuration)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _configuration = configuration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -104,10 +108,10 @@ namespace AutomationAPI.Repositories.Workers
                 return DllsReadyForActivationOutcome.AlreadyNotified;
 
             var subject = $"Release ready to activate: {release.ReleaseName} {release.Version}";
-            var body = $"<p>Release <strong>{release.ReleaseName}</strong> (Version {release.Version}, " +
-                       $"Environment {release.EnvironmentName}) now has usable DLLs in its release folder " +
-                       $"and is ready for activation. Activation is a manual step — please review and " +
-                       $"activate it from Release Management when ready.</p>";
+            var frontendUrl = _configuration["App:FrontendUrl"]?.TrimEnd('/') ?? "";
+            var body = EmailTemplateBuilder.BuildReleaseReadyToActivateEmail(
+                release.ReleaseName, release.Version, release.EnvironmentName,
+                $"{frontendUrl}/release-management");
 
             await notificationService.NotifyManagersAndAdminsAsync(release.ReleaseId, NotificationType, subject, body);
             return DllsReadyForActivationOutcome.Notified;
