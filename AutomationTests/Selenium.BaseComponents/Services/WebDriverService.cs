@@ -1,6 +1,7 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Edge;
+using Selenium.BaseComponents;
 
 namespace Selenium.BaseComponents.Services
 {
@@ -10,6 +11,23 @@ namespace Selenium.BaseComponents.Services
     /// </summary>
     public class WebDriverService
     {
+        // Own SettingsReader instance (same pattern as APIGatway's own) - reads
+        // AppSettings:HeadlessMode from the deployed appSettings.json, i.e. a
+        // per-deployment Base Framework setting, not something picked per run/queue
+        // item (unlike Browser/LoginUserId, which are threaded through TestContext.
+        // Parameters instead). Read once and cached - matches the file's own
+        // per-process lifetime (a fresh isolated process is started for every run
+        // anyway, see AGENTS.md's ProcessModel=Separate notes, so there's no
+        // "picked up a stale value mid-run" concern).
+        private readonly bool _headlessFromSettings;
+
+        public WebDriverService()
+        {
+            var settingsReader = new SettingsReader();
+            _headlessFromSettings = bool.TryParse(
+                settingsReader.GetSetting("AppSettings:HeadlessMode"), out var configured) && configured;
+        }
+
         /// <summary>
         /// Creates and configures Chrome WebDriver
         /// </summary>
@@ -23,10 +41,22 @@ namespace Selenium.BaseComponents.Services
             chromeOptions.AddArgument("--ignore-certificate-errors");
             chromeOptions.AddArgument("--disable-search-engine-choice-screen");
 
-            // Check if running in CI environment
-            if (Environment.GetEnvironmentVariable("AGENT_MACHINENAME") != null)
+            // Headless if: the caller explicitly asked for it (this parameter was
+            // previously accepted but never actually read - a pre-existing dead-
+            // parameter bug, fixed here), OR AppSettings:HeadlessMode is true in the
+            // deployed appSettings.json (the new Base Framework "Silent/Headless
+            // Browser Mode" setting), OR the existing CI-environment-variable check.
+            if (headless || _headlessFromSettings || Environment.GetEnvironmentVariable("AGENT_MACHINENAME") != null)
             {
                 chromeOptions.AddArgument("--headless");
+
+                // --start-maximized above is a no-op in headless mode (confirmed by
+                // direct testing: without this, real pages rendered at a small default
+                // viewport, causing intermittent ElementClickInterceptedException/
+                // StaleElementReferenceException failures that don't happen with a
+                // real visible window) - there's no real window to maximize, so an
+                // explicit size is required for headless to behave equivalently.
+                chromeOptions.AddArgument("--window-size=1920,1080");
             }
 
             var service = ChromeDriverService.CreateDefaultService();
@@ -61,10 +91,12 @@ namespace Selenium.BaseComponents.Services
             edgeOptions.AddArgument("--ignore-certificate-errors");
             edgeOptions.AddArgument("--disable-search-engine-choice-screen");
 
-            // Check if running in CI environment
-            if (Environment.GetEnvironmentVariable("AGENT_MACHINENAME") != null)
+            // Same three-way check (and --window-size reasoning) as CreateChromeDriver
+            // above.
+            if (headless || _headlessFromSettings || Environment.GetEnvironmentVariable("AGENT_MACHINENAME") != null)
             {
                 edgeOptions.AddArgument("--headless");
+                edgeOptions.AddArgument("--window-size=1920,1080");
             }
 
             var service = EdgeDriverService.CreateDefaultService();

@@ -1155,6 +1155,59 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Silent/Headless Browser Mode - a Base Framework appSettings.json setting
+Asked to add a Silent/Headless Browser Mode option "under the Base Framework application
+settings" - clarified this means the `AutomationTests` project's own deployed
+`appSettings.json` files (the same file `SettingsReader`/`APIGatway` already read
+`AppSettings:AutomationAPI` from), **not** a new Portal UI/DB-driven setting.
+
+**Found a real pre-existing bug while investigating**: `WebDriverService.
+CreateChromeDriver(bool headless = false)`/`CreateEdgeDriver(bool headless = false)`
+already *accepted* a `headless` parameter, but never actually read it anywhere in either
+method body - only an `AGENT_MACHINENAME` environment-variable check (for CI) ever added
+`--headless`. `BaseFeatureFixture` always called both with no argument anyway (defaulting
+to `false`), so this parameter was pure dead code - headless mode was never actually
+reachable at all outside a CI environment before this change.
+
+Implementation:
+- `WebDriverService` now owns its own `SettingsReader` (same pattern as `APIGatway`'s
+  own), reading `AppSettings:HeadlessMode` once per (isolated, per-run) process.
+  `CreateChromeDriver`/`CreateEdgeDriver` now go headless if *any* of: the `headless`
+  parameter is true (fixed - actually read now), `AppSettings:HeadlessMode` is `true`,
+  or the existing CI env var check - three independent ways to enable it, none of them
+  removed.
+- Added `"HeadlessMode": "false"` to `AppSettings` in every real project's
+  `appSettings.json` (`TC.SearchPA`/`TC.SearchRA`/`TC.SearchEligibility`/
+  `TC.SubmitClaims`/`TC.PriorAuthInquiry`/`TC.PriorAuthoriztion`/`Selenium.
+  BaseComponents`'s own) - defaults to off, matching today's actual behavior exactly, so
+  nothing changes unless someone explicitly flips it to `"true"` in a deployed Release
+  folder. (Incidentally fixed a pre-existing invalid-trailing-comma JSON syntax issue in
+  5 of these files while adding the new key - harmless in practice since apparently
+  tolerated, but now genuinely valid JSON.) `TC.Registration` has no tracked source-level
+  `appSettings.json` at all (only an ad-hoc file under its own `bin/` output, never
+  wired via its `.csproj`) - left alone, out of scope.
+
+**Verified for real, and found something important while doing so**: deployed a real
+Release with `HeadlessMode: "true"`, queued a real run - confirmed via `Get-Process` that
+every Chrome process for the run had an empty `MainWindowTitle` (headless has no visible
+window at all, unlike a normal run). The run itself failed twice with timing-flavored
+errors (`StaleElementReferenceException`/`ElementClickInterceptedException`) reaching well
+into the real login flow (past finding/setting the username field). Investigated via the
+actual failure screenshot (using the automatic-failure-screenshot feature added earlier)
+and found the real cause: a "Terms" agreement modal dialog that the real target site shows
+mid-login-flow, which `LoginService.Login()`'s existing `IsActive()`/`ClickCancelButton()`
+handling doesn't reliably synchronize with - unrelated to headless mode's correctness, but
+apparently exposed consistently by headless mode's different rendering pace. Added
+`--window-size=1920,1080` when headless (`--start-maximized` is a documented no-op in
+headless mode - there's no real window to maximize, so pages render at a small default
+viewport otherwise) - this is a real, worthwhile fix on its own merits, but did **not**
+resolve the Terms-modal race. **Decisively confirmed headless mode itself is not at
+fault**: re-ran the identical test/Release with `HeadlessMode` flipped back to `"false"`
+(no other change) - Passed cleanly in 14.3s. This is a separate, pre-existing login-flow
+robustness gap (the Terms modal's timing), not something this change introduced or needs
+to fix to satisfy what was actually asked - flagged as a known follow-up if headless mode
+needs to be reliable for real runs against this specific target site.
+
 ## Follow-up: linked the failure screenshot to its log entry + logged the URL at failure
 Asked "what else can we do better on failure" after the above - implemented the top two
 suggested improvements:
