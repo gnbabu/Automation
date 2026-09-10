@@ -126,7 +126,30 @@ namespace Selenium.BaseComponents.Pages
             // via APIGatway.UpdateQueue, now retired.
             await ResolveCredentialsAndUrlAsync();
 
-            InitializeChromeAndLogin();
+            InitializeBrowserAndLogin();
+        }
+
+        // Selects Chrome vs Edge based on the already-threaded TestContext.Parameters
+        // ["Browser"] (queue -> TestQueueWorker -> NUnitEngineTestRunner -> NUnit
+        // TestParameters, same mechanism as AssignmentId/AssignmentTestCaseId above -
+        // that whole pipeline already worked correctly; this method was the actual gap
+        // - InitializeTestSuite used to call InitializeChromeAndLogin() unconditionally,
+        // so InitializeEdgeAndLogin() below existed but was dead code, never reachable,
+        // regardless of what was ever selected anywhere upstream). Defaults to Chrome
+        // when absent/anything other than "Edge" - matches today's exact behavior for a
+        // local Test Explorer run outside the queue pipeline (no Browser parameter at
+        // all) or an explicit "Chrome" selection.
+        private void InitializeBrowserAndLogin()
+        {
+            string? browser = TestContext.Parameters["Browser"];
+            if (string.Equals(browser, "Edge", StringComparison.OrdinalIgnoreCase))
+            {
+                InitializeEdgeAndLogin();
+            }
+            else
+            {
+                InitializeChromeAndLogin();
+            }
         }
 
         // Resolution order (see AGENTS.md - "per-environment login users, selected

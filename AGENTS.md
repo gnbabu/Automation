@@ -1155,6 +1155,68 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: real browser selection (Chrome/Edge) for Run Now/Bulk Run Now/Schedule/Bulk Schedule
+Asked to "provide an option to select the browser when running a test case... passed to
+the Base Framework during execution... from Run Now/Schedule and Bulk in all cases."
+
+**Found the core gap**: the backend/queue plumbing for `Browser` was already fully wired
+end-to-end (`SingleRunNowRequest`/`BulkRunNowRequest`/`SingleScheduleRequest`/
+`BulkScheduleRequest` all already had a `Browser` field; `TestQueueWorker` already read
+`queue.Browser` into `TestRunRequest.Browser`; `NUnitEngineTestRunner` already threaded
+it into `TestContext.Parameters["Browser"]`) - but `BaseFeatureFixture` (the base class
+every real `TC.*` project inherits) **never actually read it**. `InitializeTestSuite()`
+unconditionally called `InitializeChromeAndLogin()` - `InitializeEdgeAndLogin()` already
+existed with equivalent logic, but was dead code, unreachable from anywhere. Selecting
+anything other than Chrome, anywhere in the UI, has never had any actual effect on which
+browser launched.
+
+Fixed by adding `BaseFeatureFixture.InitializeBrowserAndLogin()`, called from
+`InitializeTestSuite()` instead of the old unconditional Chrome call - reads
+`TestContext.Parameters["Browser"]` and dispatches to `InitializeEdgeAndLogin()` when
+it's `"Edge"` (case-insensitive), else `InitializeChromeAndLogin()` (matches today's
+exact behavior when absent, e.g. a local Test Explorer run outside the queue pipeline).
+
+**A second real bug surfaced immediately by fixing the first one**: the very first real
+Edge run failed with `InvalidSelectorException: invalid selector from javascript error:
+this.thenCore is not a function` (confirmed via the error message it really was a real
+Edge session: `Session info: MicrosoftEdge=152.0.4191.66`) - `CreateChromeDriver`'s
+`ExecuteCdpCommand` workaround for the html2pdf.js/jsPDF `thenCore` incompatibility was
+never applied in `CreateEdgeDriver` (unnoticed before, since Edge was never actually
+reachable at all). Added the identical CDP command injection to `CreateEdgeDriver` -
+confirmed by direct testing this was the actual fix: the same real test that failed
+first attempt on Edge with this error **Passed** cleanly once this was added.
+
+Frontend, for all 4 flows:
+- `ScheduleTestcasesDialogComponent` (shared by Schedule + Bulk Schedule) already had a
+  working Browser `<select>`, but offered `Chrome`/`IE` - swapped `IE` for `Edge` (`IE`
+  was never supported anywhere on the C# side at all - no `CreateInternetExplorerDriver`
+  exists, and real IE support would need a whole separate IEDriverServer dependency).
+- `RunNowDialogComponent` (shared by Run Now + Bulk Run Now) had **no browser field at
+  all**, and previously only opened when the target environment `RequiresAuthentication`
+  - for any environment that didn't need auth, Run Now skipped straight from the
+  confirm() prompt to queuing with a hard-coded `'Chrome'`, no dialog whatsoever. Added a
+  Browser `<select>` (Chrome/Edge), and the dialog now **always** opens (confirmed
+  acceptable with the user - one extra click for non-auth environments, in exchange for
+  consistent browser selection everywhere) - the Login User field inside it stays
+  conditionally shown/required exactly as before, driven by whether `loginUsers` is
+  populated.
+- `test-case-execution-panel.component.ts`'s `resolveLoginUserForRunNow` (the one
+  centralized helper feeding both `onRunNow` and `onBulkRunNow`) restructured so it
+  always opens `runNowDialog` (via a small local `openDialog` helper covering the "no
+  release/environment", "doesn't require auth", and "environment lookup failed" cases,
+  which previously all skipped the dialog outright) - the callback now carries `browser`
+  alongside `loginUserId`, replacing the hard-coded `'Chrome'` in both call sites.
+
+**Verified for real, decisively, at the API level for 3 of the 4 flows** (Run Now, Bulk
+Run Now, Schedule - Bulk Schedule shares the identical downstream `TestQueueWorker`/
+`NUnitEngineTestRunner`/`BaseFeatureFixture` mechanism as the other three once a queue
+row exists, so proving those three is conclusive for all four): queued the same real
+test case with `browser: "Edge"` through `single-run`, `bulk-run`, and `single-schedule`
+- all three **Passed** cleanly end-to-end (real login, real navigation, real screenshots)
+once the CDP fix was in place, each confirmed via the real error/session info during
+initial debugging that Edge was genuinely the browser in use, not Chrome. Re-ran with
+`browser: "Chrome"` too - still Passes, unaffected.
+
 ## Follow-up: Silent/Headless Browser Mode - a Base Framework appSettings.json setting
 Asked to add a Silent/Headless Browser Mode option "under the Base Framework application
 settings" - clarified this means the `AutomationTests` project's own deployed

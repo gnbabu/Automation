@@ -9,10 +9,12 @@ import { FormsModule } from '@angular/forms';
 import { ILoginUserModel } from '@interfaces';
 import { ModalService } from '@services';
 
-// Shown only when the environment being run against has RequiresAuthentication = true
-// (see test-case-execution-panel.component.ts's onRunNow/onBulkRunNow) - "Run Now" has
-// no dialog at all otherwise, unchanged from before this feature existed. Mirrors
-// ScheduleTestcasesDialogComponent's ModalService open(callback)/submit() pattern.
+// Now always opens for Run Now/Bulk Run Now (see test-case-execution-panel.component.
+// ts's onRunNow/onBulkRunNow) - previously only shown when the environment being run
+// against had RequiresAuthentication = true, with no dialog (and no way to pick a
+// browser) at all otherwise. The Login User field stays conditional on loginUsers being
+// non-empty; Browser is always offered. Mirrors ScheduleTestcasesDialogComponent's
+// ModalService open(callback)/submit() pattern.
 @Component({
   selector: 'app-run-now-dialog',
   standalone: true,
@@ -25,8 +27,9 @@ export class RunNowDialogComponent implements AfterViewInit {
 
   loginUsers: ILoginUserModel[] = [];
   loginUserId: number | null = null;
+  browser: string = 'Chrome';
 
-  private callback!: (data: { loginUserId: number }) => void;
+  private callback!: (data: { loginUserId?: number; browser: string }) => void;
 
   constructor(private modalService: ModalService) {}
 
@@ -36,10 +39,15 @@ export class RunNowDialogComponent implements AfterViewInit {
     });
   }
 
-  /** Open modal with this environment's active login users and pass a callback. */
-  open(loginUsers: ILoginUserModel[], cb: (data: { loginUserId: number }) => void) {
+  /** Open modal with this environment's active login users (empty if auth isn't
+   * required) and pass a callback. */
+  open(
+    loginUsers: ILoginUserModel[],
+    cb: (data: { loginUserId?: number; browser: string }) => void
+  ) {
     this.loginUsers = loginUsers.filter((lu) => lu.isActive);
     this.loginUserId = null;
+    this.browser = 'Chrome';
     this.callback = cb;
     this.modalService.open('runNowModal');
   }
@@ -48,11 +56,18 @@ export class RunNowDialogComponent implements AfterViewInit {
     this.modalService.close('runNowModal');
   }
 
+  get requiresLoginUser(): boolean {
+    return this.loginUsers.length > 0;
+  }
+
   submit() {
-    if (!this.loginUserId) return;
+    if (this.requiresLoginUser && !this.loginUserId) return;
 
     if (this.callback) {
-      this.callback({ loginUserId: this.loginUserId });
+      this.callback({
+        loginUserId: this.loginUserId ?? undefined,
+        browser: this.browser,
+      });
     }
 
     this.loginUserId = null;

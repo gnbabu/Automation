@@ -409,14 +409,14 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Only shows a Login User selection dialog when the target environment requires
-    // authentication - otherwise proceeds exactly as before this feature existed (no
-    // dialog, no loginUserId, hardcoded 'Chrome').
-    this.resolveLoginUserForRunNow((loginUserId) => {
+    // Always opens the Run Now dialog now, to offer Browser selection (Chrome/Edge) in
+    // every case - the Login User field inside it stays conditional on the target
+    // environment requiring authentication, same as before this change.
+    this.resolveLoginUserForRunNow((loginUserId, browser) => {
       const payload = {
         assignmentId: this.selectedAssignment?.assignmentId!,
         assignmentTestCaseId: testCase.assignmentTestCaseId,
-        browser: 'Chrome',
+        browser,
         loginUserId,
       };
 
@@ -434,29 +434,35 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
     }, () => this.blockNoCredential());
   }
 
-  // Checks the selected assignment's Release's environment - if it requires
-  // authentication, opens runNowDialog to let the person pick which of their own
-  // configured login credentials to use (self-service - only ever their own, never
-  // someone else's, see AGENTS.md), then calls onProceed with the chosen id. If it
-  // doesn't require auth, calls onProceed with no id at all - matches today's behavior
-  // exactly for any environment that doesn't need auth. If it does require auth but the
-  // current user has no credential configured for it yet, calls onBlocked instead of
-  // ever opening the dialog - there is nothing to select, so a soft/disabled dialog
-  // would just be confusing.
+  // Always opens runNowDialog now, to offer Browser selection (Chrome/Edge) in every
+  // case - previously skipped entirely (defaulting to a hard-coded 'Chrome' with no
+  // login user) whenever the target environment didn't require authentication. When it
+  // does require authentication, resolves the current user's own configured login
+  // credentials (self-service - only ever their own, never someone else's, see
+  // AGENTS.md) and passes them to the dialog so its Login User field is shown/required;
+  // otherwise the dialog opens with an empty login user list (field hidden, same as
+  // before). If auth is required but the current user has no credential configured yet,
+  // calls onBlocked instead of ever opening the dialog - there is nothing to select, so
+  // a soft/disabled dialog would just be confusing.
   private resolveLoginUserForRunNow(
-    onProceed: (loginUserId?: number) => void,
+    onProceed: (loginUserId: number | undefined, browser: string) => void,
     onBlocked: () => void
   ): void {
+    const openDialog = (loginUsers: ILoginUserModel[]) =>
+      this.runNowDialog.open(loginUsers, (data) =>
+        onProceed(data.loginUserId, data.browser)
+      );
+
     const environmentId = this.selectedAssignmentRelease?.environmentId;
     if (!environmentId) {
-      onProceed(undefined);
+      openDialog([]);
       return;
     }
 
     this.environmentService.getById(environmentId).subscribe({
       next: (env) => {
         if (!env.requiresAuthentication) {
-          onProceed(undefined);
+          openDialog([]);
           return;
         }
 
@@ -466,9 +472,7 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
               onBlocked();
               return;
             }
-            this.runNowDialog.open(loginUsers, (data) =>
-              onProceed(data.loginUserId)
-            );
+            openDialog(loginUsers);
           },
           error: (err) => {
             console.error('Failed to load login users:', err);
@@ -478,7 +482,7 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Failed to load environment:', err);
-        onProceed(undefined);
+        openDialog([]);
       },
     });
   }
@@ -580,15 +584,15 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
     }
 
     // Bulk actions are already scoped to a single selectedAssignment/
-    // selectedAssignmentRelease (one environment) - one shared Login User selection is
-    // applied to every queued item in the batch.
-    this.resolveLoginUserForRunNow((loginUserId) => {
+    // selectedAssignmentRelease (one environment) - one shared Login User/Browser
+    // selection is applied to every queued item in the batch.
+    this.resolveLoginUserForRunNow((loginUserId, browser) => {
       const payload = {
         assignmentId: this.selectedAssignment?.assignmentId!,
         assignmentTestCaseIds: this.selectedTestCases.map(
           (t) => t.assignmentTestCaseId
         ),
-        browser: 'Chrome',
+        browser,
         loginUserId,
       };
 

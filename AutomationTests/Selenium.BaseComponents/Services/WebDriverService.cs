@@ -100,7 +100,27 @@ namespace Selenium.BaseComponents.Services
             }
 
             var service = EdgeDriverService.CreateDefaultService();
-            return new EdgeDriver(service, edgeOptions, TimeSpan.FromMinutes(5));
+            var edgeDriver = new EdgeDriver(service, edgeOptions, TimeSpan.FromMinutes(5));
+
+            // Same "thenCore is not a function" fix as CreateChromeDriver above - Edge
+            // is Chromium-based too, and hits the exact same html2pdf.js/jsPDF
+            // incompatibility (confirmed by direct testing: InvalidSelectorException
+            // "this.thenCore is not a function" during login, before this fix existed
+            // here - Edge was never actually reachable before the Browser parameter was
+            // wired up to InitializeEdgeAndLogin, so this gap went unnoticed).
+            edgeDriver.ExecuteCdpCommand("Page.addScriptToEvaluateOnNewDocument",
+                new Dictionary<string, object>
+                {
+                    { "source", @"
+                        window.cdc_adoQpoasnfa76pfcZLmcfl_Promise = window.Promise;
+                        window.cdc_adoQpoasnfa76pfcZLmcfl_JSON = window.JSON;
+                        if (!Promise.prototype.thenCore) {
+                            Promise.prototype.thenCore = Promise.prototype.then;
+                        }
+                    " }
+                });
+
+            return edgeDriver;
         }
 
         /// <summary>
