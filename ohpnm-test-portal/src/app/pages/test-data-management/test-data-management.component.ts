@@ -81,6 +81,8 @@ export class TestDataManagementComponent
   sectionStatus = new Map<number, boolean>();
   sectionStatusLoading = false;
 
+  copyFromEnvironmentSelection?: IEnvironmentModel;
+
   constructor(
     private automationService: AutomationService,
     private toaster: CommonToasterService,
@@ -196,6 +198,60 @@ export class TestDataManagementComponent
     this.existingSectionData = undefined;
     this.submitAttempted = false;
     this.savedSnapshot = '';
+    this.copyFromEnvironmentSelection = undefined;
+  }
+
+  // Environments other than the one currently selected - the only ones it makes sense
+  // to copy *from*.
+  get otherEnvironments(): IEnvironmentModel[] {
+    return this.environments.filter(
+      (e) => e.environmentId !== this.selectedEnvironment?.environmentId
+    );
+  }
+
+  // Loads another environment's saved data for the *same* section into the current
+  // rows - a preview, not a save. Reuses the exact same getAutomationData endpoint the
+  // main form already calls, just with a different environmentId (no backend change).
+  // Deliberately replaces rather than merges the current rows - merging raises
+  // ambiguous questions (which value wins if a key exists in both?) that a plain
+  // replace avoids; nothing is actually persisted until the user saves themselves, so a
+  // replace is easy to undo by just not saving.
+  async copyFromEnvironment(sourceEnvironment: IEnvironmentModel): Promise<void> {
+    if (this.isViewer() || !this.selectedSection) return;
+
+    if (this.hasUnsavedChanges()) {
+      const discard = await this.confirmDiscardChanges();
+      if (!discard) return;
+    }
+
+    const userId = this.authService.getLoggedInUserId();
+    this.automationService
+      .getAutomationData(
+        this.selectedSection.sectionId,
+        userId,
+        sourceEnvironment.environmentId
+      )
+      .subscribe({
+        next: (res) => {
+          const copiedRows = this.parseRows(res?.testContent);
+          if (copiedRows.length === 0) {
+            this.toaster.info(
+              `No test data found in ${sourceEnvironment.environmentName} for this section.`
+            );
+            return;
+          }
+
+          this.rows = copiedRows;
+          this.submitAttempted = false;
+          this.toaster.success(
+            `Copied ${copiedRows.length} field${copiedRows.length === 1 ? '' : 's'} from ${sourceEnvironment.environmentName}. Review and Save to keep them.`
+          );
+        },
+        error: (err) => {
+          console.error('Error copying test data from environment:', err);
+          this.toaster.error('Failed to copy test data from that environment.');
+        },
+      });
   }
 
   private tryLoadAutomationData() {

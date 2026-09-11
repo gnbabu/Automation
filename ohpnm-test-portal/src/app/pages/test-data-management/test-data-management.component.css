@@ -210,6 +210,31 @@
   background: #f7f0fb;
 }
 
+.copy-env-btn {
+  border: 1.5px solid #6c3483;
+  color: #6c3483;
+  background: transparent;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.copy-env-btn:hover {
+  background: #f7f0fb;
+}
+
+.copy-env-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+:host ::ng-deep select.copy-env-select {
+  width: auto;
+  min-width: 180px;
+  height: 40px !important;
+}
+
 .empty-state {
   text-align: center;
   padding: 40px 20px;

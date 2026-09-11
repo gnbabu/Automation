@@ -1155,6 +1155,44 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Test Data Management - copy test data between environments
+Last item picked from the earlier improvement list (field-name-vs-DTO-schema
+validation was deliberately dropped after discussion - there's no centrally-governed
+contract to validate against, and building one would risk going stale the moment a
+test author adds a DTO field without updating a registry; the retry + failure-
+notification work from earlier this session already surfaces the real failure mode -
+a typo'd key - visibly instead of silently, which was the actual underlying concern).
+
+Removes the need to retype the same section's fields by hand for every environment
+(DEV/UAT/PROD/etc.) - `copyFromEnvironment(sourceEnvironment)` re-calls the exact same
+`getAutomationData(sectionId, userId, environmentId)` endpoint the main form already
+uses, just with a different `environmentId` (no backend change), and loads the result
+into the current `rows` - a preview, not a save; nothing is persisted until the user
+clicks Save/Update themselves. Deliberately **replaces** rather than merges current
+rows - merging raises ambiguous "which value wins" questions a plain replace avoids,
+and it's trivially undone by just not saving. Goes through the same unsaved-changes
+protection as everything else (confirms before discarding if there's already
+unsaved work).
+
+**Two real UX corrections made from live testing feedback, not the original design**:
+1. First implementation used Bootstrap's native `data-bs-toggle="dropdown"` JS-driven
+   menu - didn't actually open on click. Confirmed via `grep` this app has **no other
+   working example** of that pattern anywhere - the one existing "dropdown" component
+   (`app-multiselect-dropdown`) uses its own Angular `(click)`/`*ngIf` toggle instead,
+   never Bootstrap's JS. Rather than debug why the untested Bootstrap JS path wasn't
+   firing, switched to a plain Angular-driven toggle first, then simplified further
+   (see #2) once a UX concern was raised about it.
+2. Even the Angular-driven expanding menu was flagged as poor UX if the environment
+   list grows ("menu will be expandable, disturbing the experience"). Replaced
+   entirely with a plain native `<select>` + "Copy" button - matches the
+   Environment/Flow/Section selects already on this exact page, and scales to any
+   number of environments with zero custom overlay/positioning/z-index concerns at
+   all, unlike a custom menu would. Needed a specificity fix afterward
+   (`:host ::ng-deep select.copy-env-select` to override the page's existing
+   `select.form-select { height: 44px !important; }` rule) and a final height tweak
+   (34px -> 40px) to visually align with the buttons next to it, both confirmed via
+   direct visual feedback rather than guessed upfront.
+
 ## Follow-up: Test Data Management - unsaved-changes protection + section overview
 Two more improvements on top of the redesign above, picked from a list of further
 suggestions (also proposed but not yet done: validating field names against each
