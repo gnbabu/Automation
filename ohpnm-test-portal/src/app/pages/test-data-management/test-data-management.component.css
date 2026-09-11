@@ -141,6 +141,45 @@
 }
 
 /* =============================
+   FIELD SEARCH
+   ============================= */
+.field-search-wrapper {
+  position: relative;
+  margin-bottom: 10px;
+  max-width: 360px;
+}
+
+.field-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.field-search-input {
+  padding-left: 34px;
+  padding-right: 30px;
+  height: 38px;
+}
+
+.field-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.field-search-clear:hover {
+  color: #6c3483;
+}
+
+/* =============================
    TABLE EDITOR
    ============================= */
 .tdm-row {

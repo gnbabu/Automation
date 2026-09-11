@@ -83,6 +83,11 @@ export class TestDataManagementComponent
 
   copyFromEnvironmentSelection?: IEnvironmentModel;
 
+  // Only shown once a section has more than a handful of fields (see
+  // showFieldSearch below) - not worth the extra UI for a typical small section.
+  fieldSearchTerm = '';
+  private readonly FIELD_SEARCH_THRESHOLD = 6;
+
   constructor(
     private automationService: AutomationService,
     private toaster: CommonToasterService,
@@ -199,6 +204,30 @@ export class TestDataManagementComponent
     this.submitAttempted = false;
     this.savedSnapshot = '';
     this.copyFromEnvironmentSelection = undefined;
+    this.fieldSearchTerm = '';
+  }
+
+  get showFieldSearch(): boolean {
+    return this.rows.length > this.FIELD_SEARCH_THRESHOLD;
+  }
+
+  // Returns indexes into `rows` (not a filtered copy of the rows themselves) so
+  // edit/remove/duplicate-key checks - all of which operate on a row's real position
+  // in `rows` - keep working correctly against a filtered *display*, matching both Key
+  // and Value text (case-insensitive) since it's often easier to remember a value like
+  // an email address than the exact field name.
+  get filteredRowIndexes(): number[] {
+    const term = this.fieldSearchTerm.trim().toLowerCase();
+    const allIndexes = this.rows.map((_, i) => i);
+    if (!term) return allIndexes;
+
+    return allIndexes.filter((i) => {
+      const row = this.rows[i];
+      return (
+        row.key.toLowerCase().includes(term) ||
+        row.value.toLowerCase().includes(term)
+      );
+    });
   }
 
   // Environments other than the one currently selected - the only ones it makes sense
@@ -360,6 +389,9 @@ export class TestDataManagementComponent
   addRow(): void {
     this.rows.push({ key: '', value: '', showValue: true });
     this.submitAttempted = false;
+    // Clears any active filter so the newly added (empty) row is actually visible -
+    // it wouldn't match a non-empty search term otherwise.
+    this.fieldSearchTerm = '';
   }
 
   removeRow(index: number): void {

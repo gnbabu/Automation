@@ -120,15 +120,45 @@
           <span class="field-count-badge">{{ fieldCount }} field{{ fieldCount === 1 ? '' : 's' }}</span>
         </div>
 
+        <!-- Field search - only shown once a section has enough fields for it to be
+             worth the extra UI. Filters both Key and Value text. -->
+        <div class="field-search-wrapper" *ngIf="showFieldSearch">
+          <i class="bi bi-search field-search-icon"></i>
+          <input
+            type="text"
+            class="form-control field-search-input"
+            [(ngModel)]="fieldSearchTerm"
+            name="fieldSearchTerm"
+            placeholder="Search fields by key or value..."
+          />
+          <button
+            type="button"
+            class="field-search-clear"
+            *ngIf="fieldSearchTerm"
+            (click)="fieldSearchTerm = ''"
+            aria-label="Clear search"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="text-muted small mb-2" *ngIf="showFieldSearch && fieldSearchTerm">
+          Showing {{ filteredRowIndexes.length }} of {{ rows.length }} fields matching "{{ fieldSearchTerm }}".
+        </div>
+
         <!-- Empty state -->
         <div class="empty-state" *ngIf="rows.length === 0">
           <i class="bi bi-inbox"></i>
           No test data yet for this section.<br />
           Click <strong>+ Add Row</strong> to get started.
         </div>
+        <div class="empty-state" *ngIf="rows.length > 0 && filteredRowIndexes.length === 0">
+          <i class="bi bi-search"></i>
+          No fields match "{{ fieldSearchTerm }}".
+        </div>
 
         <!-- Rows -->
-        <div class="tdm-row" *ngFor="let row of rows; let i = index">
+        <div class="tdm-row" *ngFor="let i of filteredRowIndexes">
+          <ng-container *ngIf="rows[i] as row">
           <div class="key-col">
             <input
               type="text"
@@ -182,6 +212,7 @@
               <i class="bi bi-trash"></i>
             </button>
           </div>
+          </ng-container>
         </div>
 
         <div class="d-flex gap-2 align-items-center flex-wrap mt-2">

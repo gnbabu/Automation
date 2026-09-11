@@ -1155,6 +1155,22 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Test Data Management - search/filter within a section's fields
+Last item from the improvement list. Only shown once a section has more than 6 fields
+(`FIELD_SEARCH_THRESHOLD`) - not worth the extra UI for a typical small section.
+Filters on both Key *and* Value text (case-insensitive substring) - sometimes a value
+like an email address is easier to remember than the exact field name.
+
+The one real implementation subtlety: row editing/removal/duplicate-key-checking/
+Enter-to-add-row all operate on a row's position in the real `rows` array, not a
+filtered subset. `filteredRowIndexes` returns indexes into `rows` (not filtered copies
+of the rows themselves) so the template's `*ngFor="let i of filteredRowIndexes"` +
+`<ng-container *ngIf="rows[i] as row">` keeps every existing per-row interaction
+working unchanged, whether or not a filter is active - `removeRow(i)`/
+`isDuplicateKey(i)`/`onValueKeydown($event, i)` all still receive the real index.
+`addRow()` clears any active search term, since a newly-added empty row otherwise
+wouldn't match a non-empty filter and would appear to do nothing.
+
 ## Follow-up: Test Data Management - copy test data between environments
 Last item picked from the earlier improvement list (field-name-vs-DTO-schema
 validation was deliberately dropped after discussion - there's no centrally-governed
