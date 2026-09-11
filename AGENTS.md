@@ -1155,6 +1155,73 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Test Data Management redesign - table editor + real gaps fixed
+Asked to analyze the Test Data Management screen (not user friendly) and improve it.
+
+**The core problem**: the screen's only editing surface was a big `<textarea>` where
+you hand-typed strict `key | value` lines. Validation only ran on submit, with one
+generic "format is invalid" toast and zero indication of which line was wrong.
+
+**Critical discovery while implementing - the frontend's format assumption doesn't
+match what's actually stored, but it doesn't matter**: queried the real
+`aut.AutomationData` table directly and found every real row's `TestContent` is
+actually stored as **JSON** (`[{"FieldName":...,"FieldValue":...}]`), not `key | value`
+text - which looked like a fundamental mismatch with both the old and new frontend's
+`key | value` assumption. Traced this all the way through and found the real
+explanation: `AutomationAPI/Repositories/Helpers/AutomationDataHelper.cs`'s
+`BuildFieldSummary`/`ConvertToJson` transparently convert between the two on every
+single read/write (`AutomationRepository.GetAutomationDataAsync`/
+`InsertAutomationDataAsync`/`UpdateAutomationDataAsync` all call through this) - so
+`key | value` text genuinely *is* the correct, intentional wire contract for the exact
+3 endpoints this component calls, and the frontend never needs to know JSON is involved
+at all. Confirmed via `Selenium.BaseComponents.Utilities.Mapper.BindData<T>
+(List<AutomationContent>)` that the real test-automation consumer side also expects
+`FieldName`/`FieldValue` pairs - everything lines up once you see the whole
+round-trip, not just one end of it.
+
+**Core redesign**: replaced the raw textarea with a real key/value table (`rows: {
+key, value, showValue }[]`), parsed from/serialized to the exact same `key | value`
+text on load/save - zero backend changes anywhere.
+
+**Beautification/usability additions**: duplicate-key detection (the raw format
+silently allowed two rows with the same key - now flagged inline), sensitive-value
+masking for keys matching `/password|pwd|secret/i` (mirrors the Login/Register eye-icon
+toggle pattern), a friendly empty state for a brand-new section, a "N fields" badge
+(repurposing the concept behind the old dead `.stats-box` CSS into something real), a
+colored new-vs-editing banner plus a note that data is scoped to the logged-in user
+(confirmed via the API's `userId` parameter it genuinely is, never previously
+communicated), inline placeholders, and an Enter-to-add-row shortcut.
+
+**Real gaps fixed**: every load/save failure previously only did `console.error(...)` -
+most importantly the save-failure path, where a failed save looked *identical* to a
+successful one (no toast either way) - added `toaster.error(...)` everywhere. Added a
+confirm-before-overwrite prompt via the existing `ConfirmService` (same pattern already
+used in `test-case-execution-panel.component.ts`) before an Update. Added an
+`isSubmitting` double-submit guard. Removed a large block of dead/duplicated CSS
+(`.stats-box`, `.table-card`, `.status-pill`, `.testcase-bold`, duplicated
+`.priority-*` rules) that didn't correspond to anything in this component's actual
+template - looked copy-pasted from a different screen.
+
+**Bug found via your own testing, not planned upfront**: clicking "+ Add Row" made the
+brand-new, still-empty row immediately show red "Key/Value is required" errors, before
+you'd had any chance to type. Root cause: Angular's own `NgForm.submitted` flag (which
+the row-error `*ngIf`s were keyed off, matching the existing dropdown-required pattern)
+never resets back to `false` once a form has been submitted once, success or failure -
+so every row added afterward was "born" already flagged. Fixed by introducing a
+dedicated `submitAttempted` flag instead, explicitly reset to `false` in `addRow()`
+(and `resetRows()`) - a freshly-added row now starts clean, while a genuine submit
+attempt with an incomplete row still flags it correctly.
+
+**Sample data seeded for real verification** (not part of the committed change - direct
+DB inserts only, for testing): Nareshg/E2EP3/Registration flow, sections 1-10, modeled
+after other users' real existing field names for the same sections (`FirstName`/
+`LastName`/`Address1`/etc.) - section 1 (`NewProviderDTO`) includes a `Password` field
+specifically to exercise the sensitive-value-masking feature.
+
+Verified via a real, rendered standalone HTML mockup (shown for sign-off before any
+component code was touched, matching the email-template process) plus a live
+`ng serve` session against the real running API and real seeded data.
+
 ## Follow-up: Login/Register page refactor - fixed a real bug, standardized UX
 Asked to improve/refactor the Login and Register pages. Read both fully
 (`login.component.ts/html`, `register.component.ts/html`) and found:

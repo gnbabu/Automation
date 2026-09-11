@@ -36,112 +36,6 @@
   margin-bottom: 1.5rem;
 }
 
-/* Stats Box */
-.stats-box {
-  background: #ffffff;
-  border-radius: 12px;
-  text-align: center;
-  padding: 12px 18px;
-  min-width: 100px;
-}
-
-.stats-number {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 0.2rem;
-}
-
-.stats-label {
-  font-size: 0.9rem;
-  color: #6b7280;
-}
-
-/* Table Card */
-.table-card {
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-  padding: 20px 24px;
-}
-
-.table-card h5 {
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-.testcase-bold {
-  font-weight: 700;
-  color: #1f2937; /* dark grey */
-}
-
-/* Priority badges */
-.priority-high {
-  background-color: #fee2e2;
-  color: #b91c1c;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 50px;
-  font-size: 0.9rem;
-}
-
-.priority-medium {
-  background-color: #fef3c7;
-  color: #92400e;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 50px;
-  font-size: 0.9rem;
-}
-
-.priority-low {
-  background-color: #dcfce7;
-  color: #065f46;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 50px;
-  font-size: 0.9rem;
-}
-
-/* Status */
-.status-pill {
-  background-color: #e0e7ff;
-  color: #3730a3;
-  font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 50px;
-  font-size: 0.9rem;
-  display: inline-block;
-}
-
-.status-unassigned {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-.user-badge {
-  font-size: 0.9rem;
-}
-
-.footer-note {
-  color: #6b7280;
-  font-size: 0.85rem;
-  text-align: center;
-  margin-top: 12px;
-}
-
-.priority-high {
-  color: #dc3545;
-  font-weight: 600;
-}
-
-.priority-medium {
-  color: #ffc107;
-  font-weight: 600;
-}
-
-.priority-low {
-  color: #198754;
-  font-weight: 600;
-}
 :host ::ng-deep select.form-select {
   height: 44px !important;
 }
@@ -152,4 +46,146 @@
   padding: 6px 14px;
   border-radius: 8px;
   font-weight: 600;
+}
+
+/* =============================
+   NEW-VS-EDITING BANNER
+   ============================= */
+.tdm-banner {
+  border-left: 4px solid #2f6fed;
+  background: #eef4ff;
+  color: #1d3f8f;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.tdm-banner.editing {
+  border-left-color: #6c3483;
+  background: #f6f0fa;
+  color: #4a2762;
+}
+
+.tdm-banner small {
+  display: block;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* =============================
+   FIELD-COUNT BADGE (repurposes the concept behind the old stats-box)
+   ============================= */
+.tdm-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.field-count-badge {
+  background: #f3e9fa;
+  color: #6c3483;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 4px 12px;
+  border-radius: 50px;
+  display: inline-block;
+}
+
+/* =============================
+   TABLE EDITOR
+   ============================= */
+.tdm-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  align-items: flex-start;
+}
+
+.tdm-row .key-col {
+  flex: 0 0 280px;
+  position: relative;
+}
+
+.tdm-row .value-col {
+  flex: 1;
+  position: relative;
+}
+
+.tdm-row .actions-col {
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  height: 44px;
+}
+
+.tdm-row .actions-col button {
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.toggle-eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.row-error {
+  font-size: 0.78rem;
+  color: #dc3545;
+  margin-top: 2px;
+}
+
+.duplicate-key {
+  border-color: #dc3545 !important;
+}
+
+.add-row-btn {
+  border: 1.5px dashed #6c3483;
+  color: #6c3483;
+  background: transparent;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.add-row-btn:hover {
+  background: #f7f0fb;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+  border: 1.5px dashed #d8d8e0;
+  border-radius: 10px;
+  background: #fafafb;
+  margin-bottom: 12px;
+}
+
+.empty-state i {
+  font-size: 1.8rem;
+  color: #a78bc0;
+  display: block;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 700px) {
+  .tdm-row {
+    flex-direction: column;
+  }
+  .tdm-row .key-col,
+  .tdm-row .value-col {
+    flex: 1 1 100%;
+  }
 }

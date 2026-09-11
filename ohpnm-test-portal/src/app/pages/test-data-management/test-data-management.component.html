@@ -76,32 +76,100 @@
         </div>
       </div>
 
-      <!-- Textarea Output Section -->
-      <div class="border p-3 rounded mb-3">
-        <textarea
-          class="form-control"
-          name="testContent"
-          [(ngModel)]="testContent"
-          rows="15"
-          required
-          [readonly]="isViewer()"
-          placeholder="Output will appear here..."
-          [ngClass]="{
-            'is-invalid': testDataForm.submitted && !testContent.trim()
-          }"
-        ></textarea>
-        <div class="invalid-feedback">Test content is required.</div>
+      <!-- Test Data Field Editor -->
+      <div class="border p-3 rounded mb-3" *ngIf="selectedSection && selectedEnvironment">
+        <!-- New-vs-editing banner -->
+        <div class="tdm-banner" [ngClass]="{ editing: existingSectionData?.id }">
+          {{ existingSectionData?.id ? 'Editing existing test data for this section.' : 'Creating new test data for this section.' }}
+          <small>This test data is specific to your account for the selected environment.</small>
+        </div>
+
+        <div class="tdm-table-header">
+          <h6 class="mb-0 fw-bold">Test Data Fields</h6>
+          <span class="field-count-badge">{{ fieldCount }} field{{ fieldCount === 1 ? '' : 's' }}</span>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state" *ngIf="rows.length === 0">
+          <i class="bi bi-inbox"></i>
+          No test data yet for this section.<br />
+          Click <strong>+ Add Row</strong> to get started.
+        </div>
+
+        <!-- Rows -->
+        <div class="tdm-row" *ngFor="let row of rows; let i = index">
+          <div class="key-col">
+            <input
+              type="text"
+              class="form-control"
+              name="key-{{ i }}"
+              [(ngModel)]="row.key"
+              placeholder="e.g. UserName"
+              [readonly]="isViewer()"
+              [ngClass]="{
+                'is-invalid': submitAttempted && (!row.key.trim() || isDuplicateKey(i)),
+                'duplicate-key': isDuplicateKey(i)
+              }"
+            />
+            <div class="row-error" *ngIf="isDuplicateKey(i)">
+              Duplicate key - each field name must be unique.
+            </div>
+            <div class="row-error" *ngIf="submitAttempted && !row.key.trim() && !isDuplicateKey(i)">
+              Key is required.
+            </div>
+          </div>
+          <div class="value-col">
+            <input
+              [type]="isSensitiveKey(row.key) && !row.showValue ? 'password' : 'text'"
+              class="form-control"
+              [ngClass]="{
+                'pe-5': isSensitiveKey(row.key),
+                'is-invalid': submitAttempted && !row.value.trim()
+              }"
+              name="value-{{ i }}"
+              [(ngModel)]="row.value"
+              placeholder="e.g. autotechadmin"
+              [readonly]="isViewer()"
+              (keydown)="onValueKeydown($event, i)"
+            />
+            <button
+              type="button"
+              class="toggle-eye"
+              *ngIf="isSensitiveKey(row.key)"
+              (click)="toggleRowValueVisibility(row)"
+              tabindex="-1"
+              aria-label="Toggle value visibility"
+            >
+              <i class="bi" [ngClass]="row.showValue ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+            <div class="row-error" *ngIf="submitAttempted && !row.value.trim()">
+              Value is required.
+            </div>
+          </div>
+          <div class="actions-col">
+            <button type="button" title="Remove row" (click)="removeRow(i)" *ngIf="!isViewer()">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="button" class="add-row-btn mt-2" (click)="addRow()" *ngIf="!isViewer()">
+          <i class="bi bi-plus-lg me-1"></i> Add Row
+        </button>
+        <div class="text-muted small mt-2" *ngIf="rows.length > 0">
+          <i class="bi bi-info-circle me-1"></i>Tip: press <strong>Enter</strong> in the last row's value field to quickly add another row.
+        </div>
       </div>
 
       <!-- Save Button -->
-      <div class="text-end">
+      <div class="text-end" *ngIf="selectedSection && selectedEnvironment">
         <div class="alert alert-warning py-2 mb-2 text-start" *ngIf="isViewer()">
           You have Viewer (read-only) access. Saving test content is disabled.
         </div>
         <button
           class="btn-purple"
           type="submit"
-          [disabled]="isViewer() || !testDataForm.valid || !testContent.trim() || !selectedEnvironment"
+          [disabled]="isViewer() || isSubmitting"
         >
           <i class="bi bi-save me-1"></i>
           {{ existingSectionData?.id ? "Update" : "Save" }}
