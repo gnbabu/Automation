@@ -72,18 +72,32 @@
           <!-- Password -->
           <div class="mb-4">
             <label for="password" class="form-label">Password</label>
-            <input
-              type="password"
-              id="password"
-              formControlName="password"
-              class="form-control"
-              placeholder="Enter your password"
-              [ngClass]="{
-                'is-invalid':
-                  registerForm.get('password')?.touched &&
-                  registerForm.get('password')?.invalid
-              }"
-            />
+            <div class="position-relative">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                id="password"
+                formControlName="password"
+                class="form-control pe-5"
+                placeholder="Enter your password"
+                [ngClass]="{
+                  'is-invalid':
+                    registerForm.get('password')?.touched &&
+                    registerForm.get('password')?.invalid
+                }"
+              />
+              <button
+                type="button"
+                class="toggle-eye"
+                (click)="togglePasswordVisibility()"
+                tabindex="-1"
+                aria-label="Toggle password visibility"
+              >
+                <i
+                  class="fa"
+                  [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"
+                ></i>
+              </button>
+            </div>
             <div
               *ngIf="
                 registerForm.get('password')?.touched &&
@@ -94,6 +108,20 @@
               Password must be at least 8 characters and include uppercase,
               lowercase, number, and special character.
             </div>
+            <div class="progress mt-1" style="height: 6px" *ngIf="registerForm.get('password')?.value">
+              <div
+                class="progress-bar"
+                [ngClass]="{
+                  'bg-danger': passwordStrength === 'Weak',
+                  'bg-warning': passwordStrength === 'Medium',
+                  'bg-success': passwordStrength === 'Strong'
+                }"
+                [style.width]="passwordStrengthPercent + '%'"
+              ></div>
+            </div>
+            <div [ngClass]="passwordStrengthClass" class="small mt-1">
+              {{ passwordStrengthMessage }}
+            </div>
           </div>
 
           <!-- Confirm Password -->
@@ -101,18 +129,32 @@
             <label for="confirmPassword" class="form-label">
               Confirm Password
             </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              formControlName="confirmPassword"
-              class="form-control"
-              placeholder="Re-enter your password"
-              [ngClass]="{
-                'is-invalid':
-                  registerForm.hasError('notMatching') &&
-                  registerForm.get('confirmPassword')?.touched
-              }"
-            />
+            <div class="position-relative">
+              <input
+                [type]="showConfirmPassword ? 'text' : 'password'"
+                id="confirmPassword"
+                formControlName="confirmPassword"
+                class="form-control pe-5"
+                placeholder="Re-enter your password"
+                [ngClass]="{
+                  'is-invalid':
+                    registerForm.hasError('notMatching') &&
+                    registerForm.get('confirmPassword')?.touched
+                }"
+              />
+              <button
+                type="button"
+                class="toggle-eye"
+                (click)="toggleConfirmPasswordVisibility()"
+                tabindex="-1"
+                aria-label="Toggle confirm password visibility"
+              >
+                <i
+                  class="fa"
+                  [ngClass]="showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'"
+                ></i>
+              </button>
+            </div>
             <div
               *ngIf="
                 registerForm.hasError('notMatching') &&
@@ -131,10 +173,24 @@
               id="terms"
               formControlName="terms"
               class="form-check-input"
+              [ngClass]="{
+                'is-invalid':
+                  registerForm.get('terms')?.touched &&
+                  registerForm.get('terms')?.invalid
+              }"
             />
             <label class="form-check-label" for="terms">
-              Uncheck this box if you're using a shared or public device.
+              I agree to the Terms &amp; Conditions and Privacy Policy.
             </label>
+            <div
+              *ngIf="
+                registerForm.get('terms')?.touched &&
+                registerForm.get('terms')?.invalid
+              "
+              class="invalid-feedback d-block"
+            >
+              You must agree to the Terms &amp; Conditions to register.
+            </div>
           </div>
 
           <!-- Register Button -->
@@ -142,25 +198,12 @@
             <button
               type="submit"
               class="btn-purple"
-              [disabled]="registerForm.invalid"
+              [disabled]="registerForm.invalid || isSubmitting"
             >
               Register
             </button>
           </div>
         </form>
-
-        <!-- Error / Success Message -->
-        <div
-          *ngIf="message"
-          [ngClass]="{
-            alert: true,
-            'alert-success': messageType === 'success',
-            'alert-danger': messageType === 'error'
-          }"
-          class="mt-2"
-        >
-          {{ message }}
-        </div>
 
         <hr />
 

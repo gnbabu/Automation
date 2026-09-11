@@ -33,14 +33,14 @@ import { LoginCarouselViewComponent } from '../login-carousel-view/login-carouse
 export class LoginComponent {
   loginForm: FormGroup;
   showPassword = false;
+  isSubmitting = false;
 
-  message: string = '';
-  messageType: 'success' | 'error' | '' = '';
   constructor(
     private fb: FormBuilder,
     private router: Router,
     private modalService: ModalService,
-    private authService: AuthService //  private toaster: CommonToasterService
+    private authService: AuthService,
+    private toaster: CommonToasterService
   ) {
     this.loginForm = this.fb.group({
       username: ['', [Validators.required]],
@@ -58,42 +58,40 @@ export class LoginComponent {
   }
 
   onSubmit() {
-    if (this.loginForm.valid) {
-      const loginRequest: LoginRequest = {
-        username: this.loginForm.value.username,
-        password: this.loginForm.value.password,
-      };
+    if (this.isSubmitting) return;
 
-      this.authService.login(loginRequest).subscribe({
-        next: (response) => {
-          this.message = 'Login successful!';
-          this.messageType = 'success';
-
-          setTimeout(() => {
-            this.message = '';
-            this.messageType = '';
-          }, 6000);
-
-          this.router.navigate(['/dashboard'], { replaceUrl: true });
-        },
-        error: (err: any) => {
-          if (
-            err.status === 401 ||
-            err.status === 400 ||
-            err.error?.message?.includes('Invalid')
-          ) {
-            this.message = 'Invalid username or password.';
-          } else {
-            this.message = 'An error occurred. Please try again.';
-          }
-          this.messageType = 'error';
-        },
-        complete: () => {},
-      });
-    } else {
-      this.message = 'Please enter valid username and password';
+    if (!this.loginForm.valid) {
+      this.toaster.info('Please enter valid username and password');
       this.loginForm.markAllAsTouched();
+      return;
     }
+
+    const loginRequest: LoginRequest = {
+      username: this.loginForm.value.username,
+      password: this.loginForm.value.password,
+    };
+
+    this.isSubmitting = true;
+
+    this.authService.login(loginRequest).subscribe({
+      next: (response) => {
+        this.isSubmitting = false;
+        this.toaster.success('Login successful!');
+        this.router.navigate(['/dashboard'], { replaceUrl: true });
+      },
+      error: (err: any) => {
+        this.isSubmitting = false;
+        if (
+          err.status === 401 ||
+          err.status === 400 ||
+          err.error?.message?.includes('Invalid')
+        ) {
+          this.toaster.error('Invalid username or password.');
+        } else {
+          this.toaster.error('An error occurred. Please try again.');
+        }
+      },
+    });
   }
 
   openForgotPassword(): void {

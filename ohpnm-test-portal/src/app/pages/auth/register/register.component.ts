@@ -33,12 +33,17 @@ import { LoadingOverlayComponent } from 'app/core/components/loader/loading-over
   ],
 })
 export class RegisterComponent {
-  successMessage = '';
-  errorMessage = '';
   registerForm: FormGroup;
 
-  message: string = '';
-  messageType: 'success' | 'error' | '' = '';
+  showPassword = false;
+  showConfirmPassword = false;
+  isSubmitting = false;
+
+  passwordStrength: 'Weak' | 'Medium' | 'Strong' = 'Weak';
+  passwordStrengthMessage = '';
+  passwordStrengthClass = '';
+  passwordStrengthPercent = 0;
+
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,
@@ -62,10 +67,14 @@ export class RegisterComponent {
           ],
         ],
         confirmPassword: ['', [Validators.required]],
-        terms: [false],
+        terms: [false, [Validators.requiredTrue]],
       },
       { validators: this.passwordsMatch }
     );
+
+    this.registerForm.get('password')?.valueChanges.subscribe((value) => {
+      this.checkPasswordStrength(value ?? '');
+    });
   }
 
   passwordsMatch(group: AbstractControl): ValidationErrors | null {
@@ -74,7 +83,51 @@ export class RegisterComponent {
     return password === confirm ? null : { notMatching: true };
   }
 
+  // Mirrors settings.component.ts's checkPasswordStrength exactly, so "Weak"/"Medium"/
+  // "Strong" mean the same thing everywhere in the app rather than two different scales.
+  checkPasswordStrength(password: string): void {
+    let strength = 0;
+
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+    switch (true) {
+      case strength >= 4:
+        this.passwordStrength = 'Strong';
+        this.passwordStrengthMessage = 'Strong password';
+        this.passwordStrengthClass = 'text-success';
+        this.passwordStrengthPercent = 100;
+        break;
+      case strength >= 3:
+        this.passwordStrength = 'Medium';
+        this.passwordStrengthMessage = 'Medium strength password';
+        this.passwordStrengthClass = 'text-warning';
+        this.passwordStrengthPercent = 60;
+        break;
+      default:
+        this.passwordStrength = 'Weak';
+        this.passwordStrengthMessage = password
+          ? 'Weak password'
+          : '';
+        this.passwordStrengthClass = 'text-danger';
+        this.passwordStrengthPercent = password ? 30 : 0;
+        break;
+    }
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
   onSubmit() {
+    if (this.isSubmitting) return;
+
     if (!this.registerForm.valid) {
       this.toaster.info('Please enter valid details');
       this.registerForm.markAllAsTouched();
@@ -82,9 +135,11 @@ export class RegisterComponent {
     }
 
     const registerRequest: RegisterRequest = this.registerForm.value;
+    this.isSubmitting = true;
 
     this.authService.register(registerRequest).subscribe({
       next: (response) => {
+        this.isSubmitting = false;
         if (response?.result) {
           this.toaster.success('Registration successful');
           this.router.navigate(['/login'], { replaceUrl: true });
@@ -96,6 +151,7 @@ export class RegisterComponent {
         }
       },
       error: (err) => {
+        this.isSubmitting = false;
         const errorMessage =
           err?.error?.message || err?.error || 'An unexpected error occurred';
 

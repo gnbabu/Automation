@@ -67,6 +67,14 @@
   font-size: 16px;
 }
 
+/* Bootstrap's own .is-invalid background-image (a small error icon positioned on the
+   right of the input) overlaps the eye toggle button above - the toggle button is the
+   one that always needs that space, and the invalid-feedback text below the field
+   already conveys the error, so the built-in icon is suppressed here. */
+.form-control.is-invalid {
+  background-image: none;
+}
+
 /* SSO Button */
 .btn-maximus-sso {
   background-color: #f3e9fa;

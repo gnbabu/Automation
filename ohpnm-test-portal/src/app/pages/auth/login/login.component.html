@@ -109,7 +109,7 @@
             <button
               type="submit"
               class="btn-purple"
-              [disabled]="!loginForm.valid"
+              [disabled]="!loginForm.valid || isSubmitting"
             >
               Secure Log In
             </button>
@@ -122,19 +122,6 @@
             <a (click)="openForgotPassword()">Forgot your password?</a>
             <span class="vertical-divider"></span>
             <a (click)="openLoginTips()">Log in tips</a>
-          </div>
-
-          <!-- Error / Success Message -->
-          <div
-            *ngIf="message"
-            [ngClass]="{
-              alert: true,
-              'alert-success': messageType === 'success',
-              'alert-danger': messageType === 'error'
-            }"
-            class="mt-2"
-          >
-            {{ message }}
           </div>
 
           <hr />

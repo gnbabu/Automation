@@ -1155,6 +1155,61 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Login/Register page refactor - fixed a real bug, standardized UX
+Asked to improve/refactor the Login and Register pages. Read both fully
+(`login.component.ts/html`, `register.component.ts/html`) and found:
+
+**Real bug (confirmed and fixed)**: Register's "Terms" checkbox literally said *"Uncheck
+this box if you're using a shared or public device"* - copy-pasted from Login's
+unrelated "Remember Me" checkbox - and had no validator at all
+(`terms: [false]`, no `Validators.requiredTrue`), so it was pure decoration with wrong
+wording; registering with it unchecked worked identically to checking it. Fixed to a
+real, required "I agree to the Terms & Conditions and Privacy Policy." checkbox
+(`Validators.requiredTrue` added), with matching invalid-feedback text.
+
+**Inconsistencies fixed** (confirmed in scope, "best judgment without breaking
+functionality"):
+- Login never actually used the toaster - `CommonToasterService` was imported and listed
+  as a constructor parameter but literally commented out
+  (`//private toaster: CommonToasterService`); Login instead had its own bespoke inline
+  `message`/`messageType` alert, the one outlier versus every other auth-adjacent
+  component (Register, `ForgotPasswordModalComponent`, `ForgotUsernameModalComponent`)
+  which already use the shared toaster. Switched Login to the toaster, removed the dead
+  alert markup.
+- Register had genuinely dead code left over from before the toaster was wired in:
+  `message`/`messageType`/`successMessage`/`errorMessage` fields plus a whole
+  `*ngIf="message"` alert block that could never fire (`onSubmit()` only ever calls
+  `this.toaster.xxx(...)`, never sets `message`). Removed.
+- Register had no password visibility toggle despite a far stricter password policy than
+  Login (8+ chars, upper/lower/digit/special char) - added the same `showPassword`/
+  `toggle-eye` pattern Login already has, to both Password and Confirm Password.
+- Register had no password strength feedback - added `checkPasswordStrength()` +
+  progress bar, deliberately mirroring `settings.component.ts`'s existing
+  implementation *exactly* (same thresholds/colors/labels) so "Weak"/"Medium"/"Strong"
+  means the same thing everywhere in the app rather than two different scales.
+- Neither form guarded against a rapid double-click firing two `login`/`register`
+  requests - added an `isSubmitting` flag, checked at the top of `onSubmit()` and
+  included in each submit button's `[disabled]` binding.
+
+**Explicitly left alone** (confirmed with the user): the non-functional "Sign In with
+Maximus SSO" button (Login) and the "maximus" text-logo branding on both pages (Login
+uses "maximus" rather than "Automation"/"OHPNM Automation Portal" used elsewhere in the
+app - confirmed intentional for these two screens specifically).
+
+**Bug found and fixed during visual verification, not planned upfront**: adding the eye-
+toggle button to Register's password fields collided with Bootstrap's own `.is-invalid`
+background-image (a small built-in error icon Bootstrap positions on the right side of
+an invalid input) - both fought for the same visual space on the right edge of the
+field. Confirmed via `grep` that **Login already had this exact latent bug** too (same
+`.toggle-eye` + `.is-invalid` combination, just apparently unnoticed before). Fixed in
+both `login.component.css` and `register.component.css` with
+`.form-control.is-invalid { background-image: none; }` - the toggle button is the
+element that always needs that space, and the invalid-feedback text below the field
+already conveys the same error information Bootstrap's icon would.
+
+Verified via a real `ng serve` + browser preview (not just a mental read-through) for
+both pages before finalizing.
+
 ## Follow-up: unified the Forgot Username / Reset Password emails into the same branding
 Asked "what about the login/registration email templates" - found 2 more real templates
 (`AutomationAPI/Repositories/Helpers/EmailTemplates.cs`'s `BuildForgotUsernameEmail`/
