@@ -76,6 +76,37 @@
         </div>
       </div>
 
+      <!-- Section Overview - shows every section's data status at a glance, instead of
+           having to click into each one to find out. Only meaningful once both Flow and
+           Environment are picked (data is scoped per user+environment). Clicking a chip
+           is a shortcut for picking that section from the dropdown above. -->
+      <div class="border p-3 rounded mb-3" *ngIf="selectedFlow && selectedEnvironment && sections.length">
+        <div class="tdm-table-header">
+          <h6 class="mb-0 fw-bold">Section Overview</h6>
+          <span class="field-count-badge" *ngIf="!sectionStatusLoading">
+            {{ configuredSectionCount }} / {{ sections.length }} configured
+          </span>
+          <span class="text-muted small" *ngIf="sectionStatusLoading">
+            <i class="bi bi-hourglass-split me-1"></i>Checking sections...
+          </span>
+        </div>
+        <div class="section-overview-grid">
+          <button
+            type="button"
+            class="section-chip"
+            *ngFor="let section of sections"
+            [ngClass]="{
+              configured: hasSectionData(section.sectionId),
+              active: selectedSection?.sectionId === section.sectionId
+            }"
+            (click)="selectSectionFromOverview(section)"
+          >
+            <i class="bi" [ngClass]="hasSectionData(section.sectionId) ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+            {{ section.sectionName }}
+          </button>
+        </div>
+      </div>
+
       <!-- Test Data Field Editor -->
       <div class="border p-3 rounded mb-3" *ngIf="selectedSection && selectedEnvironment">
         <!-- New-vs-editing banner -->

@@ -94,6 +94,53 @@
 }
 
 /* =============================
+   SECTION OVERVIEW
+   ============================= */
+.section-overview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.section-chip {
+  border: 1.5px solid #d8d8e0;
+  background: #ffffff;
+  color: #4b5563;
+  border-radius: 50px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.section-chip i {
+  margin-right: 5px;
+  color: #9ca3af;
+}
+
+.section-chip.configured {
+  border-color: #bfe3cc;
+  background: #f0faf4;
+  color: #166534;
+}
+
+.section-chip.configured i {
+  color: #22a35c;
+}
+
+.section-chip.active {
+  border-color: #6c3483;
+  background: #f3e9fa;
+  color: #4a2762;
+  font-weight: 600;
+}
+
+.section-chip:hover {
+  border-color: #6c3483;
+}
+
+/* =============================
    TABLE EDITOR
    ============================= */
 .tdm-row {

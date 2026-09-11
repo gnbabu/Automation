@@ -4,6 +4,7 @@ import { adminGuard } from './core/guards/admin.guard';
 import { managerGuard } from './core/guards/manager.guard';
 import { notViewerGuard } from './core/guards/not-viewer.guard';
 import { loginGuard } from './core/guards/login.guard';
+import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
   {
@@ -61,6 +62,7 @@ export const routes: Routes = [
             (m) => m.TestDataManagementComponent,
           ),
         canActivate: [authGuard, notViewerGuard],
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'users',

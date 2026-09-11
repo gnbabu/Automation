@@ -1155,6 +1155,54 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Test Data Management - unsaved-changes protection + section overview
+Two more improvements on top of the redesign above, picked from a list of further
+suggestions (also proposed but not yet done: validating field names against each
+section's real target DTO schema - currently a typo'd key is silently dropped with no
+warning anywhere; and copying test data between environments to avoid re-typing the
+same section for DEV/UAT/PROD by hand; and a search/filter for sections with many
+fields).
+
+**Unsaved-changes protection** - previously, editing rows then switching Section/
+Environment/Flow, or just closing the tab, silently discarded all in-progress edits
+with zero warning. Now covered on all 3 fronts:
+- Switching Environment/Flow/Section: `guardedDropdownChange()` wraps all 3 `on*Change`
+  handlers - if `hasUnsavedChanges()` (a simple serialized-rows-vs-last-loaded-snapshot
+  string comparison), prompts via the existing `ConfirmService` before proceeding, and
+  **reverts the dropdown's already-changed value** if declined - the `<select>` +
+  `[(ngModel)]` binding has already applied the new value by the time `(change)` fires,
+  so declining means writing the old value back to `selectedEnvironment`/`selectedFlow`/
+  `selectedSection`, tracked via `lastConfirmedEnvironment`/`lastConfirmedFlow`/
+  `lastConfirmedSection`, not skipping the change upfront.
+- Closing/refreshing the browser tab: `@HostListener('window:beforeunload')` -
+  browsers show their own native prompt here regardless of any custom message once
+  `preventDefault()` is called; a `ConfirmService` modal can't be used for a real tab
+  close.
+- Navigating away via the router/sidebar: new `unsavedChangesGuard`
+  (`core/guards/unsaved-changes.guard.ts`, matches the existing functional-guard
+  convention already used for `authGuard`/`notViewerGuard`/etc.) registered as this
+  route's `canDeactivate` in `app.routes.ts` - the first `CanDeactivate` guard in this
+  app (no prior pattern existed) - delegates to the leaving component via a small
+  `IConfirmsUnsavedChanges` interface (`hasUnsavedChanges()`/`confirmDiscardChanges()`),
+  the standard Angular pattern for this.
+
+**Section overview at a glance** - previously you had to click into each of a flow's
+~26 sections one at a time to discover which already had data. `loadSectionStatuses()`
+fires once both Flow and Environment are selected - re-calls the *exact same*
+per-section `getAutomationData(sectionId, userId, environmentId)` endpoint the main
+form already uses, once per section, in parallel via `forkJoin` (no backend change at
+all - 26 small parallel calls is a reasonable trade-off for a convenience feature,
+avoided adding a new bulk-status endpoint). Each inner call has its own `catchError`
+mapped to "no data" rather than one section's lookup failure breaking the whole
+overview. Rendered as a row of clickable chips (green checkmark = configured, gray
+circle = empty) with a "N / total configured" badge - clicking a chip is a shortcut for
+picking that section from the dropdown, going through the same guarded/unsaved-changes-
+aware path. A just-completed save immediately flips that one section's chip via
+`sectionStatus.set(...)` rather than waiting for a full re-check.
+
+Verified via a real `ng serve` session against the real running API and the
+sample data seeded earlier this session (Nareshg/E2EP3/Registration, sections 1-10).
+
 ## Follow-up: Test Data Management redesign - table editor + real gaps fixed
 Asked to analyze the Test Data Management screen (not user friendly) and improve it.
 

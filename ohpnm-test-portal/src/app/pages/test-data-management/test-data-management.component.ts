@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
+import { catchError, forkJoin, map, of } from 'rxjs';
 
 import {
   IAutomationData,
@@ -16,6 +17,7 @@ import {
   ConfirmService,
   EnvironmentService,
 } from '@services';
+import { IConfirmsUnsavedChanges } from '../../core/guards/unsaved-changes.guard';
 
 interface ITestDataRow {
   key: string;
@@ -34,7 +36,9 @@ const SENSITIVE_KEY_PATTERN = /password|pwd|secret/i;
   templateUrl: './test-data-management.component.html',
   styleUrl: './test-data-management.component.css',
 })
-export class TestDataManagementComponent implements OnInit {
+export class TestDataManagementComponent
+  implements OnInit, IConfirmsUnsavedChanges
+{
   flows: IAutomationFlow[] = [];
   sections: IAutomationDataSection[] = [];
   environments: IEnvironmentModel[] = [];
@@ -55,6 +59,27 @@ export class TestDataManagementComponent implements OnInit {
   // row is added, so only rows that existed at the last actual submit attempt (and are
   // still incomplete) get flagged.
   submitAttempted = false;
+
+  // Snapshot of the serialized rows exactly as last loaded/saved - used to detect
+  // unsaved changes (see hasUnsavedChanges() below). Kept as a plain serialized string
+  // rather than a deep-cloned rows array so the comparison is a simple string equality
+  // check, not a per-field diff.
+  private savedSnapshot = '';
+
+  // "Last confirmed" selections - restored if the user declines to discard unsaved
+  // changes when switching Environment/Flow/Section (see guardedDropdownChange below).
+  // The <select> + ngModel binding has already applied the new value by the time
+  // (change) fires, so reverting means writing back to these fields, not skipping
+  // anything upfront.
+  private lastConfirmedEnvironment?: IEnvironmentModel;
+  private lastConfirmedFlow?: IAutomationFlow;
+  private lastConfirmedSection?: IAutomationDataSection;
+
+  // Section overview - populated once both Flow and Environment are selected (see
+  // loadSectionStatuses()). Not persisted/cached across visits - always reflects a
+  // fresh check for the current user.
+  sectionStatus = new Map<number, boolean>();
+  sectionStatusLoading = false;
 
   constructor(
     private automationService: AutomationService,
@@ -89,40 +114,88 @@ export class TestDataManagementComponent implements OnInit {
     });
   }
 
-  onFlowChange() {
-    this.selectedSection = undefined;
-    this.sections = [];
-    this.resetRows();
-
-    if (this.selectedFlow) {
-      this.automationService.getSections(this.selectedFlow.flowName).subscribe({
-        next: (res) => {
-          this.sections = res;
-        },
-        error: (err) => {
-          console.error('Error loading sections:', err);
-          this.toaster.error('Failed to load sections for this flow.');
-        },
-      });
+  // All 3 dropdown changes route through this so unsaved-changes protection (see
+  // hasUnsavedChanges()/confirmDiscardChanges()) applies uniformly - previously a
+  // dropdown change silently discarded any in-progress edits with zero warning.
+  private async guardedDropdownChange(applyChange: () => void, revert: () => void): Promise<void> {
+    if (this.hasUnsavedChanges()) {
+      const discard = await this.confirmDiscardChanges();
+      if (!discard) {
+        revert();
+        return;
+      }
     }
+    applyChange();
   }
 
-  onEnvironmentChange() {
-    this.selectedFlow = undefined;
-    this.selectedSection = undefined;
-    this.sections = [];
-    this.resetRows();
+  async onFlowChange() {
+    const previousFlow = this.lastConfirmedFlow;
+    await this.guardedDropdownChange(
+      () => {
+        this.lastConfirmedFlow = this.selectedFlow;
+        this.selectedSection = undefined;
+        this.sections = [];
+        this.sectionStatus.clear();
+        this.resetRows();
+
+        if (this.selectedFlow) {
+          this.automationService.getSections(this.selectedFlow.flowName).subscribe({
+            next: (res) => {
+              this.sections = res;
+              this.loadSectionStatuses();
+            },
+            error: (err) => {
+              console.error('Error loading sections:', err);
+              this.toaster.error('Failed to load sections for this flow.');
+            },
+          });
+        }
+      },
+      () => (this.selectedFlow = previousFlow)
+    );
   }
 
-  onSectionChange() {
-    this.resetRows();
-    this.tryLoadAutomationData();
+  async onEnvironmentChange() {
+    const previousEnvironment = this.lastConfirmedEnvironment;
+    await this.guardedDropdownChange(
+      () => {
+        this.lastConfirmedEnvironment = this.selectedEnvironment;
+        this.selectedFlow = undefined;
+        this.selectedSection = undefined;
+        this.sections = [];
+        this.sectionStatus.clear();
+        this.resetRows();
+      },
+      () => (this.selectedEnvironment = previousEnvironment)
+    );
+  }
+
+  async onSectionChange() {
+    const previousSection = this.lastConfirmedSection;
+    await this.guardedDropdownChange(
+      () => {
+        this.lastConfirmedSection = this.selectedSection;
+        this.resetRows();
+        this.tryLoadAutomationData();
+      },
+      () => (this.selectedSection = previousSection)
+    );
+  }
+
+  // Clicking a section in the overview grid (see loadSectionStatuses()) is just a
+  // shortcut for picking the same section from the dropdown - goes through the exact
+  // same guarded path, so unsaved-changes protection applies here too.
+  selectSectionFromOverview(section: IAutomationDataSection): void {
+    if (this.selectedSection?.sectionId === section.sectionId) return;
+    this.selectedSection = section;
+    this.onSectionChange();
   }
 
   private resetRows() {
     this.rows = [];
     this.existingSectionData = undefined;
     this.submitAttempted = false;
+    this.savedSnapshot = '';
   }
 
   private tryLoadAutomationData() {
@@ -139,7 +212,8 @@ export class TestDataManagementComponent implements OnInit {
       .subscribe({
         next: (res) => {
           this.existingSectionData = res;
-          this.rows = this.parseRows(res.testContent);
+          this.rows = this.parseRows(res?.testContent);
+          this.savedSnapshot = this.serializeRows(this.rows);
         },
         error: (err) => {
           console.error('Error loading test data:', err);
@@ -148,10 +222,55 @@ export class TestDataManagementComponent implements OnInit {
       });
   }
 
+  // Section overview - fetches every section's data status for the current user +
+  // environment in parallel (no backend change: reuses the exact same per-section
+  // endpoint the main form already calls, just once per section instead of once for
+  // the selected one). A per-call catchError means one section's lookup failing
+  // doesn't break the whole overview - it's just shown as "Empty" rather than blocking
+  // everything else from rendering.
+  private loadSectionStatuses(): void {
+    this.sectionStatus.clear();
+    if (!this.selectedEnvironment || this.sections.length === 0) return;
+
+    const userId = this.authService.getLoggedInUserId();
+    const environmentId = this.selectedEnvironment.environmentId;
+
+    this.sectionStatusLoading = true;
+    const checks = this.sections.map((section) =>
+      this.automationService
+        .getAutomationData(section.sectionId, userId, environmentId)
+        .pipe(
+          map((res) => ({
+            sectionId: section.sectionId,
+            hasData: !!res?.testContent?.trim(),
+          })),
+          catchError(() => of({ sectionId: section.sectionId, hasData: false }))
+        )
+    );
+
+    forkJoin(checks).subscribe({
+      next: (results) => {
+        results.forEach((r) => this.sectionStatus.set(r.sectionId, r.hasData));
+        this.sectionStatusLoading = false;
+      },
+      error: () => {
+        this.sectionStatusLoading = false;
+      },
+    });
+  }
+
+  hasSectionData(sectionId: number): boolean {
+    return this.sectionStatus.get(sectionId) === true;
+  }
+
+  get configuredSectionCount(): number {
+    return [...this.sectionStatus.values()].filter(Boolean).length;
+  }
+
   // Parses the exact same "key | value" per line format the backend has always stored
   // - the table is a presentation layer over the identical wire format, not a new data
   // shape (no backend/API changes anywhere in this feature).
-  private parseRows(content: string): ITestDataRow[] {
+  private parseRows(content: string | null | undefined): ITestDataRow[] {
     if (!content) return [];
 
     return content
@@ -268,6 +387,9 @@ export class TestDataManagementComponent implements OnInit {
         this.isSubmitting = false;
         this.toaster.success('Test content saved successfully');
         this.tryLoadAutomationData();
+        if (this.selectedSection) {
+          this.sectionStatus.set(this.selectedSection.sectionId, this.rows.length > 0);
+        }
       },
       error: (err) => {
         this.isSubmitting = false;
@@ -275,5 +397,33 @@ export class TestDataManagementComponent implements OnInit {
         this.toaster.error('Failed to save test content. Please try again.');
       },
     });
+  }
+
+  // --- Unsaved-changes protection ---
+  // Covers all 3 ways work could otherwise be silently lost: switching Environment/
+  // Flow/Section (guardedDropdownChange above), closing/refreshing the browser tab
+  // (@HostListener below), and navigating away via the router/sidebar
+  // (unsavedChangesGuard, registered as this route's canDeactivate in app.routes.ts).
+
+  hasUnsavedChanges(): boolean {
+    if (!this.selectedSection || !this.selectedEnvironment) return false;
+    return this.serializeRows(this.rows) !== this.savedSnapshot;
+  }
+
+  async confirmDiscardChanges(): Promise<boolean> {
+    return this.confirmService.confirm(
+      'Discard Unsaved Changes?',
+      'You have unsaved test data changes for this section. Leaving now will discard them. Continue?'
+    );
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges()) {
+      // Browsers show their own native prompt here (ignoring any custom message) once
+      // preventDefault is called - a ConfirmService modal can't be used for a real tab
+      // close/refresh, only for in-app navigation (see confirmDiscardChanges above).
+      event.preventDefault();
+    }
   }
 }
