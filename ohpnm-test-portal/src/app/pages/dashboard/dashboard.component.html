@@ -23,10 +23,18 @@
     </div>
 
     <div class="d-flex gap-2">
-      <button class="btn btn-outline-primary">
+      <button
+        class="btn btn-outline-primary"
+        [disabled]="!selectedRelease"
+        (click)="onExportCsv()"
+      >
         <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
       </button>
-      <button class="btn btn-primary">
+      <button
+        class="btn btn-primary"
+        [disabled]="!selectedRelease"
+        (click)="onExportPdf()"
+      >
         <i class="bi bi-file-earmark-pdf"></i> Export PDF
       </button>
     </div>
@@ -55,6 +63,22 @@
         >
           <i class="bi bi-arrow-clockwise"></i> Refresh
         </button>
+
+        <!-- Freshness indicator - previously there was no way to tell how stale the
+             data on screen was without clicking Refresh yourself. Auto-refreshes on
+             its own while the release is "In Progress" (see startPollingIfRunning). -->
+        <span
+          class="badge rounded-pill freshness-badge align-self-center"
+          [ngClass]="{ live: runStatusLabel === 'In Progress' }"
+          *ngIf="selectedRelease"
+          [title]="runStatusLabel === 'In Progress' ? 'Auto-refreshing every 30s while In Progress' : 'Click Refresh to update'"
+        >
+          <i
+            class="bi"
+            [ngClass]="runStatusLabel === 'In Progress' ? 'bi-arrow-repeat' : 'bi-clock-history'"
+          ></i>
+          Last updated: {{ lastUpdatedLabel }}
+        </span>
       </div>
 
       <!-- Stats aligned to right -->
@@ -72,13 +96,15 @@
     </div>
   </div>
 
-  <!-- 4 CARD SUMMARY -->
-  <div class="row g-3 mb-4" *ngIf="selectedRelease">
+  <!-- 4 CARD SUMMARY - Testers see their own "My Results" scoped to just their
+       assigned test cases; Admin/Manager/Viewer see the release-wide totals as
+       before. -->
+  <div class="row g-3" [ngClass]="isPersonalizedView ? 'mb-2' : 'mb-4'" *ngIf="selectedRelease">
     <!-- TOTAL TESTS -->
     <div class="col-md-3">
       <div class="summary-card bg-white shadow-sm border-total">
-        <p class="text-muted small mb-1">TOTAL TESTS</p>
-        <h3 class="fw-bold">{{ totalCases }}</h3>
+        <p class="text-muted small mb-1">{{ isPersonalizedView ? 'MY TOTAL TESTS' : 'TOTAL TESTS' }}</p>
+        <h3 class="fw-bold">{{ isPersonalizedView ? myTotalCases : totalCases }}</h3>
       </div>
     </div>
 
@@ -86,10 +112,13 @@
     <div class="col-md-3">
       <div class="summary-card bg-white shadow-sm border-passed">
         <p class="text-muted small mb-1">PASSED</p>
-        <h3 class="fw-bold text-success">{{ passedCount }}</h3>
-        <p class="text-muted small">
+        <h3 class="fw-bold text-success">{{ isPersonalizedView ? myPassedCount : passedCount }}</h3>
+        <p class="text-muted small" *ngIf="!isPersonalizedView">
           {{ (passedCount / totalCases) * 100 | number : "1.0-1" }}% Success
           Rate
+        </p>
+        <p class="text-muted small" *ngIf="isPersonalizedView">
+          {{ myTotalCases ? (myPassedCount / myTotalCases) * 100 : 0 | number : "1.0-1" }}% Success Rate
         </p>
       </div>
     </div>
@@ -98,10 +127,13 @@
     <div class="col-md-3">
       <div class="summary-card bg-white shadow-sm border-failed">
         <p class="text-muted small mb-1">FAILED</p>
-        <h3 class="fw-bold text-danger">{{ failedCount }}</h3>
-        <p class="text-muted small">
+        <h3 class="fw-bold text-danger">{{ isPersonalizedView ? myFailedCount : failedCount }}</h3>
+        <p class="text-muted small" *ngIf="!isPersonalizedView">
           {{ (failedCount / totalCases) * 100 | number : "1.0-1" }}% Failure
           Rate
+        </p>
+        <p class="text-muted small" *ngIf="isPersonalizedView">
+          {{ myTotalCases ? (myFailedCount / myTotalCases) * 100 : 0 | number : "1.0-1" }}% Failure Rate
         </p>
       </div>
     </div>
@@ -111,17 +143,28 @@
       <div class="summary-card bg-white shadow-sm border-running">
         <p class="text-muted small mb-1">RUNNING / SKIPPED</p>
         <h3 class="fw-bold text-warning">
-          {{ runningCount + skippedCount }}
+          {{ isPersonalizedView ? myRunningSkippedCount : (runningCount + skippedCount) }}
         </h3>
-        <p class="text-muted small">
+        <p class="text-muted small" *ngIf="!isPersonalizedView">
           {{
             ((runningCount + skippedCount) / totalCases) * 100
               | number : "1.0-1"
           }}%
         </p>
+        <p class="text-muted small" *ngIf="isPersonalizedView">
+          {{ myTotalCases ? (myRunningSkippedCount / myTotalCases) * 100 : 0 | number : "1.0-1" }}%
+        </p>
       </div>
     </div>
   </div>
+
+  <!-- Release-wide context for the personalized view - Testers still see overall
+       release health, not just their own slice. -->
+  <p class="text-muted small mb-4" *ngIf="selectedRelease && isPersonalizedView">
+    <i class="bi bi-info-circle me-1"></i>
+    Release-wide: {{ totalCases }} total, {{ passedCount }}/{{ totalCases }} passed
+    ({{ totalCases ? (passedCount / totalCases) * 100 : 0 | number : "1.0-1" }}%).
+  </p>
 
   <div class="row g-3 mb-4" *ngIf="selectedRelease">
     <!-- RUN DETAILS -->
@@ -183,16 +226,23 @@
     </div>
   </div>
 
-  <!-- TABLE -->
+  <!-- TABLE - Testers see only their own assigned test cases; Admin/Manager/Viewer
+       see every test case in the release, as before. -->
   <div class="table-card" *ngIf="selectedRelease">
-    <h5>Individual Test Case Results ( {{ totalCases }} Total)</h5>
+    <h5 *ngIf="!isPersonalizedView">Individual Test Case Results ( {{ totalCases }} Total)</h5>
+    <h5 *ngIf="isPersonalizedView">My Test Case Results ( {{ myTotalCases }} Total)</h5>
 
-    <div class="table-responsive">
+    <div class="text-muted small py-4 text-center" *ngIf="isPersonalizedView && myTotalCases === 0">
+      <i class="bi bi-inbox me-1"></i>
+      You have no test cases assigned in this release.
+    </div>
+
+    <div class="table-responsive" *ngIf="!isPersonalizedView || myTotalCases > 0">
       <div class="table-responsive">
         <app-data-grid
           [selectionEnabled]="false"
           [columns]="columns"
-          [data]="testCases"
+          [data]="isPersonalizedView ? myTestCases : testCases"
           [pagingEnabled]="true"
           [pageSize]="10"
           [sortingMode]="'client'"

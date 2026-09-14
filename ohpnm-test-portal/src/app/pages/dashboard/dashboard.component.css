@@ -159,6 +159,40 @@
   display: inline-block;
 }
 
+/* Freshness indicator - matches the same subtle pill language as .status-pill above,
+   with its own muted grey (calm/neutral, not a state) and a slightly deeper teal-green
+   "live" variant while auto-refreshing, plus a slow pulse on the icon so the polling
+   is visibly happening rather than just implied by the label text. */
+.freshness-badge {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  font-weight: 500;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.freshness-badge.live {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.freshness-badge.live i {
+  animation: freshness-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes freshness-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
 .status-unassigned {
   background-color: #f3f4f6;
   color: #374151;

@@ -45,7 +45,14 @@ export const routes: Routes = [
           import('./pages/dashboard/dashboard.component').then(
             (m) => m.DashboardComponent,
           ),
-        canActivate: [authGuard, managerGuard],
+        // Was [authGuard, managerGuard] - blocked Tester/Viewer entirely, even though
+        // login.component.ts/login.guard.ts both unconditionally send every role here
+        // after login, so Tester/Viewer were silently double-redirected straight to
+        // /test-case-execution-panel on every login and never saw a Dashboard at all.
+        // Every API this page calls only requires [Authorize] server-side, no role
+        // restriction - DashboardComponent itself now shows a personalized view for
+        // Tester (see isTester()) instead of gating the whole page.
+        canActivate: [authGuard],
       },
       {
         path: 'test-case-execution-panel',

@@ -171,6 +171,25 @@ export class AuthService {
       return false;
     }
   }
+
+  // Used by DashboardComponent to show a personalized "My Results" view scoped to the
+  // logged-in Tester's own assigned test cases, instead of the full release-wide view
+  // Admin/Manager/Viewer see - Viewers are deliberately excluded from this even though
+  // the assignment UI doesn't technically prevent assigning one, since they're meant to
+  // be read-only overseers, not executors.
+  isTester(): boolean {
+    const loggedInUser = localStorage.getItem('currentUser');
+
+    if (!loggedInUser) return false;
+
+    try {
+      const user: IUser = JSON.parse(loggedInUser);
+      return user.roleName.toLowerCase() == 'tester';
+    } catch (e) {
+      console.error('Error parsing currentUser from localStorage', e);
+      return false;
+    }
+  }
   startAutoLogout(token?: string): void {
     const jwt = token ?? this.getToken();
     if (!jwt) return;

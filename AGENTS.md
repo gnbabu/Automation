@@ -1155,6 +1155,62 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Dashboard access for all roles + Tester personalization + exports
+User asked to analyze why the Dashboard wasn't "provided for all users properly".
+
+**Confirmed real bug**: `/dashboard`'s route guard was `[authGuard, managerGuard]` -
+`managerGuard` only allows Admin/Manager, redirecting anyone else to
+`/test-case-execution-panel`. But `login.component.ts` and `login.guard.ts` both
+unconditionally navigate to `/dashboard` for **every** role after login. Result: a
+Tester or Viewer logging in was sent to `/dashboard`, then immediately bounced again by
+`managerGuard` - they never saw a Dashboard at all, just an invisible double-redirect
+on every single login. The sidebar also hid the Dashboard link entirely for these two
+roles. Confirmed via the actual backend controllers this was a pure frontend gap - every
+API the Dashboard calls (`ReleaseController.GetAll`, `TestSuitesController`'s
+libraries endpoints, `TestCaseAssignmentsController`'s release-assigned-testcases,
+execution logs, screenshots) only requires `[Authorize]`, no role restriction anywhere
+server-side.
+
+**Fix**: relaxed `/dashboard`'s guard to just `[authGuard]`, removed the sidebar's
+`*ngIf="canAccessManagerFeatures"` gate on the Dashboard link specifically (left it in
+place, untouched, for Release Management/Test Case Assignment). `managerGuard` itself
+is otherwise unchanged.
+
+**Tester gets a personalized view, Viewer doesn't** (deliberately, per discussion) -
+Testers now see "My Results" summary cards + a table scoped to just their own assigned
+test cases (a pure client-side filter on `assignedUserId`, using data already loaded
+for the release-wide view - no new API call), plus a small "Release-wide: X total, Y%
+passed" context line and an empty state when they have no assignments in the selected
+release. Viewers keep the exact same full release-wide view Admin/Manager see - even
+though the current Test Case Assignment user picker doesn't technically prevent
+assigning a Viewer, they're meant to be read-only overseers, not executors, so scoping
+their view down to "their own assignments" wouldn't fit the role. Added
+`AuthService.isTester()` (didn't exist before, only `isAdmin`/`isManager`/`isViewer`),
+matching the exact same `roleName.toLowerCase() == '...'` pattern as the others.
+
+**Freshness indicator** - previously data was only ever as fresh as the last manual
+Refresh click, with no way to tell how stale it might be. Added a
+`lastUpdatedLabel` ("just now" / "2m ago" / "1h ago") that ticks forward on its own via
+a 15s timer independent of any actual data refresh, plus light auto-polling
+(`startPollingIfRunning`, every 30s) - but **only** while the release's computed
+`runStatusLabel` is "In Progress"; a Completed or Not Started release has nothing new
+to fetch, so polling then would just be wasted requests. Styled as a Bootstrap
+`badge rounded-pill` matching the existing `.status-pill` visual language elsewhere on
+this page, with a soft green + gently pulsing icon while actively auto-refreshing.
+
+**Real Export CSV/PDF** - both buttons were pure placeholders with no click handler at
+all before this. CSV is built by hand (proper RFC 4180 quoting/escaping, UTF-8 BOM so
+Excel doesn't mis-render special characters) and downloaded via a Blob - deliberately
+kept as plain, unstyled CSV (confirmed with the user) rather than switching to a styled
+`.xlsx`, since CSV's whole value is being a universally-compatible plain-text format,
+not a "broken" version of a spreadsheet. PDF uses newly-added `jspdf`/`jspdf-autotable`
+(2.5.2/3.8.2 - deliberately chose long-established, widely-used versions over the
+newer 4.x/5.x majors for a first-time integration) to render a landscape table with
+the release name/version, the same summary counts as the on-screen cards, and a header
+row styled in the app's purple branding. Both exports respect whichever view is
+currently on screen - the full table or the Tester's personalized `myTestCases` - so
+what gets exported always matches what's visible.
+
 ## Follow-up: Test Data Management - Flow requires Environment first
 User asked that Flow not be selectable in Test Data Management until an Environment is
 chosen. The dropdowns were previously all independently selectable (Environment/Flow/
