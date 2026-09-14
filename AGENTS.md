@@ -1155,6 +1155,19 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Dashboard button colors weren't actually themed
+User asked directly whether the Dashboard's button colors matched the rest of the app.
+They didn't: `dashboard.component.css`'s existing `.btn-primary` rule only ever set
+padding/border-radius/font-weight - never an actual color - and `.btn-outline-primary`/
+`.btn-outline-secondary` had no override at all. So the newly-added Export CSV/PDF
+buttons and the pre-existing Refresh button were all rendering in Bootstrap's stock
+blue, not this app's own purple branding (`#6c3483`/`#55296a` hover) used everywhere
+else - Test Data Management's `.btn-purple`, Flow & Section Management's
+`.copy-env-btn`/`.btn-purple`, etc. all already use this same pair. Added proper color
+overrides for all 3 Bootstrap button variants used on this page (needs `!important` -
+Bootstrap's own rules are equal specificity, so a plain override without it wouldn't
+actually win).
+
 ## Follow-up: Dashboard access for all roles + Tester personalization + exports
 User asked to analyze why the Dashboard wasn't "provided for all users properly".
 

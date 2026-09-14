@@ -263,6 +263,12 @@
   border-radius: 50px !important;
   font-size: 0.9rem;
 }
+/* These previously only set spacing/radius, never an actual color - Export CSV/PDF and
+   Refresh rendered in Bootstrap's stock blue instead of this app's own purple branding
+   used everywhere else (Test Data Management's .btn-purple, Flow & Section
+   Management's .copy-env-btn/.btn-purple, etc. all use this same #6c3483/#55296a
+   pair). Bootstrap's own .btn-primary/.btn-outline-primary/.btn-outline-secondary
+   rules are equal specificity to these, so !important is needed to actually win. */
 .btn-primary {
   font-weight: 500;
   border: none;
@@ -270,6 +276,38 @@
   padding: 6px 14px;
   cursor: pointer;
   transition: background-color 0.2s;
+  background-color: #6c3483 !important;
+  border-color: #6c3483 !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: #55296a !important;
+  border-color: #55296a !important;
+}
+
+.btn-outline-primary {
+  color: #6c3483 !important;
+  border-color: #6c3483 !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+  background-color: #6c3483 !important;
+  border-color: #6c3483 !important;
+  color: #ffffff !important;
+}
+
+.btn-outline-secondary {
+  color: #4b5563 !important;
+  border-color: #d8d8e0 !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+  background-color: #f3f4f6 !important;
+  border-color: #d8d8e0 !important;
+  color: #4b5563 !important;
 }
 
 /* Base icon button (shared) */
