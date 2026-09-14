@@ -1155,6 +1155,16 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Test Data Management - Flow requires Environment first
+User asked that Flow not be selectable in Test Data Management until an Environment is
+chosen. The dropdowns were previously all independently selectable (Environment/Flow/
+Section, only Section was gated on Flow via `[disabled]="!sections.length"`), even
+though `onEnvironmentChange()` already clears Flow/Section whenever Environment changes
+- so picking Flow first, then Environment, just silently wiped what you'd already
+picked. `[disabled]="!selectedEnvironment"` on the Flow `<select>` plus a small
+"Select an Environment first." hint makes that existing dependency visible upfront
+instead of only discoverable after the fact.
+
 ## Follow-up: Sidebar scroll fix + Font Awesome CDN -> local package
 Two real bugs reported after adding the Flow & Section Management sidebar entry above.
 

@@ -40,6 +40,7 @@
               [(ngModel)]="selectedFlow"
               (change)="onFlowChange()"
               required
+              [disabled]="!selectedEnvironment"
               [ngClass]="{
                 'is-invalid': testDataForm.submitted && !selectedFlow
               }"
@@ -50,6 +51,9 @@
               </option>
             </select>
             <div class="invalid-feedback">Flow Name is required.</div>
+            <div class="text-muted small mt-1" *ngIf="!selectedEnvironment">
+              Select an Environment first.
+            </div>
           </div>
 
           <div class="col-md-4">
