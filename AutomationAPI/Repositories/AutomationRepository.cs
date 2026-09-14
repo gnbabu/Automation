@@ -143,8 +143,28 @@ namespace AutomationAPI.Repositories
         }
 
 
+        // Duplicate-name check lives here in C# (reusing the already-existing
+        // GetAutomationDataSectionsAsync) rather than in SQL - usp_InsertAutomationDataSection/
+        // usp_UpdateAutomationDataSections themselves have no uniqueness constraint at
+        // all, so this was previously entirely unchecked.
+        private async Task EnsureSectionNameIsUniqueAsync(string flowName, string sectionName, int? excludeSectionId = null)
+        {
+            var existing = await GetAutomationDataSectionsAsync(flowName);
+            var duplicate = existing.Any(s =>
+                s.SectionId != excludeSectionId &&
+                string.Equals(s.SectionName?.Trim(), sectionName?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (duplicate)
+            {
+                throw new DuplicateSectionException(
+                    $"A section named \"{sectionName}\" already exists in flow \"{flowName}\".");
+            }
+        }
+
         public async Task<int> InsertAutomationDataSectionAsync(AutomationDataSectionRequest request)
         {
+            await EnsureSectionNameIsUniqueAsync(request.FlowName, request.SectionName);
+
             var parameters = new[]
             {
                 new SqlParameter("@SectionName", request.SectionName),
@@ -156,6 +176,8 @@ namespace AutomationAPI.Repositories
 
         public async Task UpdateAutomationDataSectionAsync(AutomationDataSectionRequest request)
         {
+            await EnsureSectionNameIsUniqueAsync(request.FlowName, request.SectionName, request.SectionId);
+
             var parameters = new[]
             {
                 new SqlParameter("@SectionID", request.SectionId),
@@ -166,14 +188,33 @@ namespace AutomationAPI.Repositories
             await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.UpdateAutomationDataSections, parameters);
         }
 
-        public async Task DeleteAutomationDataSectionAsync(int sectionId)
+        public async Task DeleteAutomationDataSectionAsync(int sectionId, bool cascade = false)
         {
+            // Default path blocks deletion if the section already has saved test data
+            // - there is no FK constraint protecting this relationship at all, so an
+            // unguarded delete would silently orphan that data forever. cascade=true
+            // (only sent after the user explicitly confirms "delete the section AND its
+            // data" in the UI) runs both deletes atomically in one proc instead.
+            var countParameters = new[] { new SqlParameter("@SectionID", sectionId) };
+            var dataCount = await _sqlDataAccessHelper.ExecuteScalarAsync<int>(
+                SqlDbConstants.CountAutomationDataForSection, countParameters);
+
+            if (dataCount > 0 && !cascade)
+            {
+                throw new SectionHasDataException(
+                    $"This section has {dataCount} saved test data entr{(dataCount == 1 ? "y" : "ies")} - remove them first before deleting the section.",
+                    dataCount);
+            }
+
             var parameters = new SqlParameter[]
             {
             new SqlParameter("@SectionID", sectionId)
             };
 
-            await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.DeleteAutomationDataSection, parameters);
+            await _sqlDataAccessHelper.ExecuteNonQueryAsync(
+                cascade ? SqlDbConstants.DeleteAutomationDataSectionCascade
+                        : SqlDbConstants.DeleteAutomationDataSection,
+                parameters);
         }
 
 

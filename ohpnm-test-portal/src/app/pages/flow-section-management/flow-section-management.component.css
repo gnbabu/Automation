@@ -1,0 +1,258 @@
+/* Flow & Section Management - visually consistent with Test Data Management's own
+   card/table language rather than inventing a new one (same container, header,
+   underline, filter-card, btn-purple conventions). */
+
+.test-data-management-container {
+  padding: 20px;
+}
+
+.header-section h1 {
+  font-weight: 700;
+  font-size: 1.9rem;
+  color: #5c3c9e;
+  margin-bottom: 0.3rem;
+}
+
+.brand-header-underline {
+  height: 3px;
+  background: linear-gradient(135deg, #1a1c2e 0%, #5c3c9e 100%);
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+.filter-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+  margin-bottom: 1.5rem;
+}
+
+.btn-purple {
+  background-color: #6c3483;
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  white-space: nowrap;
+}
+
+.btn-purple:hover {
+  background-color: #55296a;
+  color: #fff;
+}
+
+.btn-purple:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.flow-toggle-btn {
+  border: none;
+  background: transparent;
+  color: #6c3483;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.flow-toggle-btn:hover {
+  color: #55296a;
+}
+
+.fsm-error-msg {
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.flow-delete-btn {
+  border: 1.5px solid #b91c1c;
+  color: #b91c1c;
+  background: transparent;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.flow-delete-btn:hover:not(:disabled) {
+  background: #fdecec;
+}
+
+.flow-delete-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Sections rows */
+.fsm-section-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.fsm-section-row:last-of-type {
+  border-bottom: none;
+}
+
+.fsm-section-input {
+  flex: 1;
+}
+
+.fsm-data-badge {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.fsm-data-badge i {
+  margin-right: 4px;
+}
+
+.fsm-data-badge.has-data {
+  background: #f0faf4;
+  color: #166534;
+  border: 1px solid #bfe3cc;
+}
+
+.fsm-data-badge.no-data {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.fsm-row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.fsm-row-actions button {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.fsm-save-btn {
+  color: #22a35c;
+}
+
+.fsm-save-btn:hover {
+  background: #f0faf4;
+}
+
+.fsm-save-btn:disabled {
+  color: #b8d8c5;
+  cursor: not-allowed;
+}
+
+.fsm-delete-btn {
+  color: #b91c1c;
+}
+
+.fsm-delete-btn:hover:not(:disabled) {
+  background: #fdecec;
+}
+
+.fsm-delete-btn:disabled {
+  color: #d1a3a3;
+  cursor: not-allowed;
+}
+
+/* Add-section row */
+.fsm-add-section {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  align-items: center;
+}
+
+.fsm-add-section .form-control {
+  flex: 1;
+}
+
+:host ::ng-deep select.form-select,
+:host ::ng-deep .form-control {
+  height: 44px;
+}
+
+.fsm-section-row .form-control {
+  height: 40px !important;
+}
+
+/* Delete Flow type-to-confirm modal */
+.fsm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+
+.fsm-modal {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px 28px;
+  width: 90%;
+  max-width: 460px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.fsm-modal-title {
+  color: #b91c1c;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.fsm-modal-body ul {
+  margin-bottom: 12px;
+  padding-left: 20px;
+}
+
+.fsm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.fsm-modal-cancel-btn {
+  border: 1.5px solid #d8d8e0;
+  background: #ffffff;
+  color: #4b5563;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-weight: 600;
+}
+
+.fsm-modal-cancel-btn:hover {
+  background: #f3f4f6;
+}
+
+.fsm-modal-delete-btn {
+  border: none;
+  background: #b91c1c;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-weight: 600;
+}
+
+.fsm-modal-delete-btn:hover:not(:disabled) {
+  background: #911515;
+}
+
+.fsm-modal-delete-btn:disabled {
+  background: #e5b3b3;
+  cursor: not-allowed;
+}

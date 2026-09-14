@@ -65,6 +65,14 @@ export const routes: Routes = [
         canDeactivate: [unsavedChangesGuard],
       },
       {
+        path: 'flow-section-management',
+        loadComponent: () =>
+          import('./pages/flow-section-management/flow-section-management.component').then(
+            (m) => m.FlowSectionManagementComponent,
+          ),
+        canActivate: [authGuard, notViewerGuard],
+      },
+      {
         path: 'users',
         loadComponent: () =>
           import('./pages/users/users.component').then((m) => m.UsersComponent),

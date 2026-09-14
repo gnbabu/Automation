@@ -1,0 +1,230 @@
+<div class="test-data-management-container">
+  <div class="header-section d-flex justify-content-between align-items-start">
+    <div>
+      <h1>Flow &amp; Section Management</h1>
+    </div>
+  </div>
+  <div class="brand-header-underline"></div>
+
+  <!-- Flow selector / new flow -->
+  <div class="filter-card">
+    <div class="border p-3 rounded mb-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6" *ngIf="!showNewFlowInput">
+          <label for="flowName" class="form-label fw-bold">Flow</label>
+          <select
+            id="flowName"
+            name="flowName"
+            class="form-select"
+            [(ngModel)]="selectedFlowName"
+            (change)="onFlowChange()"
+          >
+            <option [ngValue]="undefined">Select Flow</option>
+            <option *ngFor="let flow of flows" [ngValue]="flow.flowName">
+              {{ flow.flowName }}
+            </option>
+          </select>
+        </div>
+
+        <!-- New flow name input replaces the dropdown when toggled -->
+        <div class="col-md-6" *ngIf="showNewFlowInput">
+          <label for="newFlowName" class="form-label fw-bold">New Flow Name</label>
+          <input
+            type="text"
+            id="newFlowName"
+            name="newFlowName"
+            class="form-control"
+            [(ngModel)]="newFlowName"
+            placeholder="e.g. ClaimsSubmission"
+            [ngClass]="{ 'is-invalid': isDuplicateFlowName }"
+            (keydown.enter)="startNewFlow()"
+          />
+          <div class="fsm-error-msg" *ngIf="isDuplicateFlowName">
+            A flow named "{{ newFlowName.trim() }}" already exists - select it from the
+            dropdown instead.
+          </div>
+        </div>
+
+        <div class="col-md-6 d-flex align-items-center gap-2">
+          <button
+            type="button"
+            class="btn-purple"
+            *ngIf="showNewFlowInput"
+            [disabled]="!newFlowName.trim() || isDuplicateFlowName"
+            (click)="startNewFlow()"
+          >
+            <i class="bi bi-plus-lg me-1"></i> Start Flow
+          </button>
+          <button
+            type="button"
+            class="flow-toggle-btn"
+            *ngIf="!isViewer()"
+            (click)="toggleNewFlowInput()"
+          >
+            <i class="bi" [ngClass]="showNewFlowInput ? 'bi-x-circle' : 'bi-plus-circle'"></i>
+            {{ showNewFlowInput ? 'Cancel - pick an existing flow' : 'Or create a new flow' }}
+          </button>
+
+          <!-- Delete the whole flow - only for a real persisted flow (i.e. it has
+               sections); disabled only while the data-status check is still running.
+               Matches deleteSection's own cascade behavior, not a stricter
+               "only if empty" rule - a flow with real data can still be deleted, with
+               an extra confirmation naming exactly how much data goes with it. -->
+          <button
+            type="button"
+            class="flow-delete-btn"
+            *ngIf="!isViewer() && selectedFlowName && !showNewFlowInput && sections.length > 0"
+            [disabled]="!canDeleteSelectedFlow || isDeletingFlow"
+            [title]="totalDataCountForSelectedFlow > 0
+              ? 'Delete this flow, its sections, and their saved test data'
+              : 'Delete this flow and its sections'"
+            (click)="openDeleteFlowConfirm()"
+          >
+            <i class="bi bi-trash me-1"></i>
+            {{ isDeletingFlow ? 'Deleting...' : 'Delete Flow' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sections table -->
+  <div class="filter-card" *ngIf="selectedFlowName">
+    <div class="border p-3 rounded">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0 fw-bold">Sections in "{{ selectedFlowName }}"</h6>
+        <span class="text-muted small" *ngIf="!loadingSections">
+          {{ sections.length }} section{{ sections.length === 1 ? '' : 's' }}
+        </span>
+        <span class="text-muted small" *ngIf="loadingSections">
+          <i class="bi bi-hourglass-split me-1"></i>Loading...
+        </span>
+      </div>
+
+      <div class="text-muted small mb-3" *ngIf="sections.length === 0 && !loadingSections">
+        <i class="bi bi-info-circle me-1"></i>
+        No sections yet - add the first one below.
+      </div>
+
+      <!-- Existing sections -->
+      <div class="fsm-section-row" *ngFor="let section of sections">
+        <input
+          type="text"
+          class="form-control fsm-section-input"
+          name="section-{{ section.sectionId }}"
+          [value]="editedSectionNames.get(section.sectionId)"
+          (input)="editedSectionNames.set(section.sectionId, $any($event.target).value)"
+          [readonly]="isViewer()"
+        />
+        <span
+          class="fsm-data-badge"
+          [ngClass]="hasData(section.sectionId) ? 'has-data' : 'no-data'"
+        >
+          <i class="bi" [ngClass]="hasData(section.sectionId) ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+          {{ hasData(section.sectionId) ? 'Has data' : 'Empty' }}
+        </span>
+        <div class="fsm-row-actions" *ngIf="!isViewer()">
+          <button
+            type="button"
+            class="fsm-save-btn"
+            title="Save rename"
+            [disabled]="!hasUnsavedRename(section) || savingSectionId === section.sectionId"
+            (click)="saveRename(section)"
+          >
+            <i class="bi" [ngClass]="savingSectionId === section.sectionId ? 'bi-hourglass-split' : 'bi-check-lg'"></i>
+          </button>
+          <button
+            type="button"
+            class="fsm-delete-btn"
+            [title]="hasData(section.sectionId)
+              ? 'Delete section and its saved test data'
+              : 'Delete section'"
+            [disabled]="deletingSectionId === section.sectionId"
+            (click)="deleteSection(section)"
+          >
+            <i class="bi" [ngClass]="deletingSectionId === section.sectionId ? 'bi-hourglass-split' : 'bi-trash'"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Add new section -->
+      <div class="fsm-add-section" *ngIf="!isViewer()">
+        <input
+          type="text"
+          class="form-control"
+          name="newSectionName"
+          [(ngModel)]="newSectionName"
+          placeholder="New section name..."
+          (keydown.enter)="addSection()"
+        />
+        <button
+          type="button"
+          class="btn-purple"
+          [disabled]="!newSectionName.trim() || isSubmittingNewSection"
+          (click)="addSection()"
+        >
+          <i class="bi bi-plus-lg me-1"></i>
+          {{ isSubmittingNewSection ? 'Adding...' : 'Add Section' }}
+        </button>
+      </div>
+
+      <div class="text-muted small mt-3">
+        <i class="bi bi-info-circle me-1"></i>
+        Deleting a section that has saved test data removes that data too - for every
+        user and environment - after an extra confirmation.
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Flow - dedicated type-to-confirm modal, not the shared app-wide confirm
+       dialog. A single click here can span dozens of sections and every saved test
+       data entry across them (for every user/environment) - a much larger blast
+       radius than a single section delete, so it gets a stronger safeguard: the
+       delete button stays disabled until the flow's exact name is typed in, matching
+       the same pattern used for deleting a GitHub repo. -->
+  <div class="fsm-modal-backdrop" *ngIf="showDeleteFlowConfirm" (click)="cancelDeleteFlowConfirm()">
+    <div class="fsm-modal" (click)="$event.stopPropagation()">
+      <h5 class="fsm-modal-title">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Flow "{{ selectedFlowName }}"
+      </h5>
+
+      <div class="fsm-modal-body">
+        <p>This will permanently delete:</p>
+        <ul>
+          <li>{{ sections.length }} section{{ sections.length === 1 ? '' : 's' }}</li>
+          <li *ngIf="totalDataCountForSelectedFlow > 0">
+            {{ totalDataCountForSelectedFlow }} saved test data entr{{ totalDataCountForSelectedFlow === 1 ? 'y' : 'ies' }}
+            (across all users and environments)
+          </li>
+        </ul>
+        <p class="fw-bold mb-3">This cannot be undone.</p>
+
+        <label class="form-label">
+          Type <strong>{{ selectedFlowName }}</strong> to confirm:
+        </label>
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="deleteFlowConfirmText"
+          name="deleteFlowConfirmText"
+          autocomplete="off"
+          (keydown.enter)="confirmDeleteFlowFromModal()"
+        />
+      </div>
+
+      <div class="fsm-modal-actions">
+        <button type="button" class="fsm-modal-cancel-btn" (click)="cancelDeleteFlowConfirm()">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="fsm-modal-delete-btn"
+          [disabled]="!deleteFlowConfirmTextMatches || isDeletingFlow"
+          (click)="confirmDeleteFlowFromModal()"
+        >
+          {{ isDeletingFlow ? 'Deleting...' : 'Delete Flow' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

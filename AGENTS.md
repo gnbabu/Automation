@@ -1155,6 +1155,93 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Flow & Section Management - new dedicated page
+User noticed the Portal had no way to define new Flows/Sections at all - only to fill in
+data for ones that already existed. Investigation found the backend already has **full
+CRUD for Sections** (`POST/PUT/DELETE api/Automation/sections`,
+`AutomationRepository.InsertAutomationDataSectionAsync`/`UpdateAutomationDataSectionAsync`/
+`DeleteAutomationDataSectionAsync`) - fully implemented, but **zero frontend code
+anywhere ever called any of it**. There is no separate "Flow" entity/table at all - a
+Flow is just the distinct set of `FlowName` values across `aut.AutomationDataSections`
+(`usp_get_AutomationFlowNames` is literally `SELECT DISTINCT FlowName`), so "creating a
+Flow" is really "creating a Section whose FlowName doesn't exist yet."
+
+New page/route `/flow-section-management` (`canActivate: [authGuard, notViewerGuard]`,
+same access as Test Data Management - confirmed with the user), new sidebar entry.
+Lets you pick a Flow (or type a new one), see all its Sections with a "Has
+data"/"Empty" badge (via `getAutomationDataByFlowName` - a bulk fetch across ALL
+users/environments, matching the exact scope the backend's own delete-guard uses, not
+the current-user-only scope Test Data Management's own section overview uses), rename
+sections inline, add new ones, and delete.
+
+**Two real gaps found in the existing-but-unused backend code, fixed as part of wiring
+it up (confirmed with the user before proceeding):**
+1. `usp_InsertAutomationDataSection` had no uniqueness check at all - nothing stopped
+   creating duplicate section names within a flow. Fixed in C#
+   (`AutomationRepository.EnsureSectionNameIsUniqueAsync`, reusing the already-existing
+   `GetAutomationDataSectionsAsync` rather than a new stored proc) - a new
+   `DuplicateSectionException` maps to a 409 with the real reason.
+2. `usp_DeleteAutomationDataSection` was an unguarded hard delete, and confirmed via
+   `sys.foreign_keys` there is **no FK constraint at all** between
+   `AutomationData.SectionID` and `AutomationDataSections` - deleting a section that
+   already had saved test data would silently orphan it forever (invisible in the UI
+   from then on, even though the raw rows remain in the table). New
+   `usp_CountAutomationDataForSection` proc backs a delete-guard
+   (`SectionHasDataException` -> 409) that runs by default.
+
+**Design discussion with the user on the delete-guard, revisited twice:**
+- Initial decision: block deletion entirely if a section has data (matching this
+  project's `usp_LoginUserHardDelete` precedent) rather than "warn and proceed anyway".
+- User pushed back once actually using it: Test Data Management has no way to delete
+  individual data rows at all, so a hard block left no path forward to ever retire an
+  obsolete section short of direct DB access - a real dead end, not just friction.
+  **Revised to cascade delete with confirmation** instead: a new
+  `usp_DeleteAutomationDataSectionCascade` proc (deletes the section's `AutomationData`
+  rows and the section itself in one transaction) is used only when the frontend sends
+  `?cascade=true` - sent only after the user confirms a dialog stating exactly how many
+  entries will be deleted, for every user/environment. The default (no `cascade`) path
+  still blocks with the same clear message otherwise.
+- Added a "Delete Flow" action (deletes every section in a flow - the only way for the
+  flow to disappear, since it isn't its own row) - **initially still used the old
+  "only if every section is already empty" rule from before the cascade-delete
+  revision**, which the user immediately called out as inconsistent (a flow with real
+  data was permanently un-deletable via this button even though deleting each of its
+  sections one at a time, cascading their data, would have worked). Fixed to match
+  single-section delete's own cascade behavior.
+- Given "Delete Flow" can span dozens of sections and every saved entry across all of
+  them in one click - a much larger blast radius than a single section - added a
+  dedicated **type-to-confirm modal** (must type the flow's exact name to unlock the
+  delete button, same pattern as deleting a GitHub repo) specifically for this action,
+  built as page-local component state rather than extending the shared `ConfirmService`
+  (used everywhere else in the app for plain Yes/No confirms) just for this one
+  destructive, disproportionately-larger-blast-radius case.
+
+**Also fixed while wiring this up (found via real testing, not planned upfront):**
+- `InsertAutomationDataSectionAsync`'s controller action used
+  `CreatedAtAction(nameof(GetAutomationDataSectionsAsync), new { sectionId = newId })` -
+  threw `InvalidOperationException: No route matches the supplied values` at runtime
+  (that route takes `{flowName}`, not `sectionId`) - a pre-existing bug never hit before
+  because no UI ever called this endpoint. The insert itself always succeeded; the 500
+  thrown afterward just hid that, making a legitimate first attempt look like it failed
+  and the inevitable retry then correctly hit the new duplicate-name check, looking like
+  a false rejection. Fixed to `return Ok(newId)`, matching `InsertAutomationDataAsync`'s
+  own pattern.
+- `HttpService.handleError`'s "other errors" branch (400/404/409/etc, shared across the
+  whole app) was always showing the generic `HttpErrorResponse.message` ("Http failure
+  response for ...: 409 Conflict") instead of the backend's actual response body -
+  meaning every carefully-worded backend error message anywhere in the app was
+  previously invisible to users, not just this new feature's. Fixed to prefer
+  `error.error` (the real backend message) when present.
+- Also closed a real security gap while touching this controller: none of the 3 Section
+  endpoints (`InsertAutomationDataSectionAsync`/`UpdateAutomationDataSectionAsync`/
+  `DeleteAutomationDataSectionAsync`) had the `IsViewer()` check that Insert/Update
+  Automation *Data* already had - a Viewer's valid token could previously call these
+  directly even though no UI ever exposed them.
+- New-flow-name input had no duplicate check either - typing an existing flow's name
+  into "create a new flow" silently did nothing useful (would have just added a section
+  to the existing flow under a false "new flow" framing). Added live, case-insensitive
+  validation against the already-loaded `flows` list.
+
 ## Follow-up: Test Data Management - search/filter within a section's fields
 Last item from the improvement list. Only shown once a section has more than 6 fields
 (`FIELD_SEARCH_THRESHOLD`) - not worth the extra UI for a typical small section.

@@ -14,6 +14,6 @@ namespace AutomationAPI.Repositories.Interfaces
         Task DeleteAutomationDataAsync(int sectionId);
         Task<int> InsertAutomationDataSectionAsync(AutomationDataSectionRequest request);
         Task UpdateAutomationDataSectionAsync(AutomationDataSectionRequest request);
-        Task DeleteAutomationDataSectionAsync(int sectionId);
+        Task DeleteAutomationDataSectionAsync(int sectionId, bool cascade = false);
     }
 }

@@ -114,6 +114,12 @@ export interface IAutomationDataSection {
   sectionName: string;
 }
 
+export interface IAutomationDataSectionRequest {
+  sectionId?: number;
+  sectionName: string;
+  flowName: string;
+}
+
 export interface IAutomationDataRequest {
   id?: number;
   sectionId?: number;

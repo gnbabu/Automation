@@ -73,6 +73,16 @@
       <span class="hide-on-collapse">Test Data Management</span>
     </a>
     <a
+      *ngIf="!isViewer"
+      [routerLink]="['/flow-section-management']"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="sidebar-link text-decoration-none p-3"
+    >
+      <i class="fas fa-sitemap me-3"></i>
+      <span class="hide-on-collapse">Flow &amp; Section Management</span>
+    </a>
+    <a
       *ngIf="canAccessManagerFeatures"
       [routerLink]="['/release-management']"
       routerLinkActive="active"

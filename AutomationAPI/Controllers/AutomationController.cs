@@ -164,11 +164,28 @@ namespace AutomationAPI.Controllers
         [HttpPost("sections")]
         public async Task<IActionResult> InsertAutomationDataSectionAsync([FromBody] AutomationDataSectionRequest request)
         {
+            // Same IsViewer() enforcement already used for Insert/Update Automation
+            // Data - previously missing entirely on all 3 Section endpoints, even
+            // though no UI ever exposed them to begin with (see AGENTS.md).
+            if (IsViewer())
+                return StatusCode(403, "Viewers have read-only access and cannot manage flows or sections.");
+
             try
             {
                 _logger.LogInformation("Inserting automation data section with SectionName: {SectionName}", request.SectionName);
                 var newId = await _automationRepository.InsertAutomationDataSectionAsync(request);
-                return CreatedAtAction(nameof(GetAutomationDataSectionsAsync), new { sectionId = newId }, newId);
+                // Plain Ok(newId) - the previous CreatedAtAction pointed at the
+                // sections/{flowName} GET route with a sectionId route value, which
+                // throws "No route matches the supplied values" at runtime (a
+                // pre-existing bug never hit before because no UI ever called this
+                // endpoint) - the insert itself succeeded, so the row WAS created, and
+                // the resulting 500 then made every legitimate retry hit the duplicate
+                // check and look like a false rejection.
+                return Ok(newId);
+            }
+            catch (DuplicateSectionException ex)
+            {
+                return Conflict(ex.Message);
             }
             catch (Exception ex)
             {
@@ -181,11 +198,18 @@ namespace AutomationAPI.Controllers
         [HttpPut("sections")]
         public async Task<IActionResult> UpdateAutomationDataSectionAsync([FromBody] AutomationDataSectionRequest request)
         {
+            if (IsViewer())
+                return StatusCode(403, "Viewers have read-only access and cannot manage flows or sections.");
+
             try
             {
                 _logger.LogInformation("Updating automation data section for SectionID: {SectionID}", request.SectionId);
                 await _automationRepository.UpdateAutomationDataSectionAsync(request);
                 return NoContent(); // Successfully updated
+            }
+            catch (DuplicateSectionException ex)
+            {
+                return Conflict(ex.Message);
             }
             catch (Exception ex)
             {
@@ -195,14 +219,24 @@ namespace AutomationAPI.Controllers
         }
 
         // 9. Delete Automation Data Section
+        // cascade=true deletes the section's saved test data too - only sent after the
+        // user explicitly confirms that in the UI; the default still 409s if data
+        // exists.
         [HttpDelete("sections/{sectionId}")]
-        public async Task<IActionResult> DeleteAutomationDataSectionAsync(int sectionId)
+        public async Task<IActionResult> DeleteAutomationDataSectionAsync(int sectionId, [FromQuery] bool cascade = false)
         {
+            if (IsViewer())
+                return StatusCode(403, "Viewers have read-only access and cannot manage flows or sections.");
+
             try
             {
-                _logger.LogInformation("Deleting automation data section for SectionID: {SectionID}", sectionId);
-                await _automationRepository.DeleteAutomationDataSectionAsync(sectionId);
+                _logger.LogInformation("Deleting automation data section for SectionID: {SectionID} (cascade: {Cascade})", sectionId, cascade);
+                await _automationRepository.DeleteAutomationDataSectionAsync(sectionId, cascade);
                 return NoContent(); // Successfully deleted
+            }
+            catch (SectionHasDataException ex)
+            {
+                return Conflict(ex.Message);
             }
             catch (Exception ex)
             {

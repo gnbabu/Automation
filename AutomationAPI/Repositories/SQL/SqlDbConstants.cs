@@ -36,6 +36,8 @@
         public const string InsertAutomationDataSection = "[aut].[usp_InsertAutomationDataSection]";
         public const string UpdateAutomationDataSections = "[aut].[usp_UpdateAutomationDataSections]";
         public const string DeleteAutomationDataSection = "[aut].[usp_DeleteAutomationDataSection]";
+        public const string CountAutomationDataForSection = "[aut].[usp_CountAutomationDataForSection]";
+        public const string DeleteAutomationDataSectionCascade = "[aut].[usp_DeleteAutomationDataSectionCascade]";
 
 
         // Test Sceenshots

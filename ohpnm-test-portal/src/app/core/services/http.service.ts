@@ -95,9 +95,18 @@ export class HttpService {
         `Error ${error.status}`
       );
     } else {
-      // Other errors (like 400, 404)
+      // Other errors (like 400, 404, 409) - prefer the backend's own response body
+      // (error.error) over the generic HttpErrorResponse.message ("Http failure
+      // response for ...: 409 Conflict") - confirmed by direct testing that a
+      // Conflict(ex.Message)-style ASP.NET response was previously always shown as
+      // that generic text instead of the actual, specific reason returned.
+      const backendMessage =
+        typeof error.error === 'string' && error.error.trim()
+          ? error.error
+          : error.error?.message;
+
       this.toaster.warning(
-        error.message || 'Unexpected error occurred.',
+        backendMessage || error.message || 'Unexpected error occurred.',
         `Error ${error.status}`
       );
     }
