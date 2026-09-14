@@ -6,12 +6,13 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
-    <link
-      rel="stylesheet"
-      href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css"
-      integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p"
-      crossorigin="anonymous"
-    />
+    <!-- Font Awesome is now bundled locally via @fortawesome/fontawesome-free (see
+         angular.json styles) instead of this Pro CDN link - the hardcoded integrity
+         (SRI) hash here silently broke the whole stylesheet (every icon in the app,
+         not just the sidebar) the moment Font Awesome's Pro CDN content changed
+         server-side, which can happen at any time with zero code changes on our end -
+         exactly the "suddenly, with no idea why" symptom reported. A local package has
+         no such dependency on an external CDN staying byte-for-byte identical forever. -->
   </head>
   <body>
     <app-root></app-root>

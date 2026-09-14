@@ -25,3 +25,30 @@
   transition: opacity 0.3s ease, width 0.3s ease;
   box-shadow: 0 0 8px rgba(26, 188, 156, 0.6);
 }
+
+/* .sidebar itself is a fixed height: 100vh (see styles.css) with no scroll handling of
+   its own - adding the Flow & Section Management nav link (an 11th item) pushed the
+   total content past the viewport height on smaller screens, clipping/overlapping the
+   Logout link and environment badge at the bottom with no way to reach them. Scoping
+   the scroll to just the middle nav-links section (not the whole sidebar) keeps the
+   profile header and the Logout/badge footer always pinned in place, only the list of
+   links scrolls if there isn't room for all of them. min-height: 0 is required here -
+   without it a flex child ignores overflow and just keeps growing past its parent
+   instead of actually scrolling. */
+.nav.flex-column {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 188, 156, 0.6) transparent;
+}
+
+.nav.flex-column::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nav.flex-column::-webkit-scrollbar-thumb {
+  background-color: rgba(26, 188, 156, 0.6);
+  border-radius: 3px;
+}

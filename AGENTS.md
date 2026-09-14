@@ -1155,6 +1155,38 @@ now fully-verified minimum (needed for *any* `APIGatway` call, not just
 `Selenium.BaseComponents`'s own build output, so this is just "copy those 3 files," not
 extra work to locate them).
 
+## Follow-up: Sidebar scroll fix + Font Awesome CDN -> local package
+Two real bugs reported after adding the Flow & Section Management sidebar entry above.
+
+**Sidebar clipping/overlap**: `.sidebar` (styles.css) is a fixed `height: 100vh` with no
+scroll handling of its own. Adding an 11th nav link pushed total content past the
+viewport height on smaller screens, clipping/overlapping the Logout link and
+environment badge at the bottom with no way to reach them. Fixed by scoping
+`overflow-y: auto` + `flex: 1 1 auto` + `min-height: 0` to just the middle nav-links
+section (`left-sidebar.component.css`'s `.nav.flex-column`) rather than the whole
+sidebar - `min-height: 0` is required here, without it a flex child ignores overflow
+and keeps growing past its parent instead of actually scrolling. Keeps the profile
+header and Logout/badge footer always pinned in place; only the link list itself
+scrolls if there isn't room. Added a subtle themed scrollbar (teal accent, matching the
+sidebar's existing color scheme) rather than leaving the browser default.
+
+**All sidebar icons suddenly disappearing ("no idea why")**: traced to
+`index.html` loading Font Awesome from a **Pro CDN URL**
+(`https://pro.fontawesome.com/releases/v5.10.0/css/all.css`) with a hardcoded
+`integrity` (SRI) attribute pinned to that exact file's content. Confirmed the URL
+itself still returns HTTP 200, so the likely mechanism is that Font Awesome's Pro CDN
+content changed server-side at some point (they do rotate/update assets), which makes
+the browser's SRI check fail and silently block the *entire* stylesheet with no
+visible error unless you open devtools - a failure mode that can appear at any time
+with zero code changes on our side, matching the "suddenly, with no idea why" report
+exactly. Fixed by installing `@fortawesome/fontawesome-free@6.7.2` as a local npm
+package (matching how Bootstrap/Bootstrap Icons are already handled in
+`angular.json`'s `styles` array, not an external CDN) instead of depending on a
+Pro CDN link staying byte-for-byte identical forever - confirmed the webfont files
+(`fa-solid-900.woff2` etc.) are correctly copied into the build output. FA6's `fas`/
+`far`/`fab` class prefixes are unchanged from the v5 classes already used throughout
+this app, so no template changes were needed anywhere.
+
 ## Follow-up: Flow & Section Management - new dedicated page
 User noticed the Portal had no way to define new Flows/Sections at all - only to fill in
 data for ones that already existed. Investigation found the backend already has **full
