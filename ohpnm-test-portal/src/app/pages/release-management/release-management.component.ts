@@ -9,11 +9,12 @@ import {
   ReleaseService,
 } from '@services';
 import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 @Component({
   selector: 'app-release-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, AppDropdownComponent],
   templateUrl: './release-management.component.html',
   styleUrl: './release-management.component.css',
 })
@@ -22,10 +23,18 @@ export class ReleaseManagementComponent implements OnInit, OnDestroy {
   environments: IEnvironmentModel[] = [];
   themes = ['green', 'orange', 'blue', 'purple', 'teal'];
 
-  // filters
+  // filters - null (not '') so both line up directly with AppDropdownComponent's own
+  // "nothing selected" placeholder convention; the existing `!this.environmentFilter`/
+  // `!this.statusFilter` filtering checks below treat null and '' identically, so this
+  // is not a behavior change.
   search = '';
-  environmentFilter = '';
-  statusFilter = '';
+  environmentFilter: string | null = null;
+  statusFilter: string | null = null;
+  statusFilterOptions = ['Draft', 'Active', 'Completed', 'Rejected'];
+  // Options here are plain strings, not objects - AppDropdownComponent's default
+  // textAccessor ('name') would look up a `.name` field that doesn't exist on a
+  // string, so this just returns the option itself.
+  identityTextAccessor = (opt: string) => opt;
 
   loading = false;
 

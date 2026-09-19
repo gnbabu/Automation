@@ -3,11 +3,12 @@ import { ITimeZone, IUpdateOwnProfileRequest, IUser } from '@interfaces';
 import { AuthService, UsersService, CommonToasterService } from '@services';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDropdownComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.css',
 })

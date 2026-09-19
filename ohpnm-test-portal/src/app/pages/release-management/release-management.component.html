@@ -30,21 +30,21 @@
       />
     </div>
     <div class="col-6 col-md-3">
-      <select class="form-select" [(ngModel)]="environmentFilter">
-        <option value="">All Environments</option>
-        <option *ngFor="let e of environments" [value]="e.environmentName">
-          {{ e.environmentName }}
-        </option>
-      </select>
+      <app-dropdown
+        [options]="environments"
+        textAccessor="environmentName"
+        bindValue="environmentName"
+        placeholder="All Environments"
+        [(selected)]="environmentFilter"
+      ></app-dropdown>
     </div>
     <div class="col-6 col-md-3">
-      <select class="form-select" [(ngModel)]="statusFilter">
-        <option value="">All Statuses</option>
-        <option value="Draft">Draft</option>
-        <option value="Active">Active</option>
-        <option value="Completed">Completed</option>
-        <option value="Rejected">Rejected</option>
-      </select>
+      <app-dropdown
+        [options]="statusFilterOptions"
+        [textAccessor]="identityTextAccessor"
+        placeholder="All Statuses"
+        [(selected)]="statusFilter"
+      ></app-dropdown>
     </div>
     <div class="col-12 col-md-2 d-flex justify-content-md-end">
       <button class="btn btn-outline-secondary" (click)="refresh()" title="Refresh">

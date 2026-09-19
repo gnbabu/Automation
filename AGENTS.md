@@ -3253,3 +3253,103 @@ value every other real flow project already uses and a real configured `LoginUse
 for E2EP3, not an arbitrary/required magic string (the actual runtime resolution path uses
 `EnvironmentId`/`LoginUserId` from the Run Now/Schedule selection, not this string — it's
 only surfaced in the fallback error message if resolution fails entirely).
+
+## AppDropdown migration — replaced native `<select>` with `<app-dropdown>` app-wide
+Replaced every real native `<select>` across the Portal (12 files - Environment/Release/
+Users filters, Credential Configuration, Flow & Section Management, Test Data Management
+x4, Environment/Release forms, Settings, Run Now/Schedule dialogs, Add/Edit User x5) with
+the pre-existing `AppDropdownComponent` (`core/components/app-dropdown/`), which already
+existed and was already used by Dashboard - not a new component. `data-grid.component`'s
+page-size `<select>` was migrated too but then explicitly **reverted back to native** on
+request - left untouched, still a plain `<select>`.
+
+### `AppDropdownComponent` enhancements (all additive - verified zero behavior change for
+### Dashboard's pre-existing usage before touching anything else)
+- `bindValue` (string field name or function, same convention as the existing
+  `textAccessor`) - for selects that bind a *derived* field (e.g. `loginUserId`) rather
+  than the whole option object. Deliberately **not** named `valueAccessor` - Dashboard's
+  `<app-dropdown>` already had a `valueAccessor="releaseId"` attribute sitting on it that
+  was never actually wired to any `@Input()` (a harmless no-op) - reusing that exact name
+  would have silently turned dead markup into live behavior for already-working code.
+- `isInvalid` - applies Bootstrap's `is-invalid` styling to the real inner `<select>`, and
+  mirrors it onto the component's own host element (`@HostBinding`) so a sibling
+  `.invalid-feedback` block still shows via Bootstrap's plain `.is-invalid ~ .invalid-
+  feedback` CSS rule (matches on class alone, not element type).
+- `showPlaceholder` (default `true`, unchanged) - set to `false` for fields that always
+  hold a real default and should never be reachable back to an empty/null state (e.g. a
+  status filter defaulting to `'All'`).
+- `:host { display: block; width: 100% }` - Angular components default to `display:
+  inline`, which silently breaks any width/height CSS a caller applies directly to
+  `<app-dropdown class="...">` (browsers ignore sizing on inline boxes) - several pages
+  being migrated relied on exactly that for a plain `<select class="some-width-class">`.
+  Bootstrap's own `.form-select { width: 100% }` on the internal `<select>` fills whatever
+  box this makes the host.
+- `resolveOptionForValue` (private) - resolves an externally-bound value (ngModel/
+  `[selected]`) to the matching option so the internal `<select>`'s `[ngValue]` bindings
+  (which always compare full option objects, even in `bindValue` mode) highlight
+  correctly. Two real bugs found and fixed here via direct testing after the initial
+  migration, both now covered in both whole-object and `bindValue` modes:
+  - **`undefined` vs `null`**: the internal placeholder `<option>` is always bound to
+    `[ngValue]="null"`, but several real callers declare their bound field as `foo?: T`
+    with no initializer (plain `undefined`, e.g. `TestDataManagementComponent.
+    selectedEnvironment`) or explicitly reset it via `= undefined` (e.g. `onFlowChange()`
+    setting `this.selectedSection = undefined`) rather than `= null`. Angular's option
+    matching treats `null` and `undefined` as genuinely different values - no match means
+    *nothing* highlights, not even the placeholder, which looked like "the dropdown is
+    empty" even though a real placeholder option existed. Fixed by normalizing
+    `undefined` → `null` before resolving.
+  - **Type mismatch between an initial value and primitive options**: e.g.
+    `AddEditUserComponent`'s Two-Factor dropdown - `user.twoFactor` starts as a real
+    boolean `false` (from `Mappers.UserMapper.empty()`/the backend), but its options are
+    deliberately kept as the literal strings `'true'`/`'false'` (see below - preserving an
+    existing behavior, not a type this component would naturally choose). Strict equality
+    against the options list found nothing, so the dropdown rendered blank instead of
+    "No" pre-selected. Fixed with a loose, string-based fallback match (tried only after
+    strict equality fails, so it can't change any already-working case) in *both*
+    whole-object mode and `bindValue` mode.
+
+### Explicit instruction: preserve pre-existing type-coercion bugs in `AddEditUserComponent`
+### exactly, don't fix them as a side effect of swapping the UI component
+Found real, pre-existing bugs while reading the original selects closely:
+- `timeZone`/`status` used a plain `[value]="tz.timeZoneId"`/`[value]="s.statusId"` (always
+  string-coerced by the browser), even though `IUser.timeZone`/`.status` are typed
+  `number` - `role`/`priorityId` on the same form correctly used `[ngValue]` instead
+  (preserves the real type), an inconsistency already present before this migration.
+- `onSubmit()`'s `this.user.twoFactor = this.user.twoFactor ? true : false;` has a real bug
+  for the "No" case specifically: a plain `value="false"` attribute always produces the
+  *string* `"false"` once picked, and `"false"` is a non-empty string - truthy in
+  JavaScript - so selecting "No" and submitting currently saves `true`.
+
+Asked the user directly rather than deciding unilaterally; told explicitly to **preserve
+these exactly**, not fix them. `AddEditUserComponent`'s new dropdowns replicate this
+deliberately: `twoFactorOptions = ['true', 'false']` (strings, not booleans) with a plain
+identity-style `textAccessor`; `timeZoneStringBindValue`/`statusStringBindValue` are
+`bindValue` functions returning `String(tz.timeZoneId)`/`String(s.statusId)` specifically
+so the *emitted* value after a user interaction is still a string, matching today's exact
+runtime behavior (including the `twoFactor` "No" bug) - `role`/`priorityId` use a plain
+`bindValue="roleId"`/`"priorityId"` (real numbers, matching their own already-correct
+`[ngValue]` usage).
+
+### CSS scoping gotcha - `::ng-deep` needed wherever a scoped rule used to reach a native
+### `<select>` directly in a page's own template
+Angular's default view encapsulation scopes a component's own CSS to elements rendered by
+*that component's own template* - e.g. `add-edit-user.component.css`'s `.user-form-wrapper
+.form-select { border-radius: 10px; ... }` (no `::ng-deep`) worked when the `<select>` was
+a direct child of `add-edit-user`'s own template, but stopped reaching it once that
+`<select>` moved inside `<app-dropdown>`'s own, separate child-component template. Fixed in
+every affected page (`environment-form`, `release-form`, `add-edit-user`) by adding a
+mirrored `::ng-deep app-dropdown select`/`select:focus` rule alongside the original
+(left unchanged, still relevant for any native inputs/selects that remain directly in that
+page's own template) rather than editing the original rule in place.
+
+A second, narrower version of the same gotcha: `test-data-management.component.css` had
+`:host ::ng-deep select.copy-env-select` (tag+class combo) - `::ng-deep` alone doesn't help
+here, since the class moved from the `<select>` itself onto the new `<app-dropdown>`
+wrapper; the real `<select>` inside it only ever carries `app-dropdown`'s own hardcoded
+`form-select` class. Fixed by changing the selector to `.copy-env-select select`
+(descendant), not `select.copy-env-select` (tag+class). Generic `select.form-select` rules
+elsewhere (`dashboard`, `flow-section-management`, `test-case-assignment-user`,
+`schedule-testcases-dialog`, etc.) needed no changes at all - `form-select` stays on the
+real internal `<select>` for every migrated dropdown regardless of what class the caller
+applies to `<app-dropdown>` itself, so tag+class rules targeting *that specific* class were
+never actually broken.

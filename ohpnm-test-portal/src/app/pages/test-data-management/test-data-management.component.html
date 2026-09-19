@@ -12,44 +12,34 @@
         <div class="row g-3">
           <div class="col-md-4">
             <label for="environment" class="form-label fw-bold">Environment</label>
-            <select
+            <app-dropdown
               id="environment"
               name="environment"
-              class="form-select"
-              [(ngModel)]="selectedEnvironment"
-              (change)="onEnvironmentChange()"
+              [options]="environments"
+              textAccessor="environmentName"
+              placeholder="Select Environment"
+              [(selected)]="selectedEnvironment"
+              (selectionChange)="onEnvironmentChange()"
               required
-              [ngClass]="{
-                'is-invalid': testDataForm.submitted && !selectedEnvironment
-              }"
-            >
-              <option [ngValue]="undefined">Select Environment</option>
-              <option *ngFor="let env of environments" [ngValue]="env">
-                {{ env.environmentName }}
-              </option>
-            </select>
+              [isInvalid]="testDataForm.submitted && !selectedEnvironment"
+            ></app-dropdown>
             <div class="invalid-feedback">Environment is required.</div>
           </div>
 
           <div class="col-md-4">
             <label for="flowName" class="form-label fw-bold">Flow Name</label>
-            <select
+            <app-dropdown
               id="flowName"
               name="flowName"
-              class="form-select"
-              [(ngModel)]="selectedFlow"
-              (change)="onFlowChange()"
+              [options]="flows"
+              textAccessor="flowName"
+              placeholder="Select Flow"
+              [(selected)]="selectedFlow"
+              (selectionChange)="onFlowChange()"
               required
               [disabled]="!selectedEnvironment"
-              [ngClass]="{
-                'is-invalid': testDataForm.submitted && !selectedFlow
-              }"
-            >
-              <option [ngValue]="undefined">Select Flow</option>
-              <option *ngFor="let flow of flows" [ngValue]="flow">
-                {{ flow.flowName }}
-              </option>
-            </select>
+              [isInvalid]="testDataForm.submitted && !selectedFlow"
+            ></app-dropdown>
             <div class="invalid-feedback">Flow Name is required.</div>
             <div class="text-muted small mt-1" *ngIf="!selectedEnvironment">
               Select an Environment first.
@@ -58,23 +48,18 @@
 
           <div class="col-md-4">
             <label for="section" class="form-label fw-bold">Section</label>
-            <select
+            <app-dropdown
               id="section"
               name="section"
-              class="form-select"
-              [(ngModel)]="selectedSection"
-              (change)="onSectionChange()"
+              [options]="sections"
+              textAccessor="sectionName"
+              placeholder="Select Section"
+              [(selected)]="selectedSection"
+              (selectionChange)="onSectionChange()"
               required
               [disabled]="!sections.length"
-              [ngClass]="{
-                'is-invalid': testDataForm.submitted && !selectedSection
-              }"
-            >
-              <option [ngValue]="undefined">Select Section</option>
-              <option *ngFor="let section of sections" [ngValue]="section">
-                {{ section.sectionName }}
-              </option>
-            </select>
+              [isInvalid]="testDataForm.submitted && !selectedSection"
+            ></app-dropdown>
             <div class="invalid-feedback">Section is required.</div>
           </div>
         </div>
@@ -225,24 +210,23 @@
           </button>
 
           <!-- Copy from another environment - a preview, not a save; the copied rows
-               still need Save/Update clicked to actually persist. A plain native
-               <select> + button rather than a custom expanding menu - matches the
-               Environment/Flow/Section selects already on this page and scales to any
-               number of environments without any custom overlay/positioning at all. -->
+               still need Save/Update clicked to actually persist. A plain dropdown +
+               button rather than a custom expanding menu - matches the
+               Environment/Flow/Section dropdowns already on this page and scales to
+               any number of environments without any custom overlay/positioning at
+               all. -->
           <div
             class="d-flex gap-2 align-items-center"
             *ngIf="!isViewer() && otherEnvironments.length"
           >
-            <select
-              class="form-select form-select-sm copy-env-select"
+            <app-dropdown
+              class="copy-env-select"
               name="copyFromEnvironment"
-              [(ngModel)]="copyFromEnvironmentSelection"
-            >
-              <option [ngValue]="undefined">Copy from environment...</option>
-              <option *ngFor="let env of otherEnvironments" [ngValue]="env">
-                {{ env.environmentName }}
-              </option>
-            </select>
+              [options]="otherEnvironments"
+              textAccessor="environmentName"
+              placeholder="Copy from environment..."
+              [(selected)]="copyFromEnvironmentSelection"
+            ></app-dropdown>
             <button
               type="button"
               class="copy-env-btn"

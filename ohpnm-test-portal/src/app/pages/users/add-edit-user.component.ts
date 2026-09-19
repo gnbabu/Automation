@@ -11,11 +11,12 @@ import {
 import { Mappers } from '@mappers';
 import { CommonToasterService, UsersService } from '@services';
 import { Router } from '@angular/router';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 @Component({
   selector: 'app-add-edit-user',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDropdownComponent],
   templateUrl: './add-edit-user.component.html',
   styleUrl: './add-edit-user.component.css',
 })
@@ -30,6 +31,22 @@ export class AddEditUserComponent implements OnInit {
   timeZones: ITimeZone[] = [];
   statuses: IUserStatus[] = [];
   priorities: IPriorityStatus[] = [];
+
+  // Two-Factor - options are the exact same literal strings the original native
+  // <select value="true"/value="false"> used (not real booleans) - user.twoFactor is
+  // typed `boolean` but a plain `value="..."` attribute always coerces to a string at
+  // runtime once picked, same pre-existing behavior preserved deliberately here (see
+  // AGENTS.md "AppDropdown migration" - onSubmit's own `? true : false` coercion has a
+  // real, narrow pre-existing bug for the "No" case, left exactly as-is on request).
+  twoFactorOptions = ['true', 'false'];
+  twoFactorLabel = (opt: string) => (opt === 'true' ? 'Yes' : 'No');
+
+  // Time Zone / Status - the originals used a plain `[value]="tz.timeZoneId"` (always
+  // string-coerced), not `[ngValue]`, even though IUser.timeZone/.status are typed
+  // `number` - deliberately preserved exactly via a string-returning bindValue rather
+  // than "fixed" to a real number, per explicit instruction.
+  timeZoneStringBindValue = (tz: ITimeZone) => String(tz.timeZoneId);
+  statusStringBindValue = (s: IUserStatus) => String(s.statusId);
 
   constructor(
     private router: Router,

@@ -268,7 +268,12 @@
   cursor: not-allowed;
 }
 
-:host ::ng-deep select.copy-env-select {
+/* .copy-env-select now lives on <app-dropdown> (see app-dropdown.component - Angular
+   components default to `display: inline`, so a caller's sizing class has to target
+   the host, not the internal <select> tag directly the way it could when this was a
+   plain native <select class="copy-env-select">) - targets the real <select> as a
+   descendant instead of requiring it to carry the class itself. */
+:host ::ng-deep .copy-env-select select {
   width: auto;
   min-width: 180px;
   height: 40px !important;

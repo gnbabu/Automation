@@ -12,6 +12,7 @@ import {
   EnvironmentService,
   LoginUserService,
 } from '@services';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 // Self-service: every user manages only their own login credential per environment -
 // no Portal User picker, no visibility into other users' credentials (see AGENTS.md).
@@ -21,7 +22,7 @@ import {
 @Component({
   selector: 'app-credential-configuration',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDropdownComponent],
   templateUrl: './credential-configuration.component.html',
   styleUrl: './credential-configuration.component.css',
 })

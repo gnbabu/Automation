@@ -9,11 +9,12 @@ import {
   EnvironmentService,
   ReleaseService,
 } from '@services';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 @Component({
   standalone: true,
   selector: 'app-release-form',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDropdownComponent],
   templateUrl: './release-form.component.html',
   styleUrl: './release-form.component.css',
 })
@@ -24,6 +25,9 @@ export class ReleaseFormComponent implements OnInit {
     environmentId: undefined,
     description: '',
   };
+
+  environmentOptionLabel = (e: IEnvironmentModel) =>
+    `${e.environmentName}${!e.isActive ? ' (inactive)' : ''}`;
 
   allEnvironments: IEnvironmentModel[] = [];
   isEdit = false;

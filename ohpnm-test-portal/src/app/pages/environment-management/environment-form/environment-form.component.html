@@ -37,17 +37,16 @@
         <div class="mb-3">
           <label class="form-label">Status *</label>
 
-          <select
+          <app-dropdown
             name="isActive"
-            class="form-select"
+            [options]="activeStatusOptions"
+            [textAccessor]="activeStatusLabel"
+            [showPlaceholder]="false"
             [(ngModel)]="model.isActive"
             required
             #status="ngModel"
             [ngModelOptions]="{ updateOn: 'blur' }"
-          >
-            <option [ngValue]="true">Active</option>
-            <option [ngValue]="false">Inactive</option>
-          </select>
+          ></app-dropdown>
 
           <div
             class="text-danger small"

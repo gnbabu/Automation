@@ -1,0 +1,11 @@
+/* Angular components default to `display: inline`, which silently breaks any
+   width/height CSS a caller applies directly to `<app-dropdown class="...">`
+   (browsers ignore sizing on inline boxes) - many pages being migrated from a plain
+   `<select class="some-width-class">` rely on exactly that. Making the host a normal
+   block box lets external width/height/flex sizing apply to it the same way it did to
+   the native <select> it replaces; the inner <select class="form-select"> already
+   stretches to fill it via Bootstrap's own `width: 100%` on `.form-select`. */
+:host {
+  display: block;
+  width: 100%;
+}

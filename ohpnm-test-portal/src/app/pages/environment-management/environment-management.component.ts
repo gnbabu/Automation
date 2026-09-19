@@ -9,10 +9,11 @@ import {
   EnvironmentService,
 } from '@services';
 import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 @Component({
   selector: 'app-environment-management',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, AppDropdownComponent],
   templateUrl: './environment-management.component.html',
   styleUrl: './environment-management.component.css',
 })
@@ -25,6 +26,15 @@ export class EnvironmentManagementComponent implements OnInit {
   // release-management.component.ts's own filtering.
   search = '';
   statusFilter: 'All' | 'Active' | 'Inactive' = 'All';
+  statusFilterOptions: Array<'All' | 'Active' | 'Inactive'> = [
+    'All',
+    'Active',
+    'Inactive',
+  ];
+  // Options here are plain strings, not objects - AppDropdownComponent's default
+  // textAccessor ('name') would look up a `.name` field that doesn't exist on a
+  // string, so this just returns the option itself.
+  identityTextAccessor = (opt: string) => opt;
 
   // Exposed to the template so the Active/Inactive status pill pairs its bg-* class with
   // legible text color, same fix already applied everywhere else in the app this session.

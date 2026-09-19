@@ -1,12 +1,15 @@
 <select
   class="form-select"
+  [class.is-invalid]="isInvalid"
   [disabled]="isDropdownDisabled"
   [(ngModel)]="selectedValue"
   (ngModelChange)="onSelectChange($event)"
   (blur)="onTouched()"
 >
-  <!-- Placeholder -->
-  <option [ngValue]="null">{{ placeholder }}</option>
+  <!-- Placeholder - hidden entirely when showPlaceholder is false (for fields that
+       always hold a real, non-null default and should never be selectable back to
+       "nothing chosen", e.g. a status filter defaulting to "All"). -->
+  <option *ngIf="showPlaceholder" [ngValue]="null">{{ placeholder }}</option>
 
   <!-- Options -->
   <option *ngFor="let opt of options" [ngValue]="opt">

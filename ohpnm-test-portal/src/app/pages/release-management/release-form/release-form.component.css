@@ -43,6 +43,24 @@
   box-shadow: 0 0 0 0.2rem rgba(150, 70, 255, 0.2);
 }
 
+/* The two rules above are scoped by Angular to elements directly in *this*
+   component's own template (default view encapsulation) - they no longer reach a
+   <select> that now lives inside <app-dropdown>'s own child-component template.
+   Mirrored here via ::ng-deep so the Environment dropdown keeps its exact look. */
+.user-form-wrapper ::ng-deep app-dropdown select {
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: none;
+  transition: all 0.2s ease-in-out;
+  border: 2px solid #6c3483;
+  height: 44px;
+}
+
+.user-form-wrapper ::ng-deep app-dropdown select:focus {
+  border-color: #6a0dad;
+  box-shadow: 0 0 0 0.2rem rgba(150, 70, 255, 0.2);
+}
+
 /* Purple button same as login/environment-form */
 .btn-purple {
   background-color: #6c3483;

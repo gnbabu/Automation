@@ -10,6 +10,7 @@ import {
   CommonToasterService,
   ConfirmService,
 } from '@services';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 // There is no separate "Flow" entity/table anywhere in the backend - a Flow is just
 // the distinct set of FlowName values across aut.AutomationDataSections
@@ -19,7 +20,7 @@ import {
 @Component({
   selector: 'app-flow-section-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDropdownComponent],
   templateUrl: './flow-section-management.component.html',
   styleUrl: './flow-section-management.component.css',
 })

@@ -14,10 +14,13 @@
 
       <div class="modal-body">
         <label class="form-label mb-1">Browser</label>
-        <select class="form-select mb-3" [(ngModel)]="browser">
-          <option value="Chrome">Chrome</option>
-          <option value="Edge">Edge</option>
-        </select>
+        <app-dropdown
+          class="mb-3"
+          [options]="browserOptions"
+          [textAccessor]="identityTextAccessor"
+          [showPlaceholder]="false"
+          [(selected)]="browser"
+        ></app-dropdown>
 
         <ng-container *ngIf="requiresLoginUser">
           <p class="text-muted small">
@@ -26,12 +29,13 @@
           </p>
 
           <label class="form-label mb-1">Login User *</label>
-          <select class="form-select" [(ngModel)]="loginUserId">
-            <option [ngValue]="null" disabled>Select a login user...</option>
-            <option *ngFor="let lu of loginUsers" [ngValue]="lu.loginUserId">
-              {{ loginUserLabel(lu) }}
-            </option>
-          </select>
+          <app-dropdown
+            [options]="loginUsers"
+            [textAccessor]="loginUserLabel"
+            bindValue="loginUserId"
+            placeholder="Select a login user..."
+            [(selected)]="loginUserId"
+          ></app-dropdown>
         </ng-container>
       </div>
 

@@ -89,18 +89,15 @@
         <!-- Two-factor -->
         <div class="mb-3">
           <label class="form-label">Two-Factor Authentication *</label>
-          <select
+          <app-dropdown
             name="twoFactor"
-            class="form-control"
+            [options]="twoFactorOptions"
+            [textAccessor]="twoFactorLabel"
             [(ngModel)]="user.twoFactor"
             required
             #twoFactor="ngModel"
             [ngModelOptions]="{ updateOn: 'blur' }"
-          >
-            <option value="" disabled selected>Select two factor</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          ></app-dropdown>
           <div
             class="text-danger small"
             *ngIf="twoFactor.touched && twoFactor.invalid"
@@ -111,19 +108,17 @@
 
         <div class="mb-3">
           <label class="form-label">Role *</label>
-          <select
+          <app-dropdown
             name="role"
-            class="form-select"
+            [options]="roles"
+            textAccessor="roleName"
+            bindValue="roleId"
+            placeholder="Select"
             [(ngModel)]="user.roleId"
             required
             #role="ngModel"
             [ngModelOptions]="{ updateOn: 'blur' }"
-          >
-            <option [ngValue]="null">Select</option>
-            <option *ngFor="let r of roles" [ngValue]="r.roleId">
-              {{ r.roleName }}
-            </option>
-          </select>
+          ></app-dropdown>
           <div class="text-danger small" *ngIf="role.touched && role.invalid">
             Role is required.
           </div>
@@ -132,19 +127,17 @@
         <!-- Time Zone -->
         <div class="mb-3">
           <label class="form-label">Time Zone *</label>
-          <select
+          <app-dropdown
             name="timeZone"
-            class="form-control"
+            [options]="timeZones"
+            textAccessor="timeZoneName"
+            [bindValue]="timeZoneStringBindValue"
+            placeholder="Select a time zone"
             [(ngModel)]="user.timeZone"
             required
             #timezone="ngModel"
             [ngModelOptions]="{ updateOn: 'blur' }"
-          >
-            <option value="" disabled selected>Select a time zone</option>
-            <option *ngFor="let tz of timeZones" [value]="tz.timeZoneId">
-              {{ tz.timeZoneName }}
-            </option>
-          </select>
+          ></app-dropdown>
           <div
             class="text-danger small"
             *ngIf="timezone.touched && timezone.invalid"
@@ -240,19 +233,17 @@
         <!-- Status -->
         <div class="mb-3">
           <label class="form-label">Status *</label>
-          <select
+          <app-dropdown
             name="status"
-            class="form-control"
+            [options]="statuses"
+            textAccessor="statusName"
+            [bindValue]="statusStringBindValue"
+            placeholder="Select a status"
             [(ngModel)]="user.status"
             required
             #status="ngModel"
             [ngModelOptions]="{ updateOn: 'blur' }"
-          >
-            <option value="" disabled selected>Select a status</option>
-            <option *ngFor="let s of statuses" [value]="s.statusId">
-              {{ s.statusName }}
-            </option>
-          </select>
+          ></app-dropdown>
           <div
             class="text-danger small"
             *ngIf="status.touched && status.invalid"
@@ -264,21 +255,16 @@
         <!-- Priority (optional) -->
         <div class="mb-3">
           <label class="form-label">Priority</label>
-          <select
+          <app-dropdown
             name="priority"
-            class="form-control"
+            [options]="priorities"
+            textAccessor="priorityName"
+            bindValue="priorityId"
+            placeholder="Select a priority"
             [(ngModel)]="user.priorityId"
             #priority="ngModel"
             [ngModelOptions]="{ updateOn: 'blur' }"
-          >
-            <!-- Placeholder -->
-            <option value="" selected>Select a priority</option>
-
-            <!-- Actual options -->
-            <option *ngFor="let p of priorities" [ngValue]="p.priorityId">
-              {{ p.priorityName }}
-            </option>
-          </select>
+          ></app-dropdown>
         </div>
       </div>
     </div>

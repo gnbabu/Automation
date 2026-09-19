@@ -18,6 +18,7 @@ import {
   EnvironmentService,
 } from '@services';
 import { IConfirmsUnsavedChanges } from '../../core/guards/unsaved-changes.guard';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 interface ITestDataRow {
   key: string;
@@ -32,7 +33,7 @@ const SENSITIVE_KEY_PATTERN = /password|pwd|secret/i;
 
 @Component({
   selector: 'app-test-data-management',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDropdownComponent],
   templateUrl: './test-data-management.component.html',
   styleUrl: './test-data-management.component.css',
 })

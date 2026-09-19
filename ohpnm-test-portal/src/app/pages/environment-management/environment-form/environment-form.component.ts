@@ -8,11 +8,12 @@ import {
   EnvironmentService,
 } from '@services';
 import { IEnvironmentRequestDto, IEnvironmentModel } from '@interfaces';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 @Component({
   standalone: true,
   selector: 'app-environment-form',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDropdownComponent],
   templateUrl: './environment-form.component.html',
   styleUrl: './environment-form.component.css',
 })
@@ -25,6 +26,10 @@ export class EnvironmentFormComponent implements OnInit {
     environmentUrl: '',
     requiresAuthentication: true,
   };
+
+  // Options are plain booleans, not objects - textAccessor here just labels each one.
+  activeStatusOptions = [true, false];
+  activeStatusLabel = (isActive: boolean) => (isActive ? 'Active' : 'Inactive');
 
   isEdit = false;
   environmentId!: number;

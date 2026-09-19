@@ -8,6 +8,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ILoginUserModel } from '@interfaces';
 import { ModalService } from '@services';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 // Now always opens for Run Now/Bulk Run Now (see test-case-execution-panel.component.
 // ts's onRunNow/onBulkRunNow) - previously only shown when the environment being run
@@ -18,7 +19,7 @@ import { ModalService } from '@services';
 @Component({
   selector: 'app-run-now-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDropdownComponent],
   styleUrl: './run-now-dialog.component.css',
   templateUrl: './run-now-dialog.component.html',
 })
@@ -28,6 +29,11 @@ export class RunNowDialogComponent implements AfterViewInit {
   loginUsers: ILoginUserModel[] = [];
   loginUserId: number | null = null;
   browser: string = 'Chrome';
+  browserOptions = ['Chrome', 'Edge'];
+  // Options here are plain strings, not objects - AppDropdownComponent's default
+  // textAccessor ('name') would look up a `.name` field that doesn't exist on a
+  // string, so this just returns the option itself.
+  identityTextAccessor = (opt: string) => opt;
 
   private callback!: (data: { loginUserId?: number; browser: string }) => void;
 

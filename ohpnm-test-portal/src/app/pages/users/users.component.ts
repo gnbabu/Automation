@@ -6,11 +6,18 @@ import { AddEditUserComponent } from './add-edit-user.component';
 import { Mappers } from '@mappers';
 import { UsersService } from '@services';
 import { FormsModule } from '@angular/forms';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [UserListComponent, AddEditUserComponent, CommonModule, FormsModule],
+  imports: [
+    UserListComponent,
+    AddEditUserComponent,
+    CommonModule,
+    FormsModule,
+    AppDropdownComponent,
+  ],
   templateUrl: './users.component.html',
   styleUrl: './users.component.css',
 })
@@ -23,6 +30,26 @@ export class UsersComponent {
     role: 0,
     priority: 0,
   };
+
+  statusFilterOptions = [
+    { value: 0, label: 'All Status' },
+    { value: 1, label: 'Active' },
+    { value: 2, label: 'Suspended' },
+    { value: 3, label: 'Pending' },
+  ];
+  roleFilterOptions = [
+    { value: 0, label: 'All Roles' },
+    { value: 1, label: 'Admin' },
+    { value: 2, label: 'Tester' },
+    { value: 3, label: 'Manager' },
+    { value: 4, label: 'Viewer' },
+  ];
+  priorityFilterOptions = [
+    { value: 0, label: 'All Tiers' },
+    { value: 1, label: 'Tier 1' },
+    { value: 2, label: 'Tier 2' },
+    { value: 3, label: 'Tier 3' },
+  ];
 
   showForm = false;
 

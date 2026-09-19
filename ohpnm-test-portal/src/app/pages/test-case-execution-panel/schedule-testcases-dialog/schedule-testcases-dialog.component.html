@@ -18,10 +18,12 @@
           <div class="col-md-4">
             <div class="d-flex flex-column">
               <label class="form-label mb-1">Browser</label>
-              <select class="form-select" [(ngModel)]="browser">
-                <option value="Chrome">Chrome</option>
-                <option value="Edge">Edge</option>
-              </select>
+              <app-dropdown
+                [options]="browserOptions"
+                [textAccessor]="identityTextAccessor"
+                [showPlaceholder]="false"
+                [(selected)]="browser"
+              ></app-dropdown>
             </div>
           </div>
 
@@ -47,12 +49,13 @@
           <div class="col-md-8">
             <div class="d-flex flex-column">
               <label class="form-label mb-1">Login User *</label>
-              <select class="form-select" [(ngModel)]="loginUserId">
-                <option [ngValue]="null" disabled>Select a login user...</option>
-                <option *ngFor="let lu of loginUsers" [ngValue]="lu.loginUserId">
-                  {{ loginUserLabel(lu) }}
-                </option>
-              </select>
+              <app-dropdown
+                [options]="loginUsers"
+                [textAccessor]="loginUserLabel"
+                bindValue="loginUserId"
+                placeholder="Select a login user..."
+                [(selected)]="loginUserId"
+              ></app-dropdown>
             </div>
           </div>
         </div>

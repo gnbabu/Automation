@@ -51,19 +51,17 @@
       <div class="col-md-6">
         <div class="mb-3">
           <label class="form-label">Environment *</label>
-          <select
+          <app-dropdown
             name="environmentId"
-            class="form-select"
+            [options]="selectableEnvironments"
+            [textAccessor]="environmentOptionLabel"
+            bindValue="environmentId"
+            placeholder="Select an environment"
             [(ngModel)]="model.environmentId"
             required
             [disabled]="!canEditIdentity"
             #env="ngModel"
-          >
-            <option [ngValue]="undefined" disabled>Select an environment</option>
-            <option *ngFor="let e of selectableEnvironments" [ngValue]="e.environmentId">
-              {{ e.environmentName }}{{ !e.isActive ? " (inactive)" : "" }}
-            </option>
-          </select>
+          ></app-dropdown>
           <div class="text-danger small" *ngIf="env.touched && env.invalid">
             Environment is required.
           </div>

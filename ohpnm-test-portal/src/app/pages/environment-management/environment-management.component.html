@@ -31,11 +31,12 @@
     </div>
     <div>
       <label class="form-label">Status</label>
-      <select class="form-select" [(ngModel)]="statusFilter">
-        <option value="All">All</option>
-        <option value="Active">Active</option>
-        <option value="Inactive">Inactive</option>
-      </select>
+      <app-dropdown
+        [options]="statusFilterOptions"
+        [textAccessor]="identityTextAccessor"
+        [showPlaceholder]="false"
+        [(selected)]="statusFilter"
+      ></app-dropdown>
     </div>
   </div>
 

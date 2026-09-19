@@ -29,41 +29,37 @@
     />
 
     <!-- Status -->
-    <select
-      class="form-select filter-select"
-      [(ngModel)]="filters.status"
-      (change)="onFilterChange()"
-    >
-      <option [ngValue]="0">All Status</option>
-      <option [ngValue]="1">Active</option>
-      <option [ngValue]="2">Suspended</option>
-      <option [ngValue]="3">Pending</option>
-    </select>
+    <app-dropdown
+      class="filter-select"
+      [options]="statusFilterOptions"
+      textAccessor="label"
+      bindValue="value"
+      [showPlaceholder]="false"
+      [(selected)]="filters.status"
+      (selectionChange)="onFilterChange()"
+    ></app-dropdown>
 
     <!-- Role -->
-    <select
-      class="form-select filter-select"
-      [(ngModel)]="filters.role"
-      (change)="onFilterChange()"
-    >
-      <option [ngValue]="0">All Roles</option>
-      <option [ngValue]="1">Admin</option>
-      <option [ngValue]="2">Tester</option>
-      <option [ngValue]="3">Manager</option>
-      <option [ngValue]="4">Viewer</option>
-    </select>
+    <app-dropdown
+      class="filter-select"
+      [options]="roleFilterOptions"
+      textAccessor="label"
+      bindValue="value"
+      [showPlaceholder]="false"
+      [(selected)]="filters.role"
+      (selectionChange)="onFilterChange()"
+    ></app-dropdown>
 
     <!-- Priority -->
-    <select
-      class="form-select filter-select"
-      [(ngModel)]="filters.priority"
-      (change)="onFilterChange()"
-    >
-      <option [ngValue]="0">All Tiers</option>
-      <option [ngValue]="1">Tier 1</option>
-      <option [ngValue]="2">Tier 2</option>
-      <option [ngValue]="3">Tier 3</option>
-    </select>
+    <app-dropdown
+      class="filter-select"
+      [options]="priorityFilterOptions"
+      textAccessor="label"
+      bindValue="value"
+      [showPlaceholder]="false"
+      [(selected)]="filters.priority"
+      (selectionChange)="onFilterChange()"
+    ></app-dropdown>
 
     <!-- Checkbox -->
     <div class="form-check ms-2">

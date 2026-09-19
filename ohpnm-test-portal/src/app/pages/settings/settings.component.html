@@ -96,16 +96,14 @@
         <!-- Time Zone -->
         <div class="mb-2">
           <label class="form-label">Time Zone</label>
-          <select
+          <app-dropdown
             name="profileTimeZone"
-            class="form-control"
+            [options]="timeZones"
+            textAccessor="timeZoneName"
+            bindValue="timeZoneId"
+            placeholder="Select a time zone"
             [(ngModel)]="profileEdit.timeZone"
-          >
-            <option [ngValue]="undefined">Select a time zone</option>
-            <option *ngFor="let tz of timeZones" [ngValue]="tz.timeZoneId">
-              {{ tz.timeZoneName }}
-            </option>
-          </select>
+          ></app-dropdown>
         </div>
 
         <!-- Action Buttons -->

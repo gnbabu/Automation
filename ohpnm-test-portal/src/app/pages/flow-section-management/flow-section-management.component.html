@@ -12,18 +12,15 @@
       <div class="row g-3 align-items-end">
         <div class="col-md-6" *ngIf="!showNewFlowInput">
           <label for="flowName" class="form-label fw-bold">Flow</label>
-          <select
+          <app-dropdown
             id="flowName"
-            name="flowName"
-            class="form-select"
-            [(ngModel)]="selectedFlowName"
-            (change)="onFlowChange()"
-          >
-            <option [ngValue]="undefined">Select Flow</option>
-            <option *ngFor="let flow of flows" [ngValue]="flow.flowName">
-              {{ flow.flowName }}
-            </option>
-          </select>
+            [options]="flows"
+            textAccessor="flowName"
+            bindValue="flowName"
+            placeholder="Select Flow"
+            [(selected)]="selectedFlowName"
+            (selectionChange)="onFlowChange()"
+          ></app-dropdown>
         </div>
 
         <!-- New flow name input replaces the dropdown when toggled -->

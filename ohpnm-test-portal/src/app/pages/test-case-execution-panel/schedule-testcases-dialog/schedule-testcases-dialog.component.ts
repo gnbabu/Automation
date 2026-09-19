@@ -10,11 +10,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ILoginUserModel } from '@interfaces';
 import { ModalService } from '@services';
+import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 @Component({
   selector: 'app-schedule-testcases-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDropdownComponent],
   styleUrl: './schedule-testcases-dialog.component.css',
   templateUrl: './schedule-testcases-dialog.component.html',
 })
@@ -22,6 +23,11 @@ export class ScheduleTestcasesDialogComponent implements AfterViewInit {
   @ViewChild('scheduleModal') modalElement!: ElementRef;
 
   browser: string = 'Chrome';
+  browserOptions = ['Chrome', 'Edge'];
+  // Options here are plain strings, not objects - AppDropdownComponent's default
+  // textAccessor ('name') would look up a `.name` field that doesn't exist on a
+  // string, so this just returns the option itself.
+  identityTextAccessor = (opt: string) => opt;
   date: string = '';
   time: string = '';
 
