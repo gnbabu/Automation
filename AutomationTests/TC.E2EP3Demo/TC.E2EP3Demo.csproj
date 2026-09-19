@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="Selenium.Support" />
+    <PackageReference Include="Selenium.WebDriver" />
+  </ItemGroup>
+
+  <!-- Only references the common shared base - matches the established convention
+       already used by every other TC.* project (confirmed by reading them: TC.SearchPA
+       and TC.SearchRA each keep their own copy of shared page classes like
+       FinancialProviderInformationPage rather than referencing each other) - this
+       project's own Models/Pages/DataRepository below are self-contained, not shared
+       via project reference. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Selenium.BaseComponents\Selenium.BaseComponents.csproj" />
+  </ItemGroup>
+
+</Project>

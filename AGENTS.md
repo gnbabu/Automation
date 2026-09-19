@@ -3119,3 +3119,137 @@ immediately when Settings pushes a change — no reload needed. `getLoggedInUser
 `isAdmin()`/`isManager()`/`isViewer()`/etc. were left reading `localStorage` directly and
 unchanged (still correct, just not reactive) since everywhere else calls them synchronously
 and doesn't need push updates.
+
+## `TC.E2EP3Demo` — 30 demo test cases against the real E2EP3 environment
+New standalone project (`AutomationTests/TC.E2EP3Demo/`, added to `AutomationTests.sln`),
+built to demonstrate the full real pipeline end-to-end: Flow & Section Management → Test
+Data Management → real Selenium execution against a live application → Dashboard/Execution
+Panel results — using `E2EP3` (`EnvironmentId=21`,
+`https://ohpnm-e2ep3.omes.maximus.com/OH_PNM_E2EP3/Account/Login.aspx`, a real, live
+internal application, `RequiresAuthentication=1`), not a fictional/mocked target.
+
+### Why no project reference to the other TC.* flow projects
+`ohpnm-e2ep3.omes.maximus.com` is real and live — there's no way to browse/verify its actual
+DOM from here, so every interaction in this project reuses Page Objects/Models/
+DataRepository classes **already proven working** in the existing real flow projects
+(`TC.Registration`, `TC.SearchPA`, `TC.SearchRA`, `TC.PriorAuthoriztion`,
+`TC.SearchEligibility`), physically **copied** into `TC.E2EP3Demo/<Flow>/` (Models/Pages/
+Services/Utilities, keeping their **original namespaces** — e.g. `TC.ProviderDataEntry.*`,
+`TC.PriorAuthSearch.*` — so no rename/find-replace risk, they compile as-is once relocated)
+rather than referenced via `<ProjectReference>` — explicitly requested (the user wants each
+project's own dependencies self-contained, matching the existing convention that e.g.
+`TC.SearchPA`/`TC.SearchRA` already don't reference each other despite both defining their
+own copy of `FinancialProviderInformationPage`). The **only** `<ProjectReference>` is
+`Selenium.BaseComponents` — the common shared base every TC.* project already depends on
+(`BaseFeatureFixture`, `APIGatway`, login/credential resolution, screenshot/log helpers).
+
+Two real namespace collisions surfaced from this folder layout (fixed by fully-qualifying
+the type, not renaming the model): `TC.E2EP3Demo.SearchPA`'s own namespace collided with
+`TC.PriorAuthSearch.Models.SearchPA`, and `TC.E2EP3Demo.DentalPA`'s namespace collided with
+`TC.PriorAuthoriztion.Models.DentalPA` — both `CS0118 'X' is a namespace but is used like a
+type` until the model reference was fully qualified.
+
+`TC.SubmitClaims`/`TC.PriorAuthInquiry` were deliberately **excluded** — confirmed by
+reading their actual test files that they're stubs with no real Page Objects yet ("the
+moment real test steps get added here" — comments only, no implementation), so there was
+nothing proven to build on for either, same reasoning as not inventing new blind locators.
+
+### Flow/Section naming — confirmed by reading each project's own `DataRepository`, not assumed
+Each existing flow project's `GetAutomationData(flowName)` reveals the **exact** FlowName/
+SectionName strings the code looks up (not always matching the project folder name):
+- `Registration` → 26 sections (already had real E2EP3 data from earlier this session).
+- `SearchPA` → single section, also named exactly `SearchPA` (the project's C# namespace is
+  actually `TC.PriorAuthSearch`). A **pre-existing** section named `EnterSearchData`
+  (`SectionID 36`, data for a different user) already existed under this flow but doesn't
+  match what `AutomationDataRepository.GetAutomationData<T>(flowName, "SearchPA")` actually
+  looks up (exact `SectionName` match) — left untouched (in case it's used elsewhere) and a
+  correctly-named `SearchPA` section added alongside it with real data for Nareshg/E2EP3.
+- `SearchRA` → single section, also named exactly `SearchRA` — had **zero** configured
+  sections/data before this work despite the test code already calling
+  `GetAutomationData("SearchRA")`.
+- `DentalPA` — **not** `PriorAuthoriztion`(the project folder's name) — 10 sections matching
+  `DentalPA`'s nested DTOs: `DentalInformation`, `DentalRecipientInformation`,
+  `DentalContactInformation`, `DentalServiceInformation`, `DentalServiceProviderInformation`,
+  `DentalOrderingProviderInformation`, `DentalDiagnosisInformation`, `DentalServiceDetails`,
+  `DentalProviderNotes`, `DentalAttachments`. Had zero configured sections before this work.
+- `SearchMemberEligiblity` — **not** `SearchEligibility` (the project folder's name, note
+  the source's own typo "Eligiblity" is real and load-bearing — the code looks up this exact
+  string) — single section, same name. Had zero configured sections before this work.
+
+All 12 missing sections were created directly via SQL (`aut.AutomationDataSections`) rather
+than through the Flow & Section Management UI, for speed — functionally identical to using
+the screen, since Sections have no dedicated table beyond distinct `FlowName`/`SectionName`
+pairs (see the Flow & Section Management feature elsewhere in this file). Real-looking test
+data (JSON `FieldName`/`FieldValue` pairs matching each flow's actual Model field names) was
+seeded for `UserID=1` (Nareshg) / `EnvironmentId=21` (E2EP3) across all 5 flows.
+
+### The 30 test cases — 6 per flow
+- **Registration**: rather than surgically slicing the existing ~1000-line, multi-role-
+  switching (StateAdmin/EnrollmentSpecialist approval workflow) `RegistrationTest.
+  CreateNewProvider` into pieces (real risk of subtle bugs with no way to verify against the
+  live site), built from smaller, genuinely independent **checkpoints** in the same wizard
+  (`CreateNewProviderUpToWizard` → `FillProviderAndContactInfo` → `FillPrimaryAndBillingAddress`
+  → remaining sections + Submit for Review), each private helper reused by a growing prefix
+  of the 6 `[Test]`s so nothing is duplicated. Stops at Submit for Review — the subsequent
+  multi-role approval workflow is deliberately **not** reproduced (a materially heavier,
+  separate scenario). Captures a real `RegID` on successful submission for chaining.
+- **SearchPA / SearchRA / SearchMemberEligiblity**: 6 tests each varying which real
+  configured criteria field(s) drive the search (by number, by ICN/tracking number, by date
+  range, combined criteria, and a deliberate no-results negative case), all pulling data via
+  each project's own `DataRepository.GetAutomationData(...)` instead of the hard-coded
+  values (e.g. `"2422659"`, `"0005987"`) the original tests used as their only fallback.
+  Found and fixed a real bug while porting `SearchRA`: the original test set
+  `txtDateAvailableTo` **twice** (once for `ReportRunDateFrom`, again for `ToDate`) instead
+  of using the distinct `txtDateAvailableFrom` field that `SearchRAPage.cs` actually defines.
+- **DentalPA**: `DentalPA_Submit`/`DentalPA_Save` are faithful, complete reproductions of the
+  original two real tests (the full multi-section `FillDentalPAFields` form-fill is one
+  proven, highly-sequential/stateful flow — not hand-split further, same reasoning as
+  Registration). Plus 4 smaller, genuinely independent cases reusing the same proven Page
+  Objects/`PriorAuthorizationService` methods: a payer-dropdown-populates smoke check, a
+  required-fields negative-path check, a search-by-Patient-Tracking-Number case, and a
+  Diagnosis Code popup-search check.
+- **Cross-flow chaining example** (per explicit request to both pull configured data *and*
+  chain values between tests): `Registration_FullWizardThroughSubmission` sets
+  `SearchEligibilityTests.RegIdFromRegistrationFlow` (a `static string?`) to the RegID it
+  just created; `SearchEligibility_ByRegistrationId` reuses it if present. **Real, documented
+  constraint**: `NUnitEngineTestRunner` runs each queued test case in its own isolated child
+  process (`ProcessModel=Separate`, see above), so this static field only actually survives
+  between the two tests when both run within the **same process** (a local `dotnet test`/
+  Test Explorer run covering both, or an NUnit console run) — not when each is queued/run
+  independently through the Portal's own pipeline (the more common real usage), in which
+  case it falls back to the configured default RegID, same as running standalone. Not a bug
+  — an inherent limit of the isolation model chosen deliberately for reliability elsewhere in
+  this app.
+
+### Release folder — confirmed empirically, not assumed, that only 3 files are needed
+Initially copied the **full** `bin\Debug\net8.0` output (45 files) into the Release folder,
+reasoning by analogy to `TC.PriorAuthSearch`'s real Release folder (which also has the full
+build output) — since `TC.E2EP3Demo` (unlike the zero-dependency `SeleniumSmokeTests`, whose
+Release folder really does work with just 3 files) references `Selenium.BaseComponents`
+plus `Selenium.Support`/`SeleniumExtensions`/`SdetToolbox`/`WebDriverManager`/
+`Newtonsoft.Json`, none of which `AutomationAPI` references on its own behalf. **Confirmed
+wrong via direct testing at the user's request**: created a separate throwaway Release
+(`MinimalFileTest`) with just `TC.E2EP3Demo.dll` + `Selenium.BaseComponents.dll` +
+`appSettings.json` (matching `SeleniumSmokeTests`' minimal convention) — real NUnit
+`Explore()`-based discovery via the actual Assignment screen found all 30 test cases
+correctly. Root cause: `Explore()` runs `ProcessModel=InProcess` (inside AutomationAPI's own
+process — see "Discovery caching" above), so it can resolve `TC.E2EP3Demo.dll`'s
+dependencies from whatever AutomationAPI's own process already has loaded, the same
+mitigation already documented above for `SeleniumSmokeTests`, just not previously confirmed
+for a project with `TC.E2EP3Demo`'s heavier dependency set. **A crude `Assembly.LoadFrom`
++ `GetTypes()` reflection test is not a valid way to check this** — it can succeed even with
+missing dependencies, since it doesn't force full resolution of attribute types
+(`[TestFixture]`/`[Test]` from `NUnit.Framework`) the way NUnit's real engine does; only a
+real `Explore()` call via the actual Assignment screen is authoritative. `REL-49_
+E2EP3DemoSuite_v1.0.0` now correctly uses the same lean 3-file convention as `REL-48`'s
+`SeleniumSmokeTests` release, not the full 45-file copy.
+
+### Real login credentials already exist for E2EP3 — no new credential work needed
+`LoginUser` rows already exist for `EnvironmentId=21` under several roles (`TechAdmin`,
+`Admin`, `stateadmin`, `test1`, username `autotechadmin`, encrypted passwords) — the
+per-environment login credential feature (see elsewhere in this file) already fully covers
+this environment; `[TestFixture("TechAdmin")]` on every new test class matches the same
+value every other real flow project already uses and a real configured `LoginUser.UserRole`
+for E2EP3, not an arbitrary/required magic string (the actual runtime resolution path uses
+`EnvironmentId`/`LoginUserId` from the Run Now/Schedule selection, not this string — it's
+only surfaced in the fallback error message if resolution fails entirely).

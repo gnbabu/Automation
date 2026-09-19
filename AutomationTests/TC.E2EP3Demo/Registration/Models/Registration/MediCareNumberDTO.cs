@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace TC.ProviderDataEntry.Models
+{
+    public class MediCareNumberDTO
+    {
+        public string MediCareNumberType { get; set; }
+        public string MediCareNumber { get; set; }
+        public string MediCareState { get; set; }
+        public string MediCareUploadFilePath { get; set; }
+        public string AddNewMediCareNumber { get; set; }
+    }
+}
