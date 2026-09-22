@@ -121,12 +121,23 @@ namespace AutomationAPI.Repositories
                 new SqlParameter("@FlowName", flowName ?? (object)DBNull.Value)
             };
 
-            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationDataByFlowName, parameters, reader => new AutomationData
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationDataByFlowName, parameters, reader =>
             {
-                Id = reader.GetNullableInt("Id") ?? 0,
-                SectionId = reader.GetNullableInt("SectionID") ?? 0,
-                SectionName = reader.GetNullableString("SectionName"),
-                TestContent = reader.GetNullableString("TestContent")
+                var testContent = reader.GetNullableString("TestContent");
+                return new AutomationData
+                {
+                    Id = reader.GetNullableInt("Id") ?? 0,
+                    SectionId = reader.GetNullableInt("SectionID") ?? 0,
+                    SectionName = reader.GetNullableString("SectionName"),
+                    TestContent = testContent,
+                    // See AutomationData.AutomationContents - this is what every TC.*
+                    // Selenium test project's own DataRepository actually reads
+                    // (Mapper.BindData<T>(data.automationContents)); never populated
+                    // before, always null, causing a real ArgumentNullException the
+                    // first time this endpoint was actually exercised by a live queued
+                    // test run end-to-end.
+                    AutomationContents = AutomationDataHelper.ParseAutomationContents(testContent),
+                };
             });
         }
 
