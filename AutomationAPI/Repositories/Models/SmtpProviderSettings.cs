@@ -15,5 +15,6 @@ namespace AutomationAPI.Repositories.Models
         public string Password { get; set; } = string.Empty;
         public string FromEmail { get; set; } = string.Empty;
         public string FromName { get; set; } = string.Empty;
+        public string SecureSocketOptions { get; set; } = "None";
     }
 }
