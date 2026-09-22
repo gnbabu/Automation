@@ -80,7 +80,7 @@ namespace AutomationAPI.Repositories
       </tr>";
 
             return $@"<!DOCTYPE html>
-<html>
+<html xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:o=""urn:schemas-microsoft-com:office:office"">
 <head>
 <meta charset=""utf-8"">
 <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
@@ -122,15 +122,13 @@ table {{border-collapse:collapse;}}
 {errorHtml}
         <tr>
           <td style=""padding:28px 32px;"" align=""center"">
-            <!--[if mso]>
-            <v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word"" href=""{ctaUrl}"" style=""height:44px;v-text-anchor:middle;width:240px;"" arcsize=""0%"" fillcolor=""{BrandPurple}"" stroke=""f"">
-            <w:anchorlock/>
-            <center style=""color:#ffffff;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;"">{WebUtility.HtmlEncode(ctaText)}</center>
-            </v:roundrect>
-            <![endif]-->
-            <!--[if !mso]><!-->
-            <a href=""{ctaUrl}"" style=""background-color:{BrandPurple}; color:#ffffff; text-decoration:none; font-family:{FontFamily}; font-size:14px; font-weight:bold; padding:14px 28px; display:inline-block;"">{WebUtility.HtmlEncode(ctaText)}</a>
-            <!--<![endif]-->
+            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"">
+              <tr>
+                <td style=""background-color:{BrandPurple}; padding:14px 28px;"" align=""center"">
+                  <a href=""{ctaUrl}"" style=""color:#ffffff; text-decoration:none; font-family:{FontFamily}; font-size:14px; font-weight:bold; display:block;"">{WebUtility.HtmlEncode(ctaText)}</a>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
 {footnoteHtmlBlock}

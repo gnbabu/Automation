@@ -58,8 +58,18 @@ namespace AutomationAPI.Repositories
             if (string.IsNullOrWhiteSpace(_settings.SmtpHost))
                 throw new Exception($"{_providerName} SmtpHost not configured");
 
-            if (string.IsNullOrWhiteSpace(_settings.Username) || string.IsNullOrWhiteSpace(_settings.Password))
-                throw new Exception($"{_providerName} SMTP credentials not configured");
+            // Username/Password are optional as a pair - some providers are reached via an
+            // internal, IP-allow-listed relay (e.g. a corporate "smtpint.*" relay on port 25)
+            // that doesn't support/require SMTP AUTH at all; forcing an AuthenticateAsync
+            // call against one of those returns a real "535 5.7.3 Authentication
+            // unsuccessful" from the server (confirmed via direct testing), even though the
+            // relay never needed credentials in the first place. Both blank means
+            // "unauthenticated relay" and is valid; exactly one blank is still a real
+            // misconfiguration.
+            bool hasUsername = !string.IsNullOrWhiteSpace(_settings.Username);
+            bool hasPassword = !string.IsNullOrWhiteSpace(_settings.Password);
+            if (hasUsername != hasPassword)
+                throw new Exception($"{_providerName} SMTP credentials are partially configured - set both Username and Password, or leave both blank for an unauthenticated relay.");
 
             if (string.IsNullOrWhiteSpace(_settings.FromEmail))
                 throw new Exception($"{_providerName} FromEmail not configured");
@@ -86,8 +96,16 @@ namespace AutomationAPI.Repositories
 
             try
             {
-                await client.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort, SecureSocketOptions.StartTls);
-                await client.AuthenticateAsync(_settings.Username, _settings.Password);
+                // SecureSocketOptions.Auto negotiates the right behavior for either shape:
+                // STARTTLS on a real provider's submission port (587, e.g. Brevo/Office365
+                // cloud), or plain/unencrypted on an internal relay's port 25 that never
+                // offers STARTTLS at all - hardcoding StartTls previously meant an internal
+                // relay without it would fail to even connect.
+                await client.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort, SecureSocketOptions.Auto);
+
+                if (hasUsername && hasPassword)
+                    await client.AuthenticateAsync(_settings.Username, _settings.Password);
+
                 await client.SendAsync(mime);
                 await client.DisconnectAsync(true);
             }
