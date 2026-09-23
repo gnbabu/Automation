@@ -3353,3 +3353,94 @@ elsewhere (`dashboard`, `flow-section-management`, `test-case-assignment-user`,
 real internal `<select>` for every migrated dropdown regardless of what class the caller
 applies to `<app-dropdown>` itself, so tag+class rules targeting *that specific* class were
 never actually broken.
+
+## In-App Notification Center
+Adds a persistent, per-user notification feed - previously every notification was
+outbound-email-only (`ReleaseNotificationService`/`TestExecutionNotificationService`),
+with no cross-cutting personal record if a user missed the email; the two existing
+`aut.ReleaseNotification`/`aut.TestExecutionNotification` tables are email-delivery audit
+logs (`Status`='Sent'/'Failed'), only ever surfaced per-Release inside
+`release-details.component.html`'s own history grid - not read/unread-tracked, not
+personal, not visible anywhere else.
+
+### New `aut.Notification` table - a new, dedicated table, not an extension of the two
+### existing email-audit tables
+`Database/Notification_Center_Migration.sql` (idempotent, `CREATE OR ALTER PROCEDURE` +
+`IF OBJECT_ID(...) IS NULL` convention, matching `TestExecutionFailureNotification_
+Migration.sql` rather than the SSMS-regenerated master script's more verbose two-step
+`sp_executesql`/`ALTER PROCEDURE` pattern). Kept separate from `ReleaseNotification`/
+`TestExecutionNotification` because overloading their `Status` column to also mean
+read/unread would conflict with its existing "Sent"/"Failed" meaning, and their two
+slightly-different shapes would need a `UNION` to feed one feed anyway - those two tables
+and their existing screens are completely untouched by this feature.
+`UserId` is `NOT NULL` (unlike the nullable `RecipientUserId` in the two audit tables) -
+an in-app notification is meaningless without an owning user, so recipients with no
+resolvable `UserId` are simply skipped for the in-app write (they still get the email as
+before).
+
+### Backfilled with existing historical data
+Confirmed via direct query before deciding: only 91 `ReleaseNotification` + 3
+`TestExecutionNotification` rows had a resolvable `RecipientUserId`, spanning ~3 weeks -
+a modest, recent amount, so the migration backfills them (one-time, guarded by
+`IF NOT EXISTS (SELECT 1 FROM aut.Notification)` so re-running the migration never
+duplicates them) rather than starting the feed empty. Backfilled rows are inserted as
+`IsRead = 1` (`ReadOn` = their original `SentOn`/`CreatedOn`) since they were already
+delivered via email historically - this avoids a misleading "94 unread" badge spike on
+day one; only genuinely new events start unread. The legacy `Message` column is literally
+`"Notify {username}: {subject}"` (see `ReleaseNotificationService`) - the backfill strips
+that prefix via `SUBSTRING`/`CHARINDEX` so backfilled titles read the same as freshly-
+created ones.
+
+### Populated at 3 trigger points - reusing existing recipient-resolution logic, no new
+### "who gets notified" policy
+`ReleaseNotificationService.NotifyManagersAndAdminsAsync` (release activated /
+ready-to-activate) and `TestExecutionNotificationService.NotifyScheduledFailureAsync`
+(scheduled run failure) each gained a constructor-injected `INotificationRepository` and
+now write an in-app row inside their existing per-recipient loop, right alongside the
+existing email-audit-log insert/email-send/mark-sent sequence - wrapped in their own
+try/catch (separate from the email try/catch) so an in-app-write failure can never affect
+whether the email itself sends, matching the pre-existing "notification failure must never
+fail the caller's primary action" defensive pattern these methods already used.
+
+**Found and fixed while wiring this up**: `ReleaseController.SignOff` (`POST /api/Release/
+{id}/signoff`, Approved/Rejected) previously called `_repo.SignOffAsync(id, request)` and
+returned - zero notification code, no email, nothing. Now also calls
+`NotifyManagersAndAdminsAsync` (same Admin/Manager audience as the other two release
+events) with a new `EmailTemplateBuilder.BuildReleaseSignOffEmail(...)` (green accent for
+Approved, red for Rejected, matching `signOffPillClass`'s existing color convention) and a
+new `"ReleaseApproved"`/`"ReleaseRejected"` notification type. Deliberately does *not*
+resolve `Release.CreatedBy`/`SignedOffBy` (plain `nvarchar` username strings, not `UserId`
+FKs) to notify the release's specific creator - would need an extra `usp_GetUserByUsername`
+lookup with its own failure mode (renamed/deleted account); reusing the existing
+Admin/Manager audience avoids that complexity entirely.
+
+### Frontend: bell mirrors `.toggle-btn`'s exact absolute-positioning technique, not a
+### new sidebar nav-list entry
+`left-sidebar.component.html`'s header already has `.toggle-btn` at `position: absolute;
+right: -15px; top: 20px;` (outside normal flex flow, on the sidebar's outer edge). The new
+`.notification-bell-btn` mirrors this exactly at `left: 15px; top: 20px;` (opposite
+corner) rather than living inside `.nav.flex-column` (the scrollable list) - since it's
+taken completely out of the header's normal document flow, it's automatically unaffected
+by the collapsed/expanded content reflow (`.hide-on-collapse` etc.) and needs zero new
+collapse-specific CSS, and adds zero vertical height to a header whose available space was
+already tightened by the sidebar's own scroll-fit fix (`.nav.flex-column`'s `overflow-y:
+auto`/`min-height: 0`, documented elsewhere in this file). Unread count polls via a plain
+`setInterval` every 30s (`LeftSidebarComponent.ngOnInit`/`ngOnDestroy`), matching
+Dashboard's own `POLL_INTERVAL_MS` pattern exactly - no SignalR/real-time infrastructure
+exists anywhere else in this app, so none was introduced here either.
+
+`NotificationService`'s `getMine()` fetches the full list unfiltered (aside from an
+optional `unreadOnly` flag) and `/notifications` (`NotificationsComponent`) paginates it
+client-side via the shared `app-data-grid` component's default `pagingMode: 'client'` -
+confirmed via search that *no* page in this app uses `pagingMode: 'server'` despite the
+component supporting it, so a client-paged list here matches every other list in the app
+(Users/Environments/Releases/etc.) rather than introducing a novel, never-used-elsewhere
+server-side-paging stored procedure for a data volume (currently 96 rows) that doesn't
+need it.
+
+### Verified end-to-end organically during implementation
+While testing, a real Sign-Off ("Approved") was performed on a real release
+(`E2EP3DemoSuite 1.0.0`) - confirmed via direct DB query this correctly created two new
+`aut.Notification` rows (one per Admin/Manager recipient), the sidebar bell badge showed
+the new unread count, the sign-off email was received (previously this action sent none at
+all), and the `/notifications` full page displayed the new entry correctly.

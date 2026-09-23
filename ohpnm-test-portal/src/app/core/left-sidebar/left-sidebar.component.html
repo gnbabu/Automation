@@ -3,6 +3,36 @@
     <i class="fas fa-chevron-left"></i>
   </button>
 
+  <button class="notification-bell-btn" type="button" (click)="toggleNotificationPanel()">
+    <i class="fas fa-bell"></i>
+    <span class="notification-badge" *ngIf="unreadCount > 0">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+  </button>
+
+  <div class="notification-panel" *ngIf="isNotificationPanelOpen">
+    <div class="notification-panel-header">
+      <span>Notifications</span>
+      <button type="button" class="mark-all-read-btn" (click)="markAllAsRead($event)">Mark all as read</button>
+    </div>
+    <div class="notification-panel-body">
+      <div class="notification-empty" *ngIf="!recentNotifications.length">No notifications yet</div>
+      <div
+        class="notification-item"
+        *ngFor="let notification of recentNotifications"
+        [class.unread]="!notification.isRead"
+        (click)="onNotificationClick(notification)"
+      >
+        <span class="notification-dot" *ngIf="!notification.isRead"></span>
+        <div class="notification-item-content">
+          <div class="notification-item-title">{{ notification.title }}</div>
+          <div class="notification-item-time">{{ notification.createdOn | date: 'dd-MMM-yyyy HH:mm' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="notification-panel-footer">
+      <button type="button" class="view-all-btn" (click)="viewAllNotifications()">View all notifications</button>
+    </div>
+  </div>
+
   <div class="p-4 text-center">
     <!-- Project Logo -->
     <h4 class="logo-text fw-bold mb-3">Automation</h4>

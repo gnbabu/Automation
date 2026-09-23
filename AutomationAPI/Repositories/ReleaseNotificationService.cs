@@ -8,17 +8,20 @@ namespace AutomationAPI.Repositories
         private readonly IReleaseRepository _releaseRepo;
         private readonly IUserRepository _userRepo;
         private readonly IEmailService _emailService;
+        private readonly INotificationRepository _notificationRepo;
         private readonly ILogger<ReleaseNotificationService> _logger;
 
         public ReleaseNotificationService(
             IReleaseRepository releaseRepo,
             IUserRepository userRepo,
             IEmailService emailService,
+            INotificationRepository notificationRepo,
             ILogger<ReleaseNotificationService> logger)
         {
             _releaseRepo = releaseRepo;
             _userRepo = userRepo;
             _emailService = emailService;
+            _notificationRepo = notificationRepo;
             _logger = logger;
         }
 
@@ -58,6 +61,18 @@ namespace AutomationAPI.Repositories
                         _logger.LogError(ex, "Failed to email release notification to {Email}", u.Email);
                         await _releaseRepo.MarkNotificationAsync(notificationId, "Failed");
                         result.Failed++;
+                    }
+
+                    if (u.UserId.HasValue)
+                    {
+                        try
+                        {
+                            await _notificationRepo.AddAsync(u.UserId.Value, notificationType, subject, null, "/release-management", "Release", releaseId);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to write in-app notification for {UserId}", u.UserId);
+                        }
                     }
                 }
             }

@@ -98,6 +98,13 @@
         public const string TestExecutionNotificationAdd = "[aut].[usp_TestExecutionNotification_Add]";
         public const string TestExecutionNotificationMarkSent = "[aut].[usp_TestExecutionNotification_MarkSent]";
 
+        // Notification Center
+        public const string NotificationAdd = "[aut].[usp_Notification_Add]";
+        public const string NotificationGetByUser = "[aut].[usp_Notification_GetByUser]";
+        public const string NotificationGetUnreadCount = "[aut].[usp_Notification_GetUnreadCount]";
+        public const string NotificationMarkRead = "[aut].[usp_Notification_MarkRead]";
+        public const string NotificationMarkAllRead = "[aut].[usp_Notification_MarkAllRead]";
+
 
         // Environment Management
         public const string EnvironmentCreate = "[aut].[usp_EnvironmentCreate]";

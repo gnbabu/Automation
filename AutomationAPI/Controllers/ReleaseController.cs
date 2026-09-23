@@ -299,6 +299,17 @@ namespace AutomationAPI.Controllers
                 return BadRequest(GetUserMessage(ex, "Release could not be signed off."));
             }
 
+            // Notify Test Managers/Admins that the release was signed off - previously
+            // this action sent no email/notification at all.
+            var notificationType = request.SignOffStatus.Equals("Approved", StringComparison.OrdinalIgnoreCase)
+                ? "ReleaseApproved" : "ReleaseRejected";
+            var signOffSubject = $"Release {request.SignOffStatus.ToLower()}: {release.ReleaseName} {release.Version}";
+            var signOffFrontendUrl = _configuration["App:FrontendUrl"]?.TrimEnd('/') ?? "";
+            var signOffBody = EmailTemplateBuilder.BuildReleaseSignOffEmail(
+                release.ReleaseName, release.Version, request.SignOffStatus, request.SignOffBy, request.Comments,
+                $"{signOffFrontendUrl}/release-management");
+            await _notificationService.NotifyManagersAndAdminsAsync(id, notificationType, signOffSubject, signOffBody);
+
             var updated = await _repo.GetByIdAsync(id);
             await PopulateFolderInfoAsync(updated);
             return Ok(updated);

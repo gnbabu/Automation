@@ -178,6 +178,30 @@ table {{border-collapse:collapse;}}
                 ctaText: "View in Test Case Execution Panel",
                 ctaUrl: ctaUrl);
 
+        public static string BuildReleaseSignOffEmail(string releaseName, string version, string signOffStatus, string signOffBy, string comments, string ctaUrl)
+        {
+            var approved = signOffStatus.Equals("Approved", StringComparison.OrdinalIgnoreCase);
+            var facts = new List<(string, string)>
+            {
+                ("Release", releaseName),
+                ("Version", version),
+                ("Status", signOffStatus),
+                ("Signed Off By", signOffBy)
+            };
+            if (!string.IsNullOrWhiteSpace(comments))
+                facts.Add(("Comments", comments));
+
+            return BuildShell(
+                accentColor: approved ? "#2e9e5b" : "#d64545",
+                icon: approved ? "&#10003;" : "&#10007;",
+                heading: approved ? "Release Approved" : "Release Rejected",
+                messageHtml: $"Release <strong>{WebUtility.HtmlEncode(releaseName)}</strong> has been <strong>{WebUtility.HtmlEncode(signOffStatus.ToLower())}</strong> by {WebUtility.HtmlEncode(signOffBy)}.",
+                facts: facts,
+                errorBlock: null,
+                ctaText: "Open Release Management",
+                ctaUrl: ctaUrl);
+        }
+
         public static string BuildForgotUsernameEmail(string username, string ctaUrl)
             => BuildShell(
                 accentColor: "#2f6fed",

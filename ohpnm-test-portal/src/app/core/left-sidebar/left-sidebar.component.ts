@@ -1,8 +1,8 @@
-import { Component, EventEmitter, OnDestroy, OnInit, Output, Signal } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, Output, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterModule } from '@angular/router';
-import { AuthService } from '@services';
-import { IUser } from '@interfaces';
+import { Router, RouterLink, RouterModule } from '@angular/router';
+import { AuthService, NotificationService } from '@services';
+import { IUser, IUserNotification } from '@interfaces';
 import { environment } from 'environments/environment';
 import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
 import { Subscription } from 'rxjs';
@@ -22,7 +22,21 @@ export class LeftSidebarComponent implements OnInit, OnDestroy {
   user: IUser | null;
   private userSub?: Subscription;
 
-  constructor(private authService: AuthService) {
+  // Notification bell - polls the unread count the same way Dashboard polls release
+  // data (plain setInterval, matches POLL_INTERVAL_MS there), rather than adding new
+  // real-time/SignalR infrastructure that doesn't exist anywhere else in this app.
+  unreadCount = 0;
+  isNotificationPanelOpen = false;
+  recentNotifications: IUserNotification[] = [];
+  private readonly UNREAD_POLL_INTERVAL_MS = 30000;
+  private unreadPollTimer?: ReturnType<typeof setInterval>;
+
+  constructor(
+    private authService: AuthService,
+    private notificationService: NotificationService,
+    private router: Router,
+    private elementRef: ElementRef
+  ) {
     this.isAdmin = this.authService.isAdmin();
     this.canAccessManagerFeatures = this.authService.canAccessManagerFeatures();
     this.isViewer = this.authService.isViewer();
@@ -40,10 +54,66 @@ export class LeftSidebarComponent implements OnInit, OnDestroy {
       this.canAccessManagerFeatures = this.authService.canAccessManagerFeatures();
       this.isViewer = this.authService.isViewer();
     });
+
+    this.refreshUnreadCount();
+    this.unreadPollTimer = setInterval(
+      () => this.refreshUnreadCount(),
+      this.UNREAD_POLL_INTERVAL_MS
+    );
   }
 
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
+    if (this.unreadPollTimer) clearInterval(this.unreadPollTimer);
+  }
+
+  // Closes the dropdown when clicking anywhere outside the bell/panel - standard
+  // pattern for a dismissible overlay that isn't a modal.
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.isNotificationPanelOpen && !this.elementRef.nativeElement.contains(event.target)) {
+      this.isNotificationPanelOpen = false;
+    }
+  }
+
+  refreshUnreadCount(): void {
+    this.notificationService.getUnreadCount().subscribe((res) => {
+      this.unreadCount = res.count;
+    });
+  }
+
+  toggleNotificationPanel(): void {
+    this.isNotificationPanelOpen = !this.isNotificationPanelOpen;
+    if (this.isNotificationPanelOpen) {
+      this.notificationService.getMine().subscribe((notifications) => {
+        this.recentNotifications = notifications.slice(0, 10);
+      });
+    }
+  }
+
+  onNotificationClick(notification: IUserNotification): void {
+    this.isNotificationPanelOpen = false;
+    if (!notification.isRead) {
+      this.notificationService.markRead(notification.notificationId).subscribe(() => {
+        this.refreshUnreadCount();
+      });
+    }
+    if (notification.linkUrl) {
+      this.router.navigateByUrl(notification.linkUrl);
+    }
+  }
+
+  markAllAsRead(event: Event): void {
+    event.stopPropagation();
+    this.notificationService.markAllRead().subscribe(() => {
+      this.recentNotifications = this.recentNotifications.map((n) => ({ ...n, isRead: true }));
+      this.unreadCount = 0;
+    });
+  }
+
+  viewAllNotifications(): void {
+    this.isNotificationPanelOpen = false;
+    this.router.navigateByUrl('/notifications');
   }
 
   logout() {

@@ -9,6 +9,7 @@ namespace AutomationAPI.Repositories
     {
         private readonly IUserRepository _userRepo;
         private readonly IEmailService _emailService;
+        private readonly INotificationRepository _notificationRepo;
         private readonly ILogger<TestExecutionNotificationService> _logger;
         private readonly SqlDataAccessHelper _db;
         private readonly IConfiguration _configuration;
@@ -16,12 +17,14 @@ namespace AutomationAPI.Repositories
         public TestExecutionNotificationService(
             IUserRepository userRepo,
             IEmailService emailService,
+            INotificationRepository notificationRepo,
             SqlDataAccessHelper db,
             ILogger<TestExecutionNotificationService> logger,
             IConfiguration configuration)
         {
             _userRepo = userRepo;
             _emailService = emailService;
+            _notificationRepo = notificationRepo;
             _db = db;
             _logger = logger;
             _configuration = configuration;
@@ -81,6 +84,18 @@ namespace AutomationAPI.Repositories
                     {
                         _logger.LogError(ex, "Failed to email test failure notification to {Email}", email);
                         await MarkNotificationAsync(notificationId, "Failed");
+                    }
+
+                    if (userId.HasValue)
+                    {
+                        try
+                        {
+                            await _notificationRepo.AddAsync(userId.Value, "ScheduledRunFailed", subject, errorMessage, "/test-case-execution-panel", "TestExecution", assignmentTestCaseId);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to write in-app notification for {UserId}", userId);
+                        }
                     }
                 }
             }

@@ -458,6 +458,20 @@ export interface IReleaseNotification {
   sentOn?: string;
 }
 
+export interface IUserNotification {
+  notificationId: number;
+  userId: number;
+  notificationType: string;
+  title: string;
+  message?: string;
+  linkUrl?: string;
+  sourceType: string;
+  sourceId?: number;
+  isRead: boolean;
+  readOn?: string;
+  createdOn: string;
+}
+
 // Read-only readiness check: DLLs are placed in the release folder by the existing
 // controlled build/deployment process, not uploaded through this application.
 export interface IReleaseReadiness {

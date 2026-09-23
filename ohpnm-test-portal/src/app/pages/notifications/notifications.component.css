@@ -1,0 +1,16 @@
+.badge-unread {
+  background-color: #5c3c9e;
+  color: #fff;
+}
+
+.page-title {
+  font-weight: 700;
+  font-size: 1.7rem;
+  color: #5c3c9e;
+}
+
+.section-card {
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}

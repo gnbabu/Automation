@@ -14,3 +14,4 @@ export * from './test-case-execution-logs.service';
 export * from './environment.service';
 export * from './release.service';
 export * from './login-user.service';
+export * from './notification.service';
