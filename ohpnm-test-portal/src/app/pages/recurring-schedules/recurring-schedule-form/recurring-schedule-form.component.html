@@ -1,0 +1,164 @@
+<div class="container my-5 p-4 shadow-sm bg-white rounded-4 user-form-wrapper">
+  <h4 class="headerTitle">Create Recurring Schedule</h4>
+  <div class="brand-underline"></div>
+
+  <form #scheduleForm="ngForm" (ngSubmit)="save()">
+    <div class="row">
+      <!-- Left Column: what to schedule -->
+      <div class="col-md-6">
+        <div class="mb-3">
+          <label class="form-label">Environment</label>
+          <app-dropdown
+            name="environmentFilter"
+            [options]="environmentFilterOptions"
+            [textAccessor]="environmentFilterTextAccessor"
+            placeholder="All Environments"
+            [(ngModel)]="selectedEnvironmentFilter"
+            (selectionChange)="onEnvironmentFilterChange()"
+          ></app-dropdown>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Release</label>
+          <app-dropdown
+            name="releaseFilter"
+            [options]="releaseFilterOptions"
+            [textAccessor]="releaseFilterTextAccessor"
+            placeholder="All Releases"
+            [(ngModel)]="selectedReleaseFilter"
+            (selectionChange)="onReleaseFilterChange()"
+          ></app-dropdown>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Assignment *</label>
+          <app-dropdown
+            name="assignmentId"
+            [options]="filteredAssignmentOptions"
+            [textAccessor]="assignmentTextAccessor"
+            bindValue="assignmentId"
+            placeholder="Select an assignment"
+            [(ngModel)]="assignmentId"
+            (selectionChange)="onAssignmentChange()"
+            required
+            #assignment="ngModel"
+          ></app-dropdown>
+          <div class="text-danger small" *ngIf="assignment.touched && assignment.invalid">
+            Assignment is required.
+          </div>
+        </div>
+
+        <div class="mb-3" *ngIf="requiresLoginUser">
+          <label class="form-label">Login User *</label>
+          <app-dropdown
+            name="loginUserId"
+            [options]="loginUsers"
+            bindValue="loginUserId"
+            [textAccessor]="loginUserLabel"
+            placeholder="Select Login User"
+            [(ngModel)]="loginUserId"
+            required
+            #loginUser="ngModel"
+          ></app-dropdown>
+          <div class="text-danger small" *ngIf="loginUser.touched && loginUser.invalid">
+            Login User is required for this environment.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: when/how to run it -->
+      <div class="col-md-6">
+        <div class="mb-3">
+          <label class="form-label">Recurrence *</label>
+          <app-dropdown
+            name="recurrenceType"
+            [options]="recurrenceTypeOptions"
+            [textAccessor]="identityTextAccessor"
+            [showPlaceholder]="false"
+            [(ngModel)]="recurrenceType"
+            required
+          ></app-dropdown>
+        </div>
+
+        <div class="mb-3" *ngIf="recurrenceType === 'Weekly'">
+          <label class="form-label d-block">Days of Week *</label>
+          <div class="d-flex gap-2 flex-wrap">
+            <button
+              type="button"
+              class="btn btn-sm"
+              *ngFor="let d of dayOptions"
+              [class.btn-purple]="isDaySelected(d.value)"
+              [class.btn-outline-secondary]="!isDaySelected(d.value)"
+              (click)="toggleDay(d.value)"
+            >
+              {{ d.label }}
+            </button>
+          </div>
+          <div class="text-danger small" *ngIf="selectedDays.length === 0">
+            Select at least one day.
+          </div>
+        </div>
+
+        <div class="mb-3" *ngIf="recurrenceType === 'Monthly'">
+          <label class="form-label">Day of Month *</label>
+          <input
+            type="number"
+            name="dayOfMonth"
+            class="form-control"
+            min="1"
+            max="31"
+            [(ngModel)]="dayOfMonth"
+            required
+            #dom="ngModel"
+          />
+          <small class="text-muted d-block">Clamped to the last day for shorter months (e.g. 31 → 28/29 in February).</small>
+          <div class="text-danger small" *ngIf="dom.touched && dom.invalid">
+            Day of Month is required (1-31).
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Time of Day *</label>
+          <input
+            type="time"
+            name="timeOfDay"
+            class="form-control"
+            [(ngModel)]="timeOfDay"
+            required
+            #time="ngModel"
+          />
+          <div class="text-danger small" *ngIf="time.touched && time.invalid">
+            Time of Day is required.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Browser *</label>
+          <app-dropdown
+            name="browser"
+            [options]="browserOptions"
+            [textAccessor]="identityTextAccessor"
+            [showPlaceholder]="false"
+            [(ngModel)]="browser"
+            required
+          ></app-dropdown>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">End Date (optional)</label>
+          <input type="date" name="endDate" class="form-control" [(ngModel)]="endDate" />
+          <small class="text-muted d-block">Leave blank to run indefinitely until paused or deleted.</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4 gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="cancel()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-purple" [disabled]="isInvalid || isSaving">
+        {{ isSaving ? "Creating..." : "Create Schedule" }}
+      </button>
+    </div>
+  </form>
+</div>

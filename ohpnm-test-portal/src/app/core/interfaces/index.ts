@@ -472,6 +472,49 @@ export interface IUserNotification {
   createdOn: string;
 }
 
+export interface IRecurringSchedule {
+  recurringScheduleId: number;
+  assignmentId: number;
+  assignmentName: string;
+  environment: string;
+  releaseName: string;
+  releaseLifecycle: string;
+  recurrenceType: string;
+  daysOfWeek?: string;
+  dayOfMonth?: number;
+  timeOfDay: string;
+  browser: string;
+  loginUserId?: number;
+  isActive: boolean;
+  pausedReason?: string;
+  endDate?: string;
+  nextRunDate: string;
+  lastRunDate?: string;
+  createdBy?: string;
+  createdOn: string;
+}
+
+export interface IRecurringScheduleRequest {
+  assignmentId: number;
+  recurrenceType: string;
+  daysOfWeek?: string;
+  dayOfMonth?: number;
+  timeOfDay: string;
+  browser: string;
+  loginUserId?: number;
+  endDate?: string;
+}
+
+export interface IAssignmentOption {
+  assignmentId: number;
+  assignmentName: string;
+  environment: string;
+  environmentId?: number;
+  releaseId: number;
+  releaseName: string;
+  releaseLifecycle: string;
+}
+
 // Read-only readiness check: DLLs are placed in the release folder by the existing
 // controlled build/deployment process, not uploaded through this application.
 export interface IReleaseReadiness {

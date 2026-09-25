@@ -105,6 +105,16 @@
         public const string NotificationMarkRead = "[aut].[usp_Notification_MarkRead]";
         public const string NotificationMarkAllRead = "[aut].[usp_Notification_MarkAllRead]";
 
+        // Recurring Schedule
+        public const string RecurringScheduleCreate = "[aut].[usp_RecurringSchedule_Create]";
+        public const string RecurringScheduleGetAll = "[aut].[usp_RecurringSchedule_GetAll]";
+        public const string RecurringScheduleSetActive = "[aut].[usp_RecurringSchedule_SetActive]";
+        public const string RecurringScheduleDelete = "[aut].[usp_RecurringSchedule_Delete]";
+        public const string RecurringScheduleGetDue = "[aut].[usp_RecurringSchedule_GetDue]";
+        public const string RecurringScheduleMarkRun = "[aut].[usp_RecurringSchedule_MarkRun]";
+        public const string RecurringScheduleGetEligibleTestCaseIds = "[aut].[usp_RecurringSchedule_GetEligibleTestCaseIds]";
+        public const string RecurringScheduleGetAssignmentOptions = "[aut].[usp_RecurringSchedule_GetAssignmentOptions]";
+
 
         // Environment Management
         public const string EnvironmentCreate = "[aut].[usp_EnvironmentCreate]";

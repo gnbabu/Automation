@@ -1,0 +1,92 @@
+/* Main wrapper same as login/environment-form/release-form box */
+.user-form-wrapper {
+  background: #ffffff;
+  padding: 30px !important;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(140, 82, 255, 0.3);
+}
+
+/* Header */
+.headerTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #6a0dad; /* purple */
+}
+
+.brand-underline {
+  height: 3px;
+  background: #6c3483;
+  margin-bottom: 25px;
+}
+
+/* Labels */
+.user-form-wrapper .form-label {
+  font-weight: 600;
+  color: #6a0dad; /* purple */
+}
+
+/* Inputs */
+.user-form-wrapper .form-control,
+.user-form-wrapper .form-select {
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: none;
+  transition: all 0.2s ease-in-out;
+  border: 2px solid #6c3483;
+  height: 44px;
+  border-radius: 6px;
+}
+
+.user-form-wrapper .form-control:focus,
+.user-form-wrapper .form-select:focus {
+  border-color: #6a0dad;
+  box-shadow: 0 0 0 0.2rem rgba(150, 70, 255, 0.2);
+}
+
+/* The two rules above are scoped by Angular to elements directly in *this*
+   component's own template (default view encapsulation) - they don't reach a
+   <select> that lives inside <app-dropdown>'s own child-component template.
+   Mirrored here via ::ng-deep so the dropdowns keep the exact same look,
+   matching release-form.component.css's own identical fix. */
+.user-form-wrapper ::ng-deep app-dropdown select {
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: none;
+  transition: all 0.2s ease-in-out;
+  border: 2px solid #6c3483;
+  height: 44px;
+}
+
+.user-form-wrapper ::ng-deep app-dropdown select:focus {
+  border-color: #6a0dad;
+  box-shadow: 0 0 0 0.2rem rgba(150, 70, 255, 0.2);
+}
+
+/* Purple button same as login/environment-form/release-form */
+.btn-purple {
+  background-color: #6c3483;
+  color: white;
+  padding: 11px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn-purple:hover {
+  background: linear-gradient(to right, #8f3aff, #b46aff);
+}
+
+/* Cancel button */
+.btn-outline-secondary {
+  border-radius: 10px;
+  padding: 10px 22px;
+}
+
+@media (max-width: 768px) {
+  .user-form-wrapper {
+    padding: 20px;
+  }
+}
+
+.text-danger {
+  font-size: 1rem !important;
+}

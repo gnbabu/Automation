@@ -202,6 +202,17 @@ table {{border-collapse:collapse;}}
                 ctaUrl: ctaUrl);
         }
 
+        public static string BuildRecurringSchedulePausedEmail(string assignmentName, string releaseName, string releaseLifecycle, string ctaUrl)
+            => BuildShell(
+                accentColor: "#d64545",
+                icon: "&#9888;",
+                heading: "Recurring Schedule Paused",
+                messageHtml: $"The recurring schedule for <strong>{WebUtility.HtmlEncode(assignmentName)}</strong> has been automatically paused because release <strong>{WebUtility.HtmlEncode(releaseName)}</strong> is now {WebUtility.HtmlEncode(releaseLifecycle)}.",
+                facts: new[] { ("Assignment", assignmentName), ("Release", releaseName), ("Status", releaseLifecycle) },
+                errorBlock: null,
+                ctaText: "Open Recurring Schedules",
+                ctaUrl: ctaUrl);
+
         public static string BuildForgotUsernameEmail(string username, string ctaUrl)
             => BuildShell(
                 accentColor: "#2f6fed",

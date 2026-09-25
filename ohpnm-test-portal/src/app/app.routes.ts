@@ -102,6 +102,22 @@ export const routes: Routes = [
         canActivate: [authGuard, managerGuard],
       },
       {
+        path: 'recurring-schedules',
+        loadComponent: () =>
+          import('./pages/recurring-schedules/recurring-schedules.component').then(
+            (m) => m.RecurringSchedulesComponent,
+          ),
+        canActivate: [authGuard, managerGuard],
+      },
+      {
+        path: 'recurring-schedules/new',
+        loadComponent: () =>
+          import('./pages/recurring-schedules/recurring-schedule-form/recurring-schedule-form.component').then(
+            (m) => m.RecurringScheduleFormComponent,
+          ),
+        canActivate: [authGuard, managerGuard],
+      },
+      {
         path: 'release-management/new',
         loadComponent: () =>
           import('./pages/release-management/release-form/release-form.component').then(

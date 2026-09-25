@@ -1,0 +1,61 @@
+<div class="environment-management-container">
+  <!-- Header Section -->
+  <div class="header-section d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="mb-1">Recurring Schedules</h1>
+      <small class="text-muted">Repeating (Daily/Weekly/Monthly) regression runs for an assignment</small>
+    </div>
+  </div>
+
+  <div class="brand-header-underline mb-3"></div>
+
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"></h4>
+    <a routerLink="/recurring-schedules/new" class="btn btn-danger">
+      <i class="fas fa-plus me-2"></i> Create Recurring Schedule
+    </a>
+  </div>
+
+  <div *ngIf="loading" class="state-panel text-center py-5">
+    <div class="spinner-border text-danger mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div class="card section-card" *ngIf="!loading">
+    <div class="card-body p-0">
+      <app-data-grid
+        [columns]="columns"
+        [data]="schedules"
+        [pagingEnabled]="true"
+        [pageSize]="10"
+        [sortingMode]="'client'"
+        [noDataMessage]="'No recurring schedules yet'"
+      ></app-data-grid>
+    </div>
+  </div>
+</div>
+
+<ng-template #nextRunTemplate let-row let-value="value">
+  {{ value | date: "dd-MMM-yyyy HH:mm" }}
+</ng-template>
+
+<ng-template #lastRunTemplate let-row let-value="value">
+  {{ value ? (value | date: "dd-MMM-yyyy HH:mm") : "—" }}
+</ng-template>
+
+<ng-template #statusTemplate let-row let-value="value">
+  <span class="badge" [ngClass]="statusPillClass(value)" [title]="row.pausedReason || ''">
+    {{ value ? "Active" : "Paused" }}
+  </span>
+  <i class="fas fa-info-circle ms-1 text-muted" *ngIf="!value && row.pausedReason" [title]="row.pausedReason"></i>
+</ng-template>
+
+<ng-template #actionsTemplate let-row>
+  <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-outline-secondary" *ngIf="row.isActive" (click)="pause(row)">Pause</button>
+    <button class="btn btn-sm btn-outline-success" *ngIf="!row.isActive" (click)="resume(row)">Resume</button>
+    <button class="btn btn-sm btn-outline-danger" (click)="delete(row)">Delete</button>
+  </div>
+</ng-template>

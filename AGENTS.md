@@ -3444,3 +3444,103 @@ While testing, a real Sign-Off ("Approved") was performed on a real release
 `aut.Notification` rows (one per Admin/Manager recipient), the sidebar bell badge showed
 the new unread count, the sign-off email was received (previously this action sent none at
 all), and the `/notifications` full page displayed the new entry correctly.
+
+## Recurring/CRON-Style Scheduled Runs
+Adds a repeating (Daily/Weekly/Monthly) schedule on top of the existing one-time
+Schedule/Bulk Schedule pipeline (`usp_ScheduleSingleTestCase`/`usp_BulkScheduleTestCases`
+-> `aut.TestCaseExecutionQueue` -> `TestQueueWorker`, 10s poll). A recurring schedule does
+not execute anything itself - the new `RecurringScheduleWorker` (mirrors `TestQueueWorker`'s
+own `IServiceProvider`/`CreateScope()`/`Task.Delay` structure, polling every 60s) simply
+calls the *existing* `ITestCaseExecutionQueueRepository.BulkScheduleAsync` to insert fresh
+`aut.TestCaseExecutionQueue` rows, so actual test execution is completely unchanged -
+confirmed end-to-end by direct testing (see below).
+
+### Dynamic scope, not a snapshot
+`aut.RecurringSchedule` stores only an `AssignmentId`, not a fixed list of
+`AssignmentTestCaseId`s - `usp_RecurringSchedule_GetEligibleTestCaseIds` looks up the
+assignment's *current* test cases fresh every time the schedule fires, so test cases added
+to the assignment later are automatically picked up without editing the schedule. Only
+`Queued`/`Scheduled`/`InProgress` test cases are skipped (still in-flight, avoid
+double-queuing) - **`Passed` is deliberately NOT excluded**, unlike
+`isTestCaseSelectable`'s one-time-Schedule eligibility check in
+`test-case-execution-panel.component.ts` (which also locks `Passed`, since a one-time
+schedule shouldn't accidentally re-trigger a finished pass). A recurring regression
+schedule's entire point is the opposite - re-running already-passed tests to catch future
+regressions. A persistently-failing test case is re-queued and re-notified (email + in-app)
+every single occurrence for as long as the schedule stays active - no dedup/auto-pause for
+repeated failures is implemented (would overlap with a future "test flakiness tracking"
+feature; the existing manual Pause action covers the immediate need).
+
+### Auto-pause on a permanently-done release, not silent endless retry
+Unlike `TestQueueWorker`'s own "skip and retry forever" handling of an unresolvable release
+folder (a genuinely transient condition), a recurring schedule whose release becomes
+Completed/Rejected is a *permanent* state - so the worker instead sets `IsActive=0` with a
+`PausedReason` (e.g. "Release 'X' is Completed.") and dispatches a notification (in-app +
+email, reusing `INotificationRepository`/`IEmailService` and a new
+`EmailTemplateBuilder.BuildRecurringSchedulePausedEmail`, same Admin/Manager recipient
+resolution as `ReleaseNotificationService`) via `usp_RecurringSchedule_GetDue`'s joined
+`Release.ReleaseLifecycle` - confirmed via direct testing: a schedule created against a
+Completed release immediately auto-paused with the correct reason and both recipients
+received the notification.
+
+### Date-math isolated in its own class
+`RecurrenceCalculator` (static, no dependencies) computes `NextRunDate` for Daily/Weekly/
+Monthly separately from the worker loop that consumes it, specifically so this - the
+highest-risk part of the feature - could be reasoned about and verified on its own. Monthly
+clamps `DayOfMonth` to the target month's actual last day (`DateTime.DaysInMonth`) rather
+than throwing for e.g. day 31 in February.
+
+### Manager-only, enforced server-side (stronger than `ReleaseController`'s own pattern)
+`RecurringScheduleController` uses `[Authorize(Roles = "Admin,Manager")]` at the controller
+level, following `UsersController`'s existing role-based pattern. Confirmed by reading
+`ReleaseController` that its own Manager-only restriction (`managerGuard` on the frontend
+route) has **no** server-side role check at all - a pre-existing gap, not fixed here (out
+of scope), but not repeated in this new controller either.
+
+### Two real bugs found and fixed via direct DB inspection while building the Assignment
+### picker
+- `aut.TestCaseAssignment.ReleaseName` is misleadingly named - it actually holds the
+  **library name** (e.g. `TC.PriorAuthSearch`), not the release name; the real release name
+  only exists on the joined `aut.Release.ReleaseName`. `usp_RecurringSchedule_GetAll`/
+  `GetDue`/`GetAssignmentOptions` all read `r.ReleaseName` (the join), not `ta.ReleaseName`.
+- `usp_RecurringSchedule_GetAssignmentOptions` filters to `ReleaseLifecycle = 'Active'` -
+  matches `RecurringScheduleController.Create`'s own server-side lifecycle validation
+  exactly, so the Assignment dropdown never offers something guaranteed to be rejected on
+  submit (previously showed every assignment regardless of its release's lifecycle).
+
+### `[ApiController]` + `Nullable enable` gotcha: an omitted optional field becomes a 400
+`RecurringScheduleRequest.DaysOfWeek` (legitimately omitted for Daily/Monthly, only sent for
+Weekly) must be declared `string?`, not `string` - with `<Nullable>enable</Nullable>`
+project-wide (confirmed in `AutomationAPI.csproj`), `[ApiController]`'s automatic model
+validation infers `[Required]` for any non-nullable reference-type property, rejecting the
+request with "The DaysOfWeek field is required" the moment it's absent. Confirmed by direct
+testing (submitting a Daily schedule reproduced the 400 before the fix).
+
+### Create screen is a separate routed page, not an inline toggle
+`RecurringScheduleFormComponent` (`/recurring-schedules/new`) mirrors
+`ReleaseFormComponent`'s exact structure/styling (`.user-form-wrapper`/`.headerTitle`/
+`.brand-underline`, `ngForm`-based validation with `#field="ngModel"` + touched/invalid
+messages, `.btn-purple` submit + `.btn-outline-secondary` cancel) - the first implementation
+used an inline expand/collapse form on the list page itself, which didn't match this app's
+established "Create X" convention (a separate route, e.g. `/release-management/new`,
+reached via a `.btn-danger` button on its own row below the page title) and was converted
+after review.
+
+### Environment -> Release -> Assignment cascading filters on the Assignment picker
+With 30+ assignments in a single flat list, picking the right one was impractical -
+extends `test-case-execution-panel.component.ts`'s own existing Release-filter-narrows-
+Assignment pattern (`selectedReleaseFilter`/`filteredAssignments`) with an Environment
+level above it. `applyFilters()` re-derives the Release options (scoped to the current
+Environment filter) and the final Assignment list (scoped to both) from scratch on every
+change, rather than patching each level incrementally - also clears a previously-selected
+Release if it no longer exists under a newly-chosen Environment, instead of silently
+keeping a filter that no longer applies to anything.
+
+### Verified end-to-end organically during implementation
+Created two real recurring schedules directly via `usp_RecurringSchedule_Create` against
+real assignments: one targeting an Active release (`TestDashboardRoles`) confirmed the
+worker correctly queued both eligible test cases through `BulkScheduleAsync`,
+`TestQueueWorker` picked them up and ran them to completion within its own next 10s cycle,
+and `NextRunDate` advanced correctly to the next day at the configured time; one targeting
+an already-Completed release (`E2EP3DemoSuite`) confirmed the worker auto-paused it with
+the correct `PausedReason` and both Admin/Manager recipients received the notification.

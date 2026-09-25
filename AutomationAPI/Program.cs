@@ -60,6 +60,7 @@ builder.Services.AddScoped<ITestExecutionNotificationService, TestExecutionNotif
 builder.Services.AddScoped<IEnvironmentRepository, EnvironmentRepository>();
 builder.Services.AddScoped<ILoginUserRepository, LoginUserRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IRecurringScheduleRepository, RecurringScheduleRepository>();
 
 // Email providers - all plain SMTP, so every one of them (Brevo, Mailgun, Amazon SES's
 // SMTP interface, and any future SMTP-based vendor - Office365, Zoho, Postmark, etc.)
@@ -96,6 +97,7 @@ builder.Services.AddScoped<ServiceTokenGenerator>();
 
 builder.Services.AddHostedService<TestQueueWorker>();
 builder.Services.AddHostedService<ReleaseDllsReadyNotificationWorker>();
+builder.Services.AddHostedService<RecurringScheduleWorker>();
 
 
 // Authentication (JWT)
