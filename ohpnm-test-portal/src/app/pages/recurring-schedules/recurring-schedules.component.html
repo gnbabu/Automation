@@ -45,6 +45,12 @@
   {{ value ? (value | date: "dd-MMM-yyyy HH:mm") : "—" }}
 </ng-template>
 
+<ng-template #createdByTemplate let-row let-value="value">
+  <span [title]="row.createdOn ? ('Created ' + (row.createdOn | date: 'dd-MMM-yyyy HH:mm')) : ''">
+    {{ value || "—" }}
+  </span>
+</ng-template>
+
 <ng-template #statusTemplate let-row let-value="value">
   <span class="badge" [ngClass]="statusPillClass(value)" [title]="row.pausedReason || ''">
     {{ value ? "Active" : "Paused" }}
@@ -53,9 +59,21 @@
 </ng-template>
 
 <ng-template #actionsTemplate let-row>
-  <div class="d-flex gap-2">
-    <button class="btn btn-sm btn-outline-secondary" *ngIf="row.isActive" (click)="pause(row)">Pause</button>
-    <button class="btn btn-sm btn-outline-success" *ngIf="!row.isActive" (click)="resume(row)">Resume</button>
-    <button class="btn btn-sm btn-outline-danger" (click)="delete(row)">Delete</button>
+  <div class="d-flex gap-1 action-btns">
+    <button class="btn btn-sm btn-outline-primary" title="History" (click)="viewHistory(row)">
+      <i class="fas fa-history"></i>
+    </button>
+    <button class="btn btn-sm btn-outline-secondary" title="Edit" (click)="edit(row)">
+      <i class="fas fa-pen"></i>
+    </button>
+    <button class="btn btn-sm btn-outline-secondary" title="Pause" *ngIf="row.isActive" (click)="pause(row)">
+      <i class="fas fa-pause"></i>
+    </button>
+    <button class="btn btn-sm btn-outline-success" title="Resume" *ngIf="!row.isActive" (click)="resume(row)">
+      <i class="fas fa-play"></i>
+    </button>
+    <button class="btn btn-sm btn-outline-danger" title="Delete" (click)="delete(row)">
+      <i class="fas fa-trash"></i>
+    </button>
   </div>
 </ng-template>

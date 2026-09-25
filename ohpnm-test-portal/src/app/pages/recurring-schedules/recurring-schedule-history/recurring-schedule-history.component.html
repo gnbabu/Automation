@@ -1,0 +1,149 @@
+<div class="environment-management-container">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="page-title mb-1"><i class="fas fa-history me-2"></i>Recurring Schedule History</h1>
+      <small class="text-muted" *ngIf="schedule">
+        <i class="fas fa-vial me-1"></i>{{ schedule.assignmentName }}
+        <i class="fas fa-server ms-2 me-1"></i>{{ schedule.environment }}
+        <i class="fas fa-rocket ms-2 me-1"></i>{{ schedule.releaseName }}
+      </small>
+    </div>
+    <button class="btn btn-outline-secondary" (click)="back()">
+      <i class="fas fa-arrow-left me-1"></i> Back
+    </button>
+  </div>
+
+  <div class="brand-header-underline mb-4"></div>
+
+  <ng-container *ngIf="schedule as s">
+    <!-- KPI SUMMARY CARDS -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="summary-card bg-white shadow-sm border-total">
+          <p class="text-muted small mb-1"><i class="fas fa-redo me-1"></i>TOTAL RUNS</p>
+          <h3 class="fw-bold">{{ s.runCount }}</h3>
+          <p class="text-muted small mb-0" *ngIf="pendingCount > 0">{{ pendingCount }} pending resolution</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="summary-card bg-white shadow-sm border-passed">
+          <p class="text-muted small mb-1"><i class="fas fa-check-circle me-1"></i>TOTAL PASSED</p>
+          <h3 class="fw-bold text-success">{{ totalPassed }}</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="summary-card bg-white shadow-sm border-failed">
+          <p class="text-muted small mb-1"><i class="fas fa-times-circle me-1"></i>TOTAL FAILED</p>
+          <h3 class="fw-bold text-danger">{{ totalFailed }}</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="summary-card bg-white shadow-sm border-running">
+          <p class="text-muted small mb-1"><i class="fas fa-forward me-1"></i>TOTAL SKIPPED</p>
+          <h3 class="fw-bold text-warning">{{ totalSkipped }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE INFO CARD -->
+    <div class="card section-card mb-4">
+      <div class="card-header section-head d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-clock me-2"></i>Schedule Details</span>
+        <span class="badge status-badge" [ngClass]="statusPillClass(s.isActive)">
+          <i class="fas" [ngClass]="s.isActive ? 'fa-check' : 'fa-pause'"></i>
+          {{ s.isActive ? "Active" : "Paused" }}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4 info-item">
+            <i class="fas fa-redo-alt info-icon"></i>
+            <div><span class="info-label">Recurrence</span><br />{{ recurrenceSummary(s) }}</div>
+          </div>
+          <div class="col-md-4 info-item">
+            <i class="fas fa-desktop info-icon"></i>
+            <div><span class="info-label">Browser</span><br />{{ s.browser }}</div>
+          </div>
+          <div class="col-md-4 info-item">
+            <i class="fas fa-user-lock info-icon"></i>
+            <div><span class="info-label">Login User</span><br />{{ loginUserLabel(s) }}</div>
+          </div>
+          <div class="col-md-4 info-item">
+            <i class="fas fa-calendar-check info-icon"></i>
+            <div><span class="info-label">Next Run</span><br />{{ s.nextRunDate | date: "dd-MMM-yyyy HH:mm" }}</div>
+          </div>
+          <div class="col-md-4 info-item">
+            <i class="fas fa-calendar-day info-icon"></i>
+            <div><span class="info-label">Last Run</span><br />{{ s.lastRunDate ? (s.lastRunDate | date: "dd-MMM-yyyy HH:mm") : "—" }}</div>
+          </div>
+          <div class="col-md-4 info-item" *ngIf="!s.isActive && s.pausedReason">
+            <i class="fas fa-exclamation-triangle info-icon text-warning"></i>
+            <div><span class="info-label">Paused Reason</span><br />{{ s.pausedReason }}</div>
+          </div>
+          <div class="col-md-4 info-item">
+            <i class="fas fa-user-edit info-icon"></i>
+            <div><span class="info-label">Created By</span><br />{{ s.createdBy || "—" }}</div>
+          </div>
+          <div class="col-md-4 info-item">
+            <i class="fas fa-calendar-plus info-icon"></i>
+            <div><span class="info-label">Created On</span><br />{{ s.createdOn | date: "dd-MMM-yyyy HH:mm" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <div *ngIf="loading" class="state-panel text-center py-5">
+    <div class="spinner-border text-danger mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div class="card section-card" *ngIf="!loading">
+    <div class="card-header section-head"><i class="fas fa-list-ul me-2"></i>Run History</div>
+    <div class="card-body p-0">
+      <app-data-grid
+        [columns]="columns"
+        [data]="history"
+        [pagingEnabled]="true"
+        [pageSize]="10"
+        [sortingMode]="'client'"
+        [noDataMessage]="'No firings recorded yet'"
+      ></app-data-grid>
+    </div>
+  </div>
+</div>
+
+<ng-template #runDateTemplate let-row let-value="value">
+  <i class="fas fa-clock text-muted me-1"></i>{{ value | date: "dd-MMM-yyyy HH:mm" }}
+</ng-template>
+
+<ng-template #resultTemplate let-row let-value="value">
+  <span class="badge status-badge" [ngClass]="resultPillClass(value)">
+    <i class="fas" [ngClass]="resultIcon(value)"></i>
+    {{ value === "NoEligibleTestCases" ? "No Eligible Test Cases" : value }}
+  </span>
+</ng-template>
+
+<ng-template #outcomeTemplate let-row let-value="value">
+  <div *ngIf="value === 'Resolved'" class="outcome-cell">
+    <div class="outcome-bar">
+      <div class="outcome-segment bg-success" [style.width.%]="outcomePct(row.passedCount, row)"></div>
+      <div class="outcome-segment bg-danger" [style.width.%]="outcomePct(row.failedCount, row)"></div>
+      <div class="outcome-segment bg-warning" [style.width.%]="outcomePct(row.skippedCount, row)"></div>
+    </div>
+    <small>
+      <span class="text-success">{{ row.passedCount }} Passed</span> ·
+      <span class="text-danger">{{ row.failedCount }} Failed</span> ·
+      <span class="text-warning">{{ row.skippedCount }} Skipped</span>
+    </small>
+  </div>
+  <span *ngIf="value === 'Pending'" class="text-muted fst-italic">
+    <i class="fas fa-spinner fa-spin me-1"></i>Pending...
+  </span>
+  <span *ngIf="value === 'NotApplicable'" class="text-muted">—</span>
+</ng-template>
+
+<ng-template #detailTemplate let-row let-value="value">
+  {{ value || "—" }}
+</ng-template>

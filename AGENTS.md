@@ -3536,6 +3536,87 @@ change, rather than patching each level incrementally - also clears a previously
 Release if it no longer exists under a newly-chosen Environment, instead of silently
 keeping a filter that no longer applies to anything.
 
+### Run count, creator/login-user visibility, and per-firing history with resolved outcomes
+The original Recurring Schedule list only showed `NextRunDate`/`LastRunDate` - no way to
+see how many times a schedule had actually fired, who created/owns it, or what happened
+on past firings. `aut.AssignedTestCases.TestCaseStatus` is a *live*, mutable column
+overwritten by whichever run (manual or recurring) most recently touched a given test
+case, so it alone can never answer "what was the outcome of *this specific* historical
+firing" once a later firing has re-run (and overwritten the status of) the same test case.
+
+Added (`Database/Recurring_Schedule_RunHistory_Migration.sql`):
+- `aut.RecurringSchedule.RunCount` - incremented only when a firing actually queues ≥1 test
+  case (a `NoEligibleTestCases` or `Paused` firing doesn't count as "a run").
+- `aut.RecurringScheduleRunHistory` - one row per `RecurringScheduleWorker` firing attempt
+  (`Result`: `Queued`/`NoEligibleTestCases`/`Paused`), with a `ResolutionStatus`
+  (`Pending`/`Resolved`/`NotApplicable`) and `Passed`/`Failed`/`SkippedCount`.
+- `aut.RecurringScheduleRunHistoryTestCase` - a child table snapshotting exactly which
+  `AssignmentTestCaseId`s belonged to one `Queued` firing. This is the only way outcome
+  attribution stays correct even after a later firing re-runs the same test case - the
+  snapshot's own IDs are fixed at insert time; `usp_RecurringSchedule_ResolvePendingRunHistory`
+  (a set-based sweep called once per worker poll cycle, independent of whether any
+  schedules were due that cycle) checks each `Pending` row's snapshotted IDs for whether
+  *none* are still in-flight (`Queued`/`Scheduled`/`InProgress`), and if so locks in
+  Passed/Failed/Skipped counts from their current status and marks it `Resolved`.
+  `eligibleIds` (computed right before the `BulkScheduleAsync` call already used to fire
+  the schedule) is used directly as the snapshot, since `usp_BulkScheduleTestCases` was
+  confirmed to be an all-or-nothing insert for the exact list passed in.
+- Acknowledged, undefended edge case: if a schedule's cadence is fast enough relative to a
+  test's execution time that the *same* test case gets re-queued by a newer firing before
+  the older firing's snapshot has resolved, the older row can stay `Pending` indefinitely
+  (matches this codebase's existing pattern of documenting rather than engineering around
+  narrow timing races, e.g. the base Recurring Schedule feature's own accepted
+  Bulk-Schedule-vs-worker race).
+
+New `/recurring-schedules/:id/history` details page (separate route, not a modal - per
+explicit request) shows a Dashboard-style KPI summary row (`.summary-card`/`border-*`,
+reused from `dashboard.component.css` since it's component-scoped, not global) for
+lifetime Total Runs/Passed/Failed/Skipped, an icon-based Schedule Details card (including
+`LoginUserRole`/`LoginUserName`, joined in `usp_RecurringSchedule_GetAll` - deliberately
+shown here rather than as an extra main-grid column, to avoid crowding the already
+8-column list), and a Run History grid with a stacked mini progress bar per resolved
+firing instead of plain-text counts. The list page reuses the existing `getAll()`
+response (found by id) for this header rather than adding a dedicated `GetById` endpoint -
+acceptable for a low-traffic internal admin page.
+
+The list's Actions column started with just Pause/Resume/Delete, then gained History/Edit
+(below) - 5 buttons with text labels overflowed the grid's Actions column width, fixed by
+switching to icon-only 30x30px buttons with `title` tooltips instead
+(`.action-btns .btn` in `recurring-schedules.component.css`).
+
+### Regression found and fixed: RunHistory FKs broke Delete for any schedule that had fired
+`usp_RecurringSchedule_Delete` is a plain `DELETE` with no explicit cleanup of dependent
+rows. The RunHistory feature above added `RecurringScheduleRunHistory`/
+`RecurringScheduleRunHistoryTestCase` FKs pointing at `RecurringSchedule` - initially
+created *without* `ON DELETE CASCADE`, which meant deleting any schedule that had ever
+fired (i.e. had at least one history row) failed with an FK violation. Fixed by adding
+`ON DELETE CASCADE` to both FKs (in `Recurring_Schedule_RunHistory_Migration.sql` directly,
+since this was all uncommitted work in the same session) - confirmed by directly testing
+`usp_RecurringSchedule_Delete` on a schedule with history both fails-then-succeeds across
+the before/after states. **Explicitly discussed and decided**: history is deleted along
+with its schedule (not preserved as an orphaned audit record) - a soft-delete alternative
+(hide-but-keep-forever) was proposed and declined in favor of keeping the simpler,
+already-established hard-delete convention this app uses elsewhere (e.g. Flow/Section
+Management's own cascade deletion).
+
+### Edit support - Assignment is locked, only cadence/execution settings are editable
+`usp_RecurringSchedule_GetById`/`usp_RecurringSchedule_Update` (`Recurring_Schedule_
+Update_Migration.sql`) + `RecurringScheduleFormComponent`'s `isEdit` mode (mirrors
+`ReleaseFormComponent`'s own `isEdit`/`loadRelease()`/route-param convention exactly).
+The Assignment itself is deliberately **not** editable - matches `ReleaseFormComponent`'s
+own "lock identity fields once created" precedent (Release Name/Version/Environment lock
+once a release leaves Draft) - shown as a disabled, read-only input instead of the
+cascading Environment/Release/Assignment filters used at creation time. Only
+RecurrenceType/DaysOfWeek/DayOfMonth/TimeOfDay/Browser/LoginUserId/EndDate are editable;
+`NextRunDate` is recomputed via `RecurrenceCalculator` on save (same as Create).
+`onAssignmentChange`'s Login-User-resolution logic was extracted into a shared
+`loadLoginUsersForEnvironment(environmentId)` so both Create (via the Assignment dropdown)
+and Edit (via the loaded schedule's `EnvironmentId`, now also returned by
+`usp_RecurringSchedule_GetAll`/`GetById`) can reuse it. The release-lifecycle guard from
+Create is deliberately *not* re-checked on Update, since editing e.g. just the time-of-day
+on an already-paused schedule shouldn't be blocked by an unrelated lifecycle check - the
+worker's own `GetDue` lifecycle check still applies whenever it next becomes due.
+
 ### Verified end-to-end organically during implementation
 Created two real recurring schedules directly via `usp_RecurringSchedule_Create` against
 real assignments: one targeting an Active release (`TestDashboardRoles`) confirmed the

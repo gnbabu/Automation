@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { IAssignmentOption, ILoginUserModel, IRecurringScheduleRequest } from '@interfaces';
 import {
   CommonToasterService,
@@ -52,6 +52,13 @@ export class RecurringScheduleFormComponent implements OnInit {
   // already used by ScheduleTestcasesDialogComponent/ReleaseManagementComponent.
   identityTextAccessor = (opt: string) => opt;
 
+  // Edit mode - the Assignment itself is deliberately locked once created (matches
+  // ReleaseFormComponent's own "lock identity fields once created" convention); only
+  // cadence/execution settings are editable. See Recurring_Schedule_Update_Migration.sql.
+  isEdit = false;
+  scheduleId!: number;
+  readOnlyAssignmentLabel = '';
+
   assignmentId: number | undefined = undefined;
   recurrenceType = 'Daily';
   recurrenceTypeOptions = ['Daily', 'Weekly', 'Monthly'];
@@ -77,6 +84,7 @@ export class RecurringScheduleFormComponent implements OnInit {
   isSaving = false;
 
   constructor(
+    private route: ActivatedRoute,
     private router: Router,
     private recurringScheduleService: RecurringScheduleService,
     private environmentService: EnvironmentService,
@@ -85,6 +93,14 @@ export class RecurringScheduleFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (idParam) {
+      this.isEdit = true;
+      this.scheduleId = +idParam;
+      this.loadSchedule();
+      return;
+    }
+
     this.recurringScheduleService.getAssignmentOptions().subscribe({
       next: (res) => {
         this.assignmentOptions = res || [];
@@ -94,6 +110,28 @@ export class RecurringScheduleFormComponent implements OnInit {
       error: () => {
         this.assignmentOptions = [];
         this.applyFilters();
+      },
+    });
+  }
+
+  private loadSchedule(): void {
+    this.recurringScheduleService.getById(this.scheduleId).subscribe({
+      next: (s) => {
+        this.assignmentId = s.assignmentId;
+        this.readOnlyAssignmentLabel = `${s.assignmentName} — ${s.environment} (${s.releaseName})`;
+        this.recurrenceType = s.recurrenceType;
+        this.selectedDays = (s.daysOfWeek || '').split(',').filter((d) => d !== '').map((d) => +d);
+        this.dayOfMonth = s.dayOfMonth ?? null;
+        this.timeOfDay = (s.timeOfDay || '').substring(0, 5);
+        this.browser = s.browser;
+        this.loginUserId = s.loginUserId ?? null;
+        this.endDate = s.endDate ? s.endDate.substring(0, 10) : '';
+
+        if (s.environmentId) this.loadLoginUsersForEnvironment(s.environmentId);
+      },
+      error: () => {
+        this.toaster.error('Recurring schedule not found.');
+        this.router.navigate(['/recurring-schedules']);
       },
     });
   }
@@ -174,19 +212,19 @@ export class RecurringScheduleFormComponent implements OnInit {
     this.loginUserId = null;
   }
 
-  // Same self-service resolution ScheduleTestcasesDialogComponent already uses -
-  // resolves the current user's own configured Login User for the selected
-  // assignment's environment (only shown/required if that environment actually
-  // requires authentication).
   onAssignmentChange(): void {
     this.loginUsers = [];
     this.loginUserId = null;
     const selected = this.assignmentOptions.find((a) => a.assignmentId === this.assignmentId);
     if (selected) this.syncFiltersToAssignment(selected);
 
-    const environmentId = selected?.environmentId;
-    if (!environmentId) return;
+    if (selected?.environmentId) this.loadLoginUsersForEnvironment(selected.environmentId);
+  }
 
+  // Same self-service resolution ScheduleTestcasesDialogComponent already uses - shared
+  // between create mode (triggered by onAssignmentChange, above) and edit mode (triggered
+  // by loadSchedule, since the Assignment itself isn't re-selectable there).
+  private loadLoginUsersForEnvironment(environmentId: number): void {
     this.environmentService.getById(environmentId).subscribe({
       next: (env) => {
         if (!env.requiresAuthentication) return;
@@ -243,6 +281,20 @@ export class RecurringScheduleFormComponent implements OnInit {
     };
 
     this.isSaving = true;
+
+    if (this.isEdit) {
+      this.recurringScheduleService.update(this.scheduleId, request).subscribe({
+        next: () => {
+          this.toaster.success('Recurring schedule updated successfully');
+          this.router.navigate(['/recurring-schedules']);
+        },
+        error: () => {
+          this.isSaving = false;
+        },
+      });
+      return;
+    }
+
     this.recurringScheduleService.create(request).subscribe({
       next: () => {
         this.toaster.success('Recurring schedule created successfully');

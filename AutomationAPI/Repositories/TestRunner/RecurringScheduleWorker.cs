@@ -46,6 +46,18 @@ namespace AutomationAPI.Repositories.TestRunner
                             logger.LogError(ex, "Failed to process recurring schedule {RecurringScheduleId}", schedule.RecurringScheduleId);
                         }
                     }
+
+                    // Runs every cycle regardless of whether any schedules were due - sweeps
+                    // any 'Pending' run-history rows whose snapshotted test cases have all
+                    // since reached a terminal status and locks in their outcome counts.
+                    try
+                    {
+                        await scheduleRepo.ResolvePendingRunHistoryAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Failed to resolve pending recurring-schedule run history");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -72,6 +84,7 @@ namespace AutomationAPI.Repositories.TestRunner
             {
                 var reason = $"Release '{schedule.ReleaseName}' is {schedule.ReleaseLifecycle}.";
                 await scheduleRepo.MarkRunAsync(schedule.RecurringScheduleId, null, isActive: false, pausedReason: reason);
+                await scheduleRepo.AddRunHistoryAsync(schedule.RecurringScheduleId, "Paused", reason, []);
                 await NotifyPausedAsync(services, schedule, logger);
                 return;
             }
@@ -88,9 +101,17 @@ namespace AutomationAPI.Repositories.TestRunner
             if (eligibleIds.Count > 0)
             {
                 await queueRepo.BulkScheduleAsync(schedule.AssignmentId, eligibleIds, DateTime.Now, schedule.Browser, schedule.LoginUserId);
+                // eligibleIds is exactly what was just queued - usp_BulkScheduleTestCases is
+                // an all-or-nothing insert for the given list (no per-row filtering), so this
+                // snapshot is reliable for later outcome attribution.
+                await scheduleRepo.AddRunHistoryAsync(schedule.RecurringScheduleId, "Queued", null, eligibleIds);
             }
-            // Zero eligible test cases (all removed, or all currently in-flight) is a
-            // no-op this cycle, not an error - NextRunDate still advances below.
+            else
+            {
+                // Zero eligible test cases (all removed, or all currently in-flight) is a
+                // no-op this cycle, not an error - NextRunDate still advances below.
+                await scheduleRepo.AddRunHistoryAsync(schedule.RecurringScheduleId, "NoEligibleTestCases", null, []);
+            }
 
             var nextRunDate = RecurrenceCalculator.ComputeNextRunDate(
                 schedule.RecurrenceType, schedule.DaysOfWeek, schedule.DayOfMonth, schedule.TimeOfDay, DateTime.Now);

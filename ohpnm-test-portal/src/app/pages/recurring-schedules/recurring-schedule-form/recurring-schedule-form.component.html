@@ -1,52 +1,63 @@
 <div class="container my-5 p-4 shadow-sm bg-white rounded-4 user-form-wrapper">
-  <h4 class="headerTitle">Create Recurring Schedule</h4>
+  <h4 class="headerTitle">{{ isEdit ? "Edit Recurring Schedule" : "Create Recurring Schedule" }}</h4>
   <div class="brand-underline"></div>
 
   <form #scheduleForm="ngForm" (ngSubmit)="save()">
     <div class="row">
       <!-- Left Column: what to schedule -->
       <div class="col-md-6">
-        <div class="mb-3">
-          <label class="form-label">Environment</label>
-          <app-dropdown
-            name="environmentFilter"
-            [options]="environmentFilterOptions"
-            [textAccessor]="environmentFilterTextAccessor"
-            placeholder="All Environments"
-            [(ngModel)]="selectedEnvironmentFilter"
-            (selectionChange)="onEnvironmentFilterChange()"
-          ></app-dropdown>
+        <!-- Edit mode: the Assignment is locked once created (see recurring-schedule-
+             form.component.ts's own comment) - shown read-only instead of the cascading
+             filters/dropdown used at creation time. -->
+        <div class="mb-3" *ngIf="isEdit">
+          <label class="form-label">Assignment</label>
+          <input type="text" class="form-control" [value]="readOnlyAssignmentLabel" disabled />
+          <small class="text-muted d-block">The Assignment can't be changed after creation - delete and recreate to target a different one.</small>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label">Release</label>
-          <app-dropdown
-            name="releaseFilter"
-            [options]="releaseFilterOptions"
-            [textAccessor]="releaseFilterTextAccessor"
-            placeholder="All Releases"
-            [(ngModel)]="selectedReleaseFilter"
-            (selectionChange)="onReleaseFilterChange()"
-          ></app-dropdown>
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label">Assignment *</label>
-          <app-dropdown
-            name="assignmentId"
-            [options]="filteredAssignmentOptions"
-            [textAccessor]="assignmentTextAccessor"
-            bindValue="assignmentId"
-            placeholder="Select an assignment"
-            [(ngModel)]="assignmentId"
-            (selectionChange)="onAssignmentChange()"
-            required
-            #assignment="ngModel"
-          ></app-dropdown>
-          <div class="text-danger small" *ngIf="assignment.touched && assignment.invalid">
-            Assignment is required.
+        <ng-container *ngIf="!isEdit">
+          <div class="mb-3">
+            <label class="form-label">Environment</label>
+            <app-dropdown
+              name="environmentFilter"
+              [options]="environmentFilterOptions"
+              [textAccessor]="environmentFilterTextAccessor"
+              placeholder="All Environments"
+              [(ngModel)]="selectedEnvironmentFilter"
+              (selectionChange)="onEnvironmentFilterChange()"
+            ></app-dropdown>
           </div>
-        </div>
+
+          <div class="mb-3">
+            <label class="form-label">Release</label>
+            <app-dropdown
+              name="releaseFilter"
+              [options]="releaseFilterOptions"
+              [textAccessor]="releaseFilterTextAccessor"
+              placeholder="All Releases"
+              [(ngModel)]="selectedReleaseFilter"
+              (selectionChange)="onReleaseFilterChange()"
+            ></app-dropdown>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Assignment *</label>
+            <app-dropdown
+              name="assignmentId"
+              [options]="filteredAssignmentOptions"
+              [textAccessor]="assignmentTextAccessor"
+              bindValue="assignmentId"
+              placeholder="Select an assignment"
+              [(ngModel)]="assignmentId"
+              (selectionChange)="onAssignmentChange()"
+              required
+              #assignment="ngModel"
+            ></app-dropdown>
+            <div class="text-danger small" *ngIf="assignment.touched && assignment.invalid">
+              Assignment is required.
+            </div>
+          </div>
+        </ng-container>
 
         <div class="mb-3" *ngIf="requiresLoginUser">
           <label class="form-label">Login User *</label>
@@ -157,7 +168,7 @@
         Cancel
       </button>
       <button type="submit" class="btn-purple" [disabled]="isInvalid || isSaving">
-        {{ isSaving ? "Creating..." : "Create Schedule" }}
+        {{ isSaving ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Schedule") }}
       </button>
     </div>
   </form>

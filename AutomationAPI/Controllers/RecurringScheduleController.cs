@@ -38,6 +38,15 @@ namespace AutomationAPI.Controllers
             return Ok(options);
         }
 
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var schedule = await _repo.GetByIdAsync(id);
+            if (schedule == null)
+                return NotFound();
+            return Ok(schedule);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] RecurringScheduleRequest request)
         {
@@ -46,18 +55,9 @@ namespace AutomationAPI.Controllers
                 if (request == null || request.AssignmentId <= 0)
                     return BadRequest("AssignmentId is required.");
 
-                if (string.IsNullOrWhiteSpace(request.RecurrenceType) ||
-                    !new[] { "Daily", "Weekly", "Monthly" }.Contains(request.RecurrenceType))
-                    return BadRequest("RecurrenceType must be 'Daily', 'Weekly', or 'Monthly'.");
-
-                if (request.RecurrenceType == "Weekly" && string.IsNullOrWhiteSpace(request.DaysOfWeek))
-                    return BadRequest("DaysOfWeek is required for a Weekly schedule.");
-
-                if (request.RecurrenceType == "Monthly" && (request.DayOfMonth is null or < 1 or > 31))
-                    return BadRequest("DayOfMonth (1-31) is required for a Monthly schedule.");
-
-                if (string.IsNullOrWhiteSpace(request.Browser))
-                    return BadRequest("Browser is required.");
+                var validationError = ValidateRecurrence(request);
+                if (validationError != null)
+                    return BadRequest(validationError);
 
                 // Same lifecycle guard Run Now/Schedule already enforce - reused here so a
                 // recurring schedule can't be created against a release that's already
@@ -83,6 +83,61 @@ namespace AutomationAPI.Controllers
             }
         }
 
+        // The Assignment itself is deliberately not editable here (see
+        // Recurring_Schedule_Update_Migration.sql's own comment) - only cadence/execution
+        // settings, so the release-lifecycle guard from Create doesn't need to be re-checked
+        // (an already-paused/auto-paused schedule staying paused after an unrelated edit like
+        // changing the time-of-day is fine; resuming it still goes through the worker's own
+        // lifecycle check on its next due cycle).
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Update(int id, [FromBody] RecurringScheduleRequest request)
+        {
+            try
+            {
+                var validationError = ValidateRecurrence(request);
+                if (validationError != null)
+                    return BadRequest(validationError);
+
+                var existing = await _repo.GetByIdAsync(id);
+                if (existing == null)
+                    return NotFound();
+
+                var nextRunDate = RecurrenceCalculator.ComputeNextRunDate(
+                    request.RecurrenceType, request.DaysOfWeek, request.DayOfMonth, request.TimeOfDay, DateTime.Now);
+
+                await _repo.UpdateAsync(id, request.RecurrenceType, request.DaysOfWeek, request.DayOfMonth,
+                    request.TimeOfDay, request.Browser, request.LoginUserId, request.EndDate, nextRunDate);
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating recurring schedule {RecurringScheduleId}", id);
+                return StatusCode(500, "An unexpected error occurred while updating the recurring schedule.");
+            }
+        }
+
+        private static string ValidateRecurrence(RecurringScheduleRequest request)
+        {
+            if (request == null)
+                return "Request body is required.";
+
+            if (string.IsNullOrWhiteSpace(request.RecurrenceType) ||
+                !new[] { "Daily", "Weekly", "Monthly" }.Contains(request.RecurrenceType))
+                return "RecurrenceType must be 'Daily', 'Weekly', or 'Monthly'.";
+
+            if (request.RecurrenceType == "Weekly" && string.IsNullOrWhiteSpace(request.DaysOfWeek))
+                return "DaysOfWeek is required for a Weekly schedule.";
+
+            if (request.RecurrenceType == "Monthly" && (request.DayOfMonth is null or < 1 or > 31))
+                return "DayOfMonth (1-31) is required for a Monthly schedule.";
+
+            if (string.IsNullOrWhiteSpace(request.Browser))
+                return "Browser is required.";
+
+            return null;
+        }
+
         [HttpPost("{id:int}/pause")]
         public async Task<IActionResult> Pause(int id)
         {
@@ -102,6 +157,13 @@ namespace AutomationAPI.Controllers
         {
             await _repo.DeleteAsync(id);
             return Ok();
+        }
+
+        [HttpGet("{id:int}/history")]
+        public async Task<IActionResult> GetHistory(int id)
+        {
+            var history = await _repo.GetRunHistoryAsync(id);
+            return Ok(history);
         }
     }
 

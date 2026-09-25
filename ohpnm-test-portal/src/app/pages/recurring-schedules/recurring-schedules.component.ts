@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { GridColumn, IRecurringSchedule } from '@interfaces';
 import { CommonToasterService, ConfirmService, RecurringScheduleService } from '@services';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
@@ -20,6 +20,7 @@ interface IRecurringScheduleRow extends IRecurringSchedule {
 export class RecurringSchedulesComponent implements OnInit {
   @ViewChild('nextRunTemplate', { static: true }) nextRunTemplate!: TemplateRef<any>;
   @ViewChild('lastRunTemplate', { static: true }) lastRunTemplate!: TemplateRef<any>;
+  @ViewChild('createdByTemplate', { static: true }) createdByTemplate!: TemplateRef<any>;
   @ViewChild('statusTemplate', { static: true }) statusTemplate!: TemplateRef<any>;
   @ViewChild('actionsTemplate', { static: true }) actionsTemplate!: TemplateRef<any>;
 
@@ -41,6 +42,7 @@ export class RecurringSchedulesComponent implements OnInit {
     private recurringScheduleService: RecurringScheduleService,
     private confirmService: ConfirmService,
     private toaster: CommonToasterService,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -56,6 +58,8 @@ export class RecurringSchedulesComponent implements OnInit {
       { field: 'recurrenceSummary', header: 'Recurrence', sortable: false },
       { field: 'nextRunDate', header: 'Next Run', sortable: true, cellTemplate: this.nextRunTemplate },
       { field: 'lastRunDate', header: 'Last Run', sortable: true, cellTemplate: this.lastRunTemplate },
+      { field: 'runCount', header: 'Runs', sortable: true },
+      { field: 'createdBy', header: 'Created By', sortable: true, cellTemplate: this.createdByTemplate },
       { field: 'isActive', header: 'Status', sortable: true, cellTemplate: this.statusTemplate },
       { field: 'recurringScheduleId', header: 'Actions', sortable: false, cellTemplate: this.actionsTemplate },
     ];
@@ -126,5 +130,13 @@ export class RecurringSchedulesComponent implements OnInit {
 
   statusPillClass(isActive: boolean): string {
     return isActive ? pairBadgeTextColor('bg-success') : pairBadgeTextColor('bg-secondary');
+  }
+
+  viewHistory(row: IRecurringScheduleRow): void {
+    this.router.navigate(['/recurring-schedules', row.recurringScheduleId, 'history']);
+  }
+
+  edit(row: IRecurringScheduleRow): void {
+    this.router.navigate(['/recurring-schedules', row.recurringScheduleId, 'edit']);
   }
 }

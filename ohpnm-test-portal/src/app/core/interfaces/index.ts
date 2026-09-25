@@ -477,6 +477,7 @@ export interface IRecurringSchedule {
   assignmentId: number;
   assignmentName: string;
   environment: string;
+  environmentId?: number;
   releaseName: string;
   releaseLifecycle: string;
   recurrenceType: string;
@@ -485,13 +486,31 @@ export interface IRecurringSchedule {
   timeOfDay: string;
   browser: string;
   loginUserId?: number;
+  loginUserRole?: string;
+  loginUserName?: string;
   isActive: boolean;
   pausedReason?: string;
   endDate?: string;
   nextRunDate: string;
   lastRunDate?: string;
+  runCount: number;
   createdBy?: string;
   createdOn: string;
+}
+
+// aut.RecurringScheduleRunHistory - one row per RecurringScheduleWorker firing attempt.
+export interface IRecurringScheduleRunHistory {
+  runHistoryId: number;
+  recurringScheduleId: number;
+  runDate: string;
+  result: string; // 'Queued' | 'NoEligibleTestCases' | 'Paused'
+  detail?: string;
+  testCasesQueuedCount: number;
+  resolutionStatus: string; // 'Pending' | 'Resolved' | 'NotApplicable'
+  passedCount?: number;
+  failedCount?: number;
+  skippedCount?: number;
+  resolvedOn?: string;
 }
 
 export interface IRecurringScheduleRequest {

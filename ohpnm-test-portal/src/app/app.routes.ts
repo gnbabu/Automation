@@ -118,6 +118,22 @@ export const routes: Routes = [
         canActivate: [authGuard, managerGuard],
       },
       {
+        path: 'recurring-schedules/:id/edit',
+        loadComponent: () =>
+          import('./pages/recurring-schedules/recurring-schedule-form/recurring-schedule-form.component').then(
+            (m) => m.RecurringScheduleFormComponent,
+          ),
+        canActivate: [authGuard, managerGuard],
+      },
+      {
+        path: 'recurring-schedules/:id/history',
+        loadComponent: () =>
+          import('./pages/recurring-schedules/recurring-schedule-history/recurring-schedule-history.component').then(
+            (m) => m.RecurringScheduleHistoryComponent,
+          ),
+        canActivate: [authGuard, managerGuard],
+      },
+      {
         path: 'release-management/new',
         loadComponent: () =>
           import('./pages/release-management/release-form/release-form.component').then(

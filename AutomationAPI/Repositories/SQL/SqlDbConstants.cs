@@ -114,6 +114,11 @@
         public const string RecurringScheduleMarkRun = "[aut].[usp_RecurringSchedule_MarkRun]";
         public const string RecurringScheduleGetEligibleTestCaseIds = "[aut].[usp_RecurringSchedule_GetEligibleTestCaseIds]";
         public const string RecurringScheduleGetAssignmentOptions = "[aut].[usp_RecurringSchedule_GetAssignmentOptions]";
+        public const string RecurringScheduleAddRunHistory = "[aut].[usp_RecurringSchedule_AddRunHistory]";
+        public const string RecurringScheduleResolvePendingRunHistory = "[aut].[usp_RecurringSchedule_ResolvePendingRunHistory]";
+        public const string RecurringScheduleGetRunHistory = "[aut].[usp_RecurringSchedule_GetRunHistory]";
+        public const string RecurringScheduleGetById = "[aut].[usp_RecurringSchedule_GetById]";
+        public const string RecurringScheduleUpdate = "[aut].[usp_RecurringSchedule_Update]";
 
 
         // Environment Management
