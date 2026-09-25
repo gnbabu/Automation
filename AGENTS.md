@@ -3625,3 +3625,115 @@ worker correctly queued both eligible test cases through `BulkScheduleAsync`,
 and `NextRunDate` advanced correctly to the next day at the configured time; one targeting
 an already-Completed release (`E2EP3DemoSuite`) confirmed the worker auto-paused it with
 the correct `PausedReason` and both Admin/Manager recipients received the notification.
+
+## Responsive redesign (ohpnm-test-portal) - Phase 1: App Shell
+
+Full-application responsiveness work, done in phases (shell first, then shared components,
+then individual screens - checkpointed with the user between phases). Breakpoints reuse
+Bootstrap 5's own scale (already the framework in use) rather than inventing custom ones:
+Mobile `<768px`, Tablet `768-991.98px`, Desktop `>=992px` (unchanged from before this work).
+
+### Before this work: zero responsive CSS anywhere in the shell
+`styles.css` had no `@media` queries at all - `.sidebar` was a hard `280px`
+(`flex-shrink:0`), and `body { overflow-x: hidden }` was silently *masking* the resulting
+horizontal overflow rather than fixing it. On any real phone-sized viewport, main content
+was effectively pushed off-screen and invisible, not just cramped.
+
+### New mobile shell
+- `MobileHeaderComponent` (`core/mobile-header/`) - fixed top bar, `<768px` only (`d-md-none`
+  in its own template), hamburger button emits `menuToggle` to `LayoutComponent`.
+- `LayoutComponent` owns `isMobileMenuOpen`, wires the hamburger, the new
+  `.mobile-nav-overlay` backdrop, and `LeftSidebarComponent`'s new `[isMobileOpen]`
+  input/`(navigate)` output. Also closes the drawer on `NavigationStart` (router events) as
+  a belt-and-suspenders in addition to the explicit `(navigate)` event, covering any
+  navigation path that doesn't go through a plain sidebar link click.
+- `LeftSidebarComponent` - `[isMobileOpen]` toggles `.mobile-open` on the `<nav>`;
+  `(navigate)` fires from a single delegated `(click)` on the whole `.nav.flex-column`
+  container (not one handler per link) plus the new mobile-only close (X) button; the
+  desktop chevron toggle (`.toggle-btn`) is hidden `<768px` via `d-none d-md-inline-flex`.
+- Tablet (768-991.98px) defaults to the *existing, already-built* `.collapsed` icon-rail
+  styling (desktop's own manual-collapse look), just inverted - `.wrapper:not(.collapsed)`
+  is the tablet **default** rail, and clicking the same toggle button adds `.collapsed`
+  which now means "temporarily expanded" on tablet specifically (opposite of what it means
+  on desktop). This reuses the same visual treatment as desktop's collapse instead of a
+  second copy of the design, per an explicit user decision to prefer a persistent icon rail
+  over an off-canvas drawer on tablet (more real screen width available there than mobile).
+
+### Non-obvious bugs found and fixed during this phase (all confirmed via direct testing,
+not just code review - several visually contradicted what the CSS "should" have done)
+
+1. **Bootstrap's `.position-relative` utility beats a plain `position: fixed` override,
+   regardless of stylesheet load order.** `left-sidebar.component.html`'s `<nav>` already
+   carried Bootstrap's `.position-relative` (`position: relative !important`) for the
+   notification bell/panel's absolute-positioned children. A same-specificity
+   `position: fixed` (no `!important`) in the new mobile media query silently lost - the
+   sidebar just stayed in normal flex flow, fully visible, instead of becoming an off-canvas
+   drawer. **Fix**: use a higher-specificity compound selector (`.wrapper .sidebar`) *with*
+   `!important` - among two `!important` declarations, specificity is compared before
+   source order, so this wins regardless of `bootstrap.min.css` loading after `styles.css`
+   in `angular.json`'s `styles` array.
+2. **`d-md-inline-flex` on `.toggle-btn` needed explicit centering.** Forcing `display:
+   inline-flex` via the Bootstrap utility (to hide the desktop toggle on mobile) turned the
+   chevron `<i>` into an unaligned flex item, since `.toggle-btn` never previously declared
+   `align-items`/`justify-content` (it didn't need to as a plain button). Added both plus an
+   explicit `color`/`font-size` matching `.notification-bell-btn`'s own sibling pattern.
+3. **The actual root cause of nav items being permanently unreachable (not just "needs a
+   scroll"), found via screenshots showing items missing with no functioning scrollbar
+   anywhere**: Bootstrap's own `.nav` class (`bootstrap.css`) sets `flex-wrap: wrap`, and
+   nothing had ever overridden it. Combined with `flex-direction: column` (from the sibling
+   `.flex-column` utility on the same `<div class="nav flex-column">`), any vertical
+   overflow was silently **wrapping into a second, off-screen column** (clipped by
+   `.nav.flex-column`'s own `overflow-x: hidden`) instead of ever producing the vertical
+   scrollbar `overflow-y: auto` was supposed to create. No amount of scrolling could ever
+   have reached the wrapped-away items - this had nothing to do with `min-height: 0` or
+   `flex: 1 1 auto` (both already correct). **Fix**: `flex-wrap: nowrap` on
+   `.nav.flex-column`. Also reduced the profile photo to 56px and header padding on
+   `<=991.98px` (previously a fixed 90px regardless of viewport) and added
+   `-webkit-overflow-scrolling: touch`/`overscroll-behavior: contain` to the same rule, so
+   less scrolling is needed at all and the touch/wheel scroll itself feels responsive.
+4. **Active nav-item highlight was a flat 10% white overlay** (`rgba(255,255,255,0.1)`) -
+   fine near the sidebar gradient's dark start (`#1a1c2e`), but the gradient
+   (`linear-gradient(135deg, #1a1c2e -> #34495e)`) is already noticeably lighter by the
+   items further down the list, where the same overlay barely changes anything - looked
+   like "no highlight at all" despite the `active` class being applied correctly by
+   `routerLinkActive`. **Fix**: a stronger flat teal-tinted background
+   (`rgba(26,188,156,0.22)`) plus an `inset box-shadow` left accent bar (deliberately not a
+   real `border-left`, which would need a matching `padding-left` reduction to avoid
+   shifting content - and `.sidebar-link`'s own Bootstrap `.p-3` utility sets padding with
+   `!important`, so a non-`!important` compensating padding would've silently lost and
+   shifted the active item's icon/text out of alignment with every other link).
+5. **Icon/text vertical alignment relied on inline baseline alignment** (`.sidebar-link`
+   was `display: block`, icon + text just flowed as inline content) - not reliably centered
+   for FontAwesome icons, more visible once fix #4 made the active state visually bolder.
+   Converting `.sidebar-link` to `display: flex; align-items: center` fixes this robustly -
+   but this immediately surfaced bug #6.
+6. **`display: flex` on `.sidebar-link` broke the collapsed/icon-rail state completely**
+   (icons appeared missing/shifted to seemingly random positions). The collapsed state's
+   `.hide-on-collapse` (the link's text `<span>`) was only `opacity: 0; visibility: hidden`
+   - which still reserves its full natural width in a flex row. With `display: flex` now
+   active, `justify-content: center` (collapsed state) centers the *whole* flex content -
+   icon **plus** the invisible-but-space-consuming, much wider text span - instead of just
+   the icon, visibly shoving the icon off-center or out of the visible 53px rail entirely.
+   **Fix**: `.hide-on-collapse` also gets `width: 0; margin: 0; padding: 0; overflow:
+   hidden` when collapsed, removing it from the flex-space calculation entirely rather than
+   just hiding it visually.
+7. **Tablet's inverted `.collapsed` semantics conflicted with the unconditional (desktop-
+   authored) collapsed-state rules.** The base `.wrapper.collapsed .hide-on-collapse` (and
+   sibling `.logo-text`/`.sidebar-link`/`.profile-img-wrapper`/`.logo-underline` rules) are
+   not themselves media-scoped, so they fire on *any* viewport whenever `.collapsed` is
+   present - including tablet's "toggled to full-expand" state, where `.collapsed` means
+   the opposite of what it means on desktop. Without an explicit reversal, clicking the
+   toggle to expand on tablet still got silently re-hidden by these desktop-authored rules.
+   **Fix**: added a full explicit reversal block inside the tablet media query
+   (`.wrapper.collapsed .X { ...restore normal appearance... }`) for every property the
+   unconditional collapsed rules touch - this is the one part of the "reuse the existing
+   collapsed CSS, just inverted" approach that didn't come for free and needed its own
+   dedicated fix; a cleaner architecture (e.g. a dedicated `.tablet-rail` class applied by
+   JS reading the viewport) would avoid this class of bug entirely but was judged
+   higher-risk/more code to introduce than fixing the reversal explicitly, given how far
+   the "reuse existing CSS" approach already got by inverting `:not(.collapsed)`.
+
+All 7 fixes were found through **actual browser screenshots at each breakpoint**, not just
+code review - several (`#1`, `#3`, `#6`) looked like they should have worked from reading
+the CSS alone and only broke visibly once tested for real, which is why this section
+documents them in this much detail for future reference.

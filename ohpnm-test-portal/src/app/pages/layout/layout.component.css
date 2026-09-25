@@ -2,3 +2,18 @@
   height: 100vh;
   overflow-y: auto;
 }
+
+/* Without this, this rule's own unconditional height: 100vh would still force
+   .main-content to a full 100vh box even after .wrapper reserves
+   var(--mobile-header-height) above it for the fixed mobile header (styles.css) -
+   producing ~56px of extra unwanted vertical scroll on every mobile page. */
+@media (max-width: 767.98px) {
+  .main-content {
+    height: calc(100vh - var(--mobile-header-height));
+    /* styles.css's global, unconditional .main-content { min-height: 100vh } would
+       otherwise act as a floor and silently cancel the height override above -
+       component-scoped CSS carries Angular's extra attribute selector, so this wins
+       regardless of source order between the two files. */
+    min-height: calc(100vh - var(--mobile-header-height));
+  }
+}

@@ -1,5 +1,15 @@
+<app-mobile-header (menuToggle)="toggleMobileMenu()"></app-mobile-header>
+
 <div [class.wrapper]="true" [class.collapsed]="isCollapsed">
-  <app-left-sidebar (toggle)="toggleSidebar()"></app-left-sidebar>
+  <!-- Backdrop behind the off-canvas drawer, mobile-only (see styles.css) - tapping it
+       closes the menu the same way picking a nav item does. -->
+  <div class="mobile-nav-overlay" *ngIf="isMobileMenuOpen" (click)="closeMobileMenu()"></div>
+
+  <app-left-sidebar
+    [isMobileOpen]="isMobileMenuOpen"
+    (toggle)="toggleSidebar()"
+    (navigate)="closeMobileMenu()"
+  ></app-left-sidebar>
   <!-- <app-main></app-main> -->
 
   <!-- Main Content -->

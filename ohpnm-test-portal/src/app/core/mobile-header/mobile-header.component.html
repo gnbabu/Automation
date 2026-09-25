@@ -1,0 +1,14 @@
+<header class="mobile-header d-md-none">
+  <button
+    type="button"
+    class="mobile-header-btn"
+    (click)="menuToggle.emit()"
+    aria-label="Open navigation menu"
+  >
+    <i class="fas fa-bars"></i>
+  </button>
+  <span class="mobile-header-title">Automation</span>
+  <!-- Spacer balances the hamburger button's width so the title stays visually
+       centered, matching the task's recommended mobile header layout. -->
+  <span class="mobile-header-spacer" aria-hidden="true"></span>
+</header>

@@ -1,6 +1,7 @@
 :root {
   --sidebar-width: 280px;
   --sidebar-width-collapsed: 80px;
+  --mobile-header-height: 56px;
 }
 
 /* Ensure full height layout */
@@ -60,7 +61,15 @@ body {
   margin: 4px 16px;
   white-space: nowrap;
   overflow: hidden;
-  display: block;
+  /* display:flex (was display:block, relying on the icon/text's own inline baseline
+     alignment - FontAwesome icons don't reliably sit on the text baseline, so they could
+     look slightly off-center vertically, more noticeable now that the active state got a
+     bolder highlight above) guarantees the icon and label both align to the same center
+     line regardless of font metrics. It also finally makes the collapsed/icon-rail
+     state's own justify-content/align-items:center rules below actually take effect -
+     they were previously silent no-ops against a block-level element. */
+  display: flex;
+  align-items: center;
   text-decoration: none;
   padding: 1rem;
   font-size: 1rem;
@@ -74,7 +83,21 @@ body {
 
 .sidebar-link.active {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  /* A flat 10% white overlay (as used on hover, above) reads fine near the sidebar's own
+     dark navy gradient start, but the gradient (linear-gradient(135deg, #1a1c2e ->
+     #34495e)) is already noticeably lighter by the time it reaches items further down the
+     list - at that point the same 10% overlay barely changes the background at all,
+     making the active item look unhighlighted despite the class being applied correctly.
+     A stronger, flat brand-teal-tinted background plus a solid left accent bar stays
+     equally visible regardless of where the item sits along that gradient.
+     An inset box-shadow (rather than border-left) draws the accent bar without adding
+     any layout width/padding of its own - a real border-left here would've needed a
+     matching padding-left reduction to avoid shifting the text/icon, but .sidebar-link's
+     own Bootstrap .p-3 utility sets padding with !important, silently winning over any
+     non-!important compensation and shifting the active item's content out of alignment
+     with every other (inactive) link. */
+  background: rgba(26, 188, 156, 0.22);
+  box-shadow: inset 3px 0 0 #1abc9c;
 }
 
 .logo-text {
@@ -92,11 +115,19 @@ body {
   border-radius: 50%;
   width: 30px;
   height: 30px;
+  padding: 0;
   border: none;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   z-index: 100;
   cursor: pointer;
   transition: transform 0.3s ease;
+  /* Needed now that the button uses Bootstrap's d-md-inline-flex utility (see left-
+     sidebar.component.html) to hide it on mobile - without explicit centering, the
+     chevron icon renders off-center/clipped inside the 30px circle as a flex item. */
+  align-items: center;
+  justify-content: center;
+  color: #1a1c2e;
+  font-size: 0.85rem;
 }
 
 .wrapper.collapsed .toggle-btn {
@@ -106,6 +137,17 @@ body {
 .wrapper.collapsed .hide-on-collapse {
   opacity: 0;
   visibility: hidden;
+  /* .sidebar-link is now display:flex (see .sidebar-link above) so this label span is a
+     flex item alongside the icon - visibility:hidden alone still reserves its full
+     natural width (the un-clamped text, e.g. "Flow & Section Management") in the flex
+     row, so .wrapper.collapsed .sidebar-link's justify-content:center ends up centering
+     that whole (icon + invisible-but-space-taking label) group instead of just the icon,
+     visibly shoving the icon off to one side. Collapsing it to zero width removes it from
+     that flex-space calculation entirely. */
+  width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .wrapper.collapsed .logo-text,
@@ -194,6 +236,188 @@ body {
 .wrapper.collapsed .logo-underline {
   opacity: 0;
   width: 0;
+}
+
+/* =====================================
+   RESPONSIVE APP SHELL
+   Breakpoints match Bootstrap 5's own md/lg (already the framework in use throughout this
+   app), so components already built on the .col-md- and .d-md- utility classes need
+   little/no extra work:
+     - Desktop (>=992px): unchanged from above - existing expand/collapse toggle behavior.
+     - Tablet (768-991.98px): sidebar defaults to the icon-only rail (reusing the exact
+       .collapsed styles above, just inverted - see the ":not(.collapsed)" selectors below)
+       rather than duplicating a second copy of every collapsed-state rule. Tapping the
+       existing toggle button temporarily expands it back to full width.
+     - Mobile (<768px): sidebar becomes a fixed off-canvas drawer (MobileHeaderComponent's
+       hamburger opens it; LeftSidebarComponent's close (X)/nav-click/the overlay below all
+       close it) instead of ever being part of the normal document flow.
+===================================== */
+
+.mobile-nav-overlay {
+  display: none;
+}
+
+.mobile-close-btn {
+  display: none;
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  /* Inverted from the desktop .collapsed rules above: on tablet, the RAIL is the default
+     (no class needed) and .collapsed - still toggled by the same button - expands it back
+     to full width. Reuses the exact same visual treatment already built/tested for
+     desktop's collapsed state, just flipped which state is the default. */
+  .wrapper:not(.collapsed) .sidebar {
+    width: var(--sidebar-width-collapsed);
+  }
+
+  .wrapper.collapsed .sidebar {
+    width: var(--sidebar-width);
+  }
+
+  .wrapper:not(.collapsed) .hide-on-collapse {
+    opacity: 0;
+    visibility: hidden;
+    /* Same fix as .wrapper.collapsed .hide-on-collapse above, for the tablet rail's
+       inverted default state. */
+    width: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .wrapper:not(.collapsed) .logo-text,
+  .wrapper:not(.collapsed) .profile-info {
+    opacity: 0;
+  }
+
+  .wrapper:not(.collapsed) .sidebar-link {
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    width: 53px;
+  }
+
+  .wrapper:not(.collapsed) .sidebar-link i {
+    margin: 0 !important;
+    font-size: 1.25rem;
+  }
+
+  .wrapper:not(.collapsed) .sidebar .profile-img {
+    width: 53px;
+    height: 53px;
+  }
+
+  .wrapper:not(.collapsed) .profile-img-wrapper {
+    padding: 2px;
+  }
+
+  .wrapper:not(.collapsed) .logo-underline {
+    opacity: 0;
+    width: 0;
+  }
+
+  /* Tablet toggled to full-expand (.collapsed present - inverted meaning here, see above).
+     The desktop-authored .wrapper.collapsed rules earlier in this file fire regardless of
+     viewport width (they're not media-scoped themselves), so without this block, clicking
+     the toggle to "expand" on tablet would still get silently re-hidden by those rules
+     (they were written assuming .collapsed always means "narrow/hide text") - this
+     explicitly reverses every one of them back to their normal/expanded appearance. */
+  .wrapper.collapsed .hide-on-collapse {
+    opacity: 1;
+    visibility: visible;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .wrapper.collapsed .logo-text,
+  .wrapper.collapsed .profile-info {
+    opacity: 1;
+  }
+
+  .wrapper.collapsed .sidebar-link {
+    justify-content: flex-start;
+    width: auto;
+  }
+
+  .wrapper.collapsed .sidebar-link i {
+    margin-right: 1rem !important;
+    font-size: 1rem;
+  }
+
+  .wrapper.collapsed .profile-img-wrapper {
+    padding: 4px;
+  }
+
+  .wrapper.collapsed .logo-underline {
+    opacity: 1;
+    width: 100%;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .wrapper {
+    padding-top: var(--mobile-header-height);
+  }
+
+  /* Off-canvas: taken out of the .wrapper flex flow entirely (fixed positioning) so it
+     never consumes layout width - .main-content is always full viewport width on mobile,
+     matching the task's hard "content never hidden underneath/squeezed by the sidebar"
+     requirement. Deliberately ignores the desktop/tablet .collapsed icon-rail state here
+     (see the width overrides below) - "collapsed" on mobile always means "fully hidden",
+     never a persistent icon rail, since that's a different interaction model. */
+  /* !important + the compound .wrapper .sidebar selector (specificity 0,0,2,0) is
+     required here - the <nav> in left-sidebar.component.html also carries Bootstrap's
+     own .position-relative utility class (position: relative !important, specificity
+     0,0,1,0). Among two !important declarations specificity is compared *before* source
+     order, so a plain "position: fixed" here (or one at equal 0,0,1,0 specificity) would
+     silently lose to Bootstrap's utility regardless of which stylesheet loads later. */
+  .wrapper .sidebar,
+  .wrapper.collapsed .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: min(280px, 85vw);
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1030;
+  }
+
+  .wrapper .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    right: 15px;
+    top: 20px;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: white;
+    color: #1a1c2e;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+  }
+
+  .mobile-nav-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1020;
+  }
+
+  .main-content {
+    width: 100%;
+    padding: 16px;
+  }
 }
 
 /* =====================================

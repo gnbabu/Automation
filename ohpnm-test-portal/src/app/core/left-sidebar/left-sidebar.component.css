@@ -40,8 +40,50 @@
   overflow-x: hidden;
   flex: 1 1 auto;
   min-height: 0;
+  /* THE actual root cause of nav items being unreachable, not just "hard to scroll to" -
+     Bootstrap's own .nav class (bootstrap.css) sets flex-wrap: wrap and nothing here ever
+     overrode it. Combined with flex-direction: column (from the sibling .flex-column
+     utility), any overflow was silently wrapping into a second, off-screen column
+     (clipped by overflow-x: hidden below) instead of ever producing the vertical
+     scrollbar this rule's overflow-y: auto was supposed to create - so no amount of
+     scrolling could ever have reached the wrapped-away items. */
+  flex-wrap: nowrap;
+  /* Without this, the last link (Logout) sits flush against the scroll container's own
+     bottom edge once fully scrolled - easy to read as "still cut off" even though it's
+     technically fully in view. */
+  padding-bottom: 12px;
   scrollbar-width: thin;
   scrollbar-color: rgba(26, 188, 156, 0.6) transparent;
+  /* Momentum/inertial scrolling on iOS Safari - without this, a nested overflow-y:auto
+     region can feel "stuck"/unresponsive to touch drags even though it's technically
+     scrollable, which is easy to mistake for "not scrollable at all". */
+  -webkit-overflow-scrolling: touch;
+  /* Without this, a touch-drag that starts inside this small nested scroll region can
+     get handed off to scroll the page/drawer behind it instead once this region hits
+     its own scroll boundary (or in some browsers, immediately) - another common cause
+     of a technically-scrollable nested region feeling completely unresponsive. */
+  overscroll-behavior: contain;
+}
+
+/* The profile photo/header was a fixed 90x90 (plus padding) regardless of viewport -
+   with 12 nav links, this reduces how much of the sidebar's fixed 100vh is actually
+   available for links before the internal scroll region (above) has to kick in at all,
+   making the "last few links need a scroll to reach" problem worse than necessary,
+   especially on shorter mobile/laptop viewports. Desktop keeps the original size. */
+@media (max-width: 991.98px) {
+  .profile-img,
+  .wrapper.collapsed .sidebar .profile-img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .p-4.text-center {
+    padding: 1rem !important;
+  }
+
+  .logo-text {
+    font-size: 1.25rem;
+  }
 }
 
 .nav.flex-column::-webkit-scrollbar {

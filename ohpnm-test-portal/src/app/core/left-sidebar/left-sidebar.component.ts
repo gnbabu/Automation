@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, Output, Signal } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterModule } from '@angular/router';
 import { AuthService, NotificationService } from '@services';
@@ -16,6 +16,16 @@ import { Subscription } from 'rxjs';
 })
 export class LeftSidebarComponent implements OnInit, OnDestroy {
   @Output() toggle = new EventEmitter<void>();
+  // Mobile off-canvas drawer state - driven by LayoutComponent (hamburger lives in
+  // MobileHeaderComponent, a sibling). Desktop/tablet behavior (the existing .collapsed
+  // icon-rail toggle above) is completely unaffected by this - see left-sidebar.component.
+  // css's <768px media query for where isMobileOpen actually changes anything visually.
+  @Input() isMobileOpen = false;
+  // Emitted on any click inside the nav-links area (including Logout) - lets the parent
+  // close the mobile drawer once a destination is chosen, matching the task's "close menu
+  // when a navigation item is selected" requirement, without needing a click handler on
+  // every individual <a>.
+  @Output() navigate = new EventEmitter<void>();
   isAdmin: boolean;
   canAccessManagerFeatures: boolean;
   isViewer: boolean;

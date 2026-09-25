@@ -1,6 +1,16 @@
-<nav class="sidebar d-flex flex-column flex-shrink-0 position-relative">
-  <button class="toggle-btn" type="button" (click)="toggle.emit()">
+<nav
+  class="sidebar d-flex flex-column flex-shrink-0 position-relative"
+  [class.mobile-open]="isMobileOpen"
+>
+  <button class="toggle-btn d-none d-md-inline-flex" type="button" (click)="toggle.emit()">
     <i class="fas fa-chevron-left"></i>
+  </button>
+
+  <!-- Mobile-only close (X) - the chevron toggle above is desktop/tablet-only (see its
+       d-none d-md-inline-flex classes); on mobile the drawer is closed via this, the
+       overlay behind it, or picking a nav item (navigate.emit() below). -->
+  <button class="mobile-close-btn d-md-none" type="button" (click)="navigate.emit()" aria-label="Close navigation menu">
+    <i class="fas fa-times"></i>
   </button>
 
   <button class="notification-bell-btn" type="button" (click)="toggleNotificationPanel()">
@@ -52,7 +62,10 @@
     </div>
   </div>
 
-  <div class="nav flex-column">
+  <!-- Single delegated handler (rather than one on each of the 11 links below) - closes
+       the mobile drawer no matter which nav item (including Logout) was picked. Harmless
+       on desktop/tablet since isMobileOpen there is always false already. -->
+  <div class="nav flex-column" (click)="navigate.emit()">
     <a
       [routerLink]="['/dashboard']"
       routerLinkActive="active"
