@@ -166,6 +166,14 @@ export const routes: Routes = [
         canActivate: [authGuard, adminGuard],
       },
       {
+        path: 'activity-log',
+        loadComponent: () =>
+          import('./pages/activity-log/activity-log.component').then(
+            (m) => m.ActivityLogComponent,
+          ),
+        canActivate: [authGuard, adminGuard],
+      },
+      {
         path: 'environment-management/new',
         loadComponent: () =>
           import('./pages/environment-management/environment-form/environment-form.component').then(

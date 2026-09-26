@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using AutomationAPI.Repositories.Helpers;
 using Microsoft.AspNetCore.Authorization;
 
 namespace AutomationAPI.Controllers
@@ -12,11 +13,13 @@ namespace AutomationAPI.Controllers
     public class AutomationController : ControllerBase
     {
         private readonly IAutomationRepository _automationRepository;
+        private readonly IAuditLogService _auditLog;
         private readonly ILogger<AutomationController> _logger;
 
-        public AutomationController(IAutomationRepository automationRepository, ILogger<AutomationController> logger)
+        public AutomationController(IAutomationRepository automationRepository, IAuditLogService auditLog, ILogger<AutomationController> logger)
         {
             _automationRepository = automationRepository;
+            _auditLog = auditLog;
             _logger = logger;
         }
 
@@ -174,6 +177,25 @@ namespace AutomationAPI.Controllers
             {
                 _logger.LogInformation("Inserting automation data section with SectionName: {SectionName}", request.SectionName);
                 var newId = await _automationRepository.InsertAutomationDataSectionAsync(request);
+
+                // Distinguishes "brand new Flow" from "new Section in an existing Flow" -
+                // there's no separate Flow table, so this is the only signal available;
+                // an approximate check (any existing section under this FlowName before
+                // the insert) rather than a strict one is fine here, since it only
+                // affects which EntityType label the log entry gets, not the section
+                // itself.
+                var existingInFlow = await _automationRepository.GetAutomationDataSectionsAsync(request.FlowName);
+                var isNewFlow = !existingInFlow.Any(s => s.SectionId != newId);
+                if (isNewFlow)
+                {
+                    await _auditLog.LogAsync("Flow", null, request.FlowName, "Created",
+                        this.GetAuditUserId(), this.GetAuditUserName(),
+                        snapshot: new { flowName = request.FlowName, firstSectionName = request.SectionName });
+                }
+                await _auditLog.LogAsync("Section", newId, request.SectionName, "Created",
+                    this.GetAuditUserId(), this.GetAuditUserName(),
+                    snapshot: new { sectionName = request.SectionName, flowName = request.FlowName });
+
                 // Plain Ok(newId) - the previous CreatedAtAction pointed at the
                 // sections/{flowName} GET route with a sectionId route value, which
                 // throws "No route matches the supplied values" at runtime (a
@@ -204,7 +226,22 @@ namespace AutomationAPI.Controllers
             try
             {
                 _logger.LogInformation("Updating automation data section for SectionID: {SectionID}", request.SectionId);
+
+                // Fetch the pre-update name for the audit diff - there is no dedicated
+                // GetSectionById, so this reuses the same by-flow lookup the duplicate-
+                // name check already relies on.
+                var existing = (await _automationRepository.GetAutomationDataSectionsAsync(request.FlowName))
+                    .FirstOrDefault(s => s.SectionId == request.SectionId);
+
                 await _automationRepository.UpdateAutomationDataSectionAsync(request);
+
+                if (existing != null && !string.Equals(existing.SectionName, request.SectionName, StringComparison.Ordinal))
+                {
+                    await _auditLog.LogAsync("Section", request.SectionId, request.SectionName, "Updated",
+                        this.GetAuditUserId(), this.GetAuditUserName(),
+                        changes: new[] { new AuditFieldChange { Field = "SectionName", Old = existing.SectionName, New = request.SectionName } });
+                }
+
                 return NoContent(); // Successfully updated
             }
             catch (DuplicateSectionException ex)
@@ -231,7 +268,21 @@ namespace AutomationAPI.Controllers
             try
             {
                 _logger.LogInformation("Deleting automation data section for SectionID: {SectionID} (cascade: {Cascade})", sectionId, cascade);
+
+                // Fetch the pre-delete name/flow for the audit entry - there is no
+                // dedicated GetSectionById; passing a null/empty FlowName to the
+                // existing by-flow lookup returns every section across every flow
+                // (confirmed in usp_get_AutomationDataSection), which is fine here since
+                // this only runs once, right before an already-confirmed delete.
+                var existing = (await _automationRepository.GetAutomationDataSectionsAsync(null))
+                    .FirstOrDefault(s => s.SectionId == sectionId);
+
                 await _automationRepository.DeleteAutomationDataSectionAsync(sectionId, cascade);
+
+                await _auditLog.LogAsync("Section", sectionId, existing?.SectionName ?? $"Section #{sectionId}", "Deleted",
+                    this.GetAuditUserId(), this.GetAuditUserName(),
+                    snapshot: new { sectionName = existing?.SectionName, flowName = existing?.FlowName, cascade });
+
                 return NoContent(); // Successfully deleted
             }
             catch (SectionHasDataException ex)

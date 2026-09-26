@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using AutomationAPI.Repositories.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +14,13 @@ namespace AutomationAPI.Controllers
     public class EnvironmentController : ControllerBase
     {
         private readonly IEnvironmentRepository _repo;
+        private readonly IAuditLogService _auditLog;
         private readonly ILogger<EnvironmentController> _logger;
 
-        public EnvironmentController(IEnvironmentRepository repo, ILogger<EnvironmentController> logger)
+        public EnvironmentController(IEnvironmentRepository repo, IAuditLogService auditLog, ILogger<EnvironmentController> logger)
         {
             _repo = repo;
+            _auditLog = auditLog;
             _logger = logger;
         }
 
@@ -57,6 +60,10 @@ namespace AutomationAPI.Controllers
                 return Conflict(GetUserMessage(ex, "An environment with that name already exists."));
             }
 
+            await _auditLog.LogAsync("Environment", id, request.EnvironmentName, "Created",
+                this.GetAuditUserId(), this.GetAuditUserName(),
+                snapshot: new { environmentName = request.EnvironmentName, environmentUrl = request.EnvironmentUrl, requiresAuthentication = request.RequiresAuthentication });
+
             return Ok(new { EnvironmentId = id });
         }
 
@@ -86,6 +93,19 @@ namespace AutomationAPI.Controllers
                 return Conflict(GetUserMessage(ex, "An environment with that name already exists."));
             }
 
+            var changes = new List<AuditFieldChange>();
+            if (!string.Equals(existing.EnvironmentName, request.EnvironmentName, StringComparison.Ordinal))
+                changes.Add(new AuditFieldChange { Field = "EnvironmentName", Old = existing.EnvironmentName, New = request.EnvironmentName });
+            if (!string.Equals(existing.EnvironmentUrl, request.EnvironmentUrl, StringComparison.Ordinal))
+                changes.Add(new AuditFieldChange { Field = "EnvironmentUrl", Old = existing.EnvironmentUrl, New = request.EnvironmentUrl });
+            if (existing.RequiresAuthentication != (request.RequiresAuthentication ?? existing.RequiresAuthentication))
+                changes.Add(new AuditFieldChange { Field = "RequiresAuthentication", Old = existing.RequiresAuthentication, New = request.RequiresAuthentication });
+            if (!string.Equals(existing.Description, request.Description, StringComparison.Ordinal))
+                changes.Add(new AuditFieldChange { Field = "Description", Old = existing.Description, New = request.Description });
+
+            await _auditLog.LogAsync("Environment", request.EnvironmentId, request.EnvironmentName, "Updated",
+                this.GetAuditUserId(), this.GetAuditUserName(), changes: changes);
+
             return Ok();
         }
 
@@ -101,6 +121,11 @@ namespace AutomationAPI.Controllers
                 return NotFound();
 
             await _repo.SoftDeleteAsync(id, GetCurrentUserId());
+
+            await _auditLog.LogAsync("Environment", id, env.EnvironmentName, "Disabled",
+                this.GetAuditUserId(), this.GetAuditUserName(),
+                snapshot: new { environmentName = env.EnvironmentName });
+
             return Ok(new { Message = "Environment soft-deleted successfully" });
         }
 
@@ -124,6 +149,10 @@ namespace AutomationAPI.Controllers
                 _logger.LogWarning(ex, "Delete blocked for environment {EnvironmentId}", id);
                 return Conflict(GetUserMessage(ex, "This environment could not be deleted."));
             }
+
+            await _auditLog.LogAsync("Environment", id, env.EnvironmentName, "Deleted",
+                this.GetAuditUserId(), this.GetAuditUserName(),
+                snapshot: new { environmentName = env.EnvironmentName, environmentUrl = env.EnvironmentUrl });
 
             return Ok(new { Message = "Environment permanently deleted" });
         }

@@ -3937,4 +3937,113 @@ guarantees the intended side-by-side, compact layout regardless of whatever the 
 cause was, and was confirmed fixed at mobile/tablet/desktop. If a similar
 "correct-looking classes, wrong rendered layout" case turns up again, it's worth checking
 Angular's build output / browser cache more directly (e.g. inspecting the actual computed
+
+## Audit Log ("Activity Log") - Phase A
+
+There was previously **no record anywhere** of who created/renamed/deleted a Section,
+changed an Environment, etc. A few endpoints (`EnvironmentController.Update`/`SoftDelete`,
+`LoginUserController`) captured a `ModifiedBy`/similar column on the row *itself* - but
+that's overwritten on the next change and lost entirely once the row is deleted; there was
+no history, and several newer delete paths (Section delete, the client-side Flow cascade
+delete, `RecurringSchedule` delete) captured no attribution at all, not even that.
+
+### Schema (`Database/AuditLog_Migration.sql`, idempotent)
+New, generic `aut.AuditLog` table - not an extension of any existing entity table, so one
+screen/API can show activity across every module:
+- `EntityType`/`EntityId`/`EntityName` - `EntityId` is nullable (a "Flow" has no single
+  numeric id of its own - it's just the distinct `FlowName` value on
+  `aut.AutomationDataSections` rows); `EntityName` is always a populated *snapshot*, not a
+  live lookup, so the log stays readable after the underlying row is deleted.
+- `Action` - `'Created'/'Updated'/'Deleted'/'Enabled'/'Disabled'/'Paused'/'Resumed'/
+  'PasswordChanged'`.
+- `ActorUserId`/`ActorUserName` - `ActorUserId` is nullable for system/background actions
+  with no logged-in user in context at all (`RecurringScheduleWorker`'s own auto-pause);
+  `ActorUserName` is always populated (`'System'` for those) - a snapshot, not an FK-
+  dependent lookup, so it reads correctly even after the acting user is later deleted.
+  Deliberately no FK constraint on `ActorUserId` for the same reason.
+- `Details` - JSON: a `changes[]` diff (`{field, old, new}`) for Updates, built by
+  comparing the pre-mutation row to the request at each call site (not a generic
+  reflection-based diff - keeps `Details` meaningful rather than every field regardless of
+  whether it changed); a plain snapshot object for Creates/Deletes.
+- `usp_AuditLog_Insert`, `usp_AuditLog_GetPaged` (filtered + `COUNT(*) OVER()` for
+  `TotalCount`, static SQL - no dynamic-SQL/`sp_executesql` surface), `usp_AuditLog_
+  GetDistinctEntityTypes` (powers the Entity Type filter dropdown with exactly what's
+  actually been logged, rather than a hard-coded list).
+- Also added `usp_LoginUserGetById` (small, additive) - none of the existing LoginUser
+  procs take just a `LoginUserId` (they're all ownership-scoped by `EnvironmentId`+
+  `PortalUserId` pairs), but `LoginUserController`'s Update/SoftDelete/HardDelete
+  endpoints only ever receive a bare id - needed so those audit entries can show a
+  readable "TechAdmin (jdoe)" name instead of just a number.
+
+### Backend
+- `IAuditLogService`/`AuditLogService` (`Repositories/AuditLogService.cs`) - the only
+  thing every controller calls; wraps `IAuditLogRepository` and is the only place that
+  decides what `Details` looks like. **Failures are caught and logged via `ILogger`, never
+  propagated** - an audit-log write must never fail or roll back the real Section/
+  Environment/Release/etc. mutation it's attached to.
+- `ControllerAuditExtensions` (`Repositories/Helpers/`) - small `GetAuditUserId()`/
+  `GetAuditUserName()` extension methods on `ControllerBase`, reading the same JWT claims
+  (`ClaimTypes.NameIdentifier`/`ClaimTypes.Name`) several controllers already had their
+  own ad-hoc `GetCurrentUserId()` for - added the matching `ActorUserName` half without
+  touching any of those existing methods.
+- `AuditLogController` - `[Authorize(Roles = "Admin")]`, matching the frontend's
+  `adminGuard` convention already used for User Management/Environment Management (the
+  log surfaces every user's actions, not just the caller's own).
+- **Instrumented in this pass** (call sites, right after each mutation succeeds):
+  - `AutomationController` - Section Create/Update(rename diff)/Delete(+cascade), and a
+    best-effort "is this actually a brand new Flow" check on Create (no separate Flow
+    table exists, so this is inferred from whether any other section already existed
+    under that `FlowName` before the insert).
+  - `EnvironmentController` - Create/Update(diff)/SoftDelete(`'Disabled'`)/HardDelete.
+  - `RecurringScheduleController` - Create/Update(diff)/Pause/Resume/Delete, **plus**
+    `RecurringScheduleWorker`'s own auto-pause branch (`ActorUserId = null`,
+    `ActorUserName = "System"` - resolved via `services.GetRequiredService<
+    IAuditLogService>()` inside the worker's existing per-cycle DI scope, same pattern as
+    its own `NotifyPausedAsync`).
+  - `LoginUserController` - Create/Update(diff)/SoftDelete(`'Disabled'`)/HardDelete.
+  - `UsersController` - Create/Update(diff)/Delete/`SetUserActiveStatus`
+    (Enabled/Disabled)/`ChangePassword` (event only - **never** any password value; actor
+    is always the caller themselves since it's self-service).
+- Not yet instrumented (deferred to a later phase): Release lifecycle (Activate/Sign-
+  off/Reject/Enable/Disable/Delete), Test Case Assignment save/reset, Test Data
+  Management field-level changes.
+
+### Frontend
+- New `activity-log` route (`authGuard, adminGuard`) and sidebar nav entry (`*ngIf=
+  "isAdmin"`, right after Environment Management).
+- `ActivityLogComponent` - built on the shared `DataGridComponent` (light theme),
+  filters (Entity Type/Action/User/date range) in a `.filter-card` matching every other
+  list screen's convention. Fetches one large batch (`pageSize: 500`) and lets
+  `DataGridComponent` paginate client-side - matches every other grid in the app (none of
+  them actually wire up `fetchServerData`/server paging mode, even though the shared
+  component supports it).
+- `Details` renders as a small expandable list (`View (N)`/`Hide (N)`) rather than raw
+  JSON - a `changes[]` diff shows `field: old → new`; a plain snapshot object shows
+  `key: value` pairs.
+- **Two real overflow bugs found via live end-to-end testing** (creating a real
+  RecurringSchedule/Environment/Section and checking what actually rendered) - both the
+  same underlying cause as a bug found earlier this session in Phase 2/3 of the
+  responsive-redesign work: the shared grid's own `table td { max-width: 200px; overflow:
+  visible; white-space: nowrap }` lets long, unwrapped cell content render past its own
+  200px boundary and collide with whatever sits in the next column, instead of wrapping
+  within its own cell:
+  - A long Entity name (e.g. a RecurringSchedule's full assignment name) collided with
+    the Details column's "View/Hide" link sitting right after it.
+  - The expanded Details `<ul>` itself needed the same `white-space: normal` reset for
+    the same reason.
+  Fixed by giving both `.entity-cell`/`.details-cell` an explicit `max-width` + `white-
+  space: normal` + `word-break: break-word`, rather than relying on the shared grid's
+  default cell behavior.
+
+### Verified end-to-end against the real local DB
+Created a real Section, renamed it (well, a different one - see below), toggled an
+Environment through Update/Disable, and let a real RecurringSchedule actually fire via
+`RecurringScheduleWorker` - all four produced correctly-attributed `aut.AuditLog` rows
+(confirmed via direct SQL query, not just the UI) with the right actor, entity name, and
+`Details` diff/snapshot. The RecurringSchedule firing's own test-case execution separately
+failed with a Chrome/network-level `net::ERR_CONNECTION_CLOSED` during login (not a
+Recurring Schedule or audit-log bug at all - the exact same test case, browser, and login
+user succeeded moments later when run manually through the identical `TestQueueWorker`
+pipeline both paths share) - noted here in case the same test case fails again and this
+history is useful context, not because anything about this feature needed fixing.
 `flex-direction` in dev tools) rather than assuming the source CSS is the full picture.

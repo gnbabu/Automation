@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using AutomationAPI.Repositories.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +13,13 @@ namespace AutomationAPI.Controllers
     public class LoginUserController : ControllerBase
     {
         private readonly ILoginUserRepository _repo;
+        private readonly IAuditLogService _auditLog;
         private readonly ILogger<LoginUserController> _logger;
 
-        public LoginUserController(ILoginUserRepository repo, ILogger<LoginUserController> logger)
+        public LoginUserController(ILoginUserRepository repo, IAuditLogService auditLog, ILogger<LoginUserController> logger)
         {
             _repo = repo;
+            _auditLog = auditLog;
             _logger = logger;
         }
 
@@ -82,6 +85,10 @@ namespace AutomationAPI.Controllers
                 return Conflict(GetUserMessage(ex, "Failed to create login user."));
             }
 
+            await _auditLog.LogAsync("LoginUser", id, $"{request.UserRole} ({request.UserName})", "Created",
+                this.GetAuditUserId(), this.GetAuditUserName(),
+                snapshot: new { environmentId = request.EnvironmentId, userRole = request.UserRole, userName = request.UserName });
+
             return Ok(new { LoginUserId = id });
         }
 
@@ -101,6 +108,8 @@ namespace AutomationAPI.Controllers
 
             request.ModifiedBy = currentUserId;
 
+            var existing = await _repo.GetByIdAsync(request.LoginUserId.Value);
+
             bool updated;
             try
             {
@@ -114,6 +123,19 @@ namespace AutomationAPI.Controllers
 
             if (!updated)
                 return Forbid();
+
+            var changes = new List<AuditFieldChange>();
+            if (existing != null)
+            {
+                if (!string.Equals(existing.UserRole, request.UserRole, StringComparison.Ordinal))
+                    changes.Add(new AuditFieldChange { Field = "UserRole", Old = existing.UserRole, New = request.UserRole });
+                if (!string.Equals(existing.UserName, request.UserName, StringComparison.Ordinal))
+                    changes.Add(new AuditFieldChange { Field = "UserName", Old = existing.UserName, New = request.UserName });
+                if (existing.IsActive != request.IsActive)
+                    changes.Add(new AuditFieldChange { Field = "IsActive", Old = existing.IsActive, New = request.IsActive });
+            }
+            await _auditLog.LogAsync("LoginUser", request.LoginUserId, $"{request.UserRole} ({request.UserName})", "Updated",
+                this.GetAuditUserId(), this.GetAuditUserName(), changes: changes);
 
             return Ok();
         }
@@ -129,9 +151,13 @@ namespace AutomationAPI.Controllers
             if (currentUserId == null)
                 return Unauthorized();
 
+            var existing = await _repo.GetByIdAsync(id);
             var disabled = await _repo.SoftDeleteAsync(id, currentUserId.Value, currentUserId);
             if (!disabled)
                 return Forbid();
+
+            await _auditLog.LogAsync("LoginUser", id, existing != null ? $"{existing.UserRole} ({existing.UserName})" : $"LoginUser #{id}", "Disabled",
+                this.GetAuditUserId(), this.GetAuditUserName());
 
             return Ok(new { Message = "Login user disabled successfully" });
         }
@@ -147,6 +173,8 @@ namespace AutomationAPI.Controllers
             if (currentUserId == null)
                 return Unauthorized();
 
+            var existing = await _repo.GetByIdAsync(id);
+
             bool deleted;
             try
             {
@@ -160,6 +188,9 @@ namespace AutomationAPI.Controllers
 
             if (!deleted)
                 return Forbid();
+
+            await _auditLog.LogAsync("LoginUser", id, existing != null ? $"{existing.UserRole} ({existing.UserName})" : $"LoginUser #{id}", "Deleted",
+                this.GetAuditUserId(), this.GetAuditUserName());
 
             return Ok(new { Message = "Login user permanently deleted" });
         }

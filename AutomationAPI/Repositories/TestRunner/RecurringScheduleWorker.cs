@@ -86,6 +86,15 @@ namespace AutomationAPI.Repositories.TestRunner
                 await scheduleRepo.MarkRunAsync(schedule.RecurringScheduleId, null, isActive: false, pausedReason: reason);
                 await scheduleRepo.AddRunHistoryAsync(schedule.RecurringScheduleId, "Paused", reason, []);
                 await NotifyPausedAsync(services, schedule, logger);
+
+                // No logged-in user in context at all here (a background timer, not an
+                // HTTP request) - ActorUserId stays null, ActorUserName is a fixed
+                // "System" label, same distinction the audit log screen surfaces for
+                // every other worker-initiated action.
+                var auditLog = services.GetRequiredService<IAuditLogService>();
+                await auditLog.LogAsync("RecurringSchedule", schedule.RecurringScheduleId, schedule.AssignmentName, "Paused",
+                    null, "System", snapshot: new { reason });
+
                 return;
             }
 

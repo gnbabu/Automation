@@ -139,6 +139,12 @@
         public const string LoginUserGetByEnvironmentAndPortalUser = "[aut].[usp_LoginUserGetByEnvironmentAndPortalUser]";
         public const string LoginUserGetCredentials = "[aut].[usp_LoginUserGetCredentials]";
         public const string LoginUserResolveByRole = "[aut].[usp_LoginUserResolveByRole]";
+        public const string LoginUserGetById = "[aut].[usp_LoginUserGetById]";
+
+        // Audit Log
+        public const string AuditLogInsert = "[aut].[usp_AuditLog_Insert]";
+        public const string AuditLogGetPaged = "[aut].[usp_AuditLog_GetPaged]";
+        public const string AuditLogGetDistinctEntityTypes = "[aut].[usp_AuditLog_GetDistinctEntityTypes]";
 
     }
 }

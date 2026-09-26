@@ -1,0 +1,64 @@
+.environment-management-container {
+  max-width: 100%;
+}
+
+.header-section h1 {
+  font-weight: 700;
+  font-size: 1.9rem;
+  color: #5c3c9e;
+  margin-bottom: 0.3rem;
+}
+
+.header-section small {
+  color: #2563eb;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.filter-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+}
+
+.section-card {
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.state-panel {
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* The shared grid's own table td { max-width: 200px; overflow: visible; white-space:
+   nowrap } (data-grid.component.css) lets a long, unwrapped Entity name (e.g. a
+   RecurringSchedule's full assignment name) render past its own cell's 200px boundary
+   and collide with the Details column's "View/Hide" link sitting right after it -
+   confirmed via screenshot: short entity names (e.g. "E2E (#22)") never showed this,
+   only the one long enough to actually overflow. Resetting white-space plus a hard cap
+   on this cell's own width forces it to wrap within its own column instead. */
+.entity-cell {
+  max-width: 220px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.details-cell {
+  max-width: 260px;
+  white-space: normal;
+}
+
+.details-list {
+  padding-left: 18px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.details-list li {
+  color: #4b5563;
+}

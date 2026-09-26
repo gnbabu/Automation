@@ -90,6 +90,13 @@ namespace AutomationAPI.Repositories
             return await _db.ExecuteReaderAsync(SqlDbConstants.LoginUserGetByEnvironmentAndPortalUser, parameters, MapLoginUser);
         }
 
+        public async Task<LoginUserModel?> GetByIdAsync(int loginUserId)
+        {
+            var parameters = new[] { new SqlParameter("@LoginUserId", loginUserId) };
+            var results = await _db.ExecuteReaderAsync(SqlDbConstants.LoginUserGetById, parameters, MapLoginUser);
+            return results.FirstOrDefault();
+        }
+
         private static LoginUserModel MapLoginUser(SqlDataReader reader) => new LoginUserModel
         {
             LoginUserId = reader.GetInt32(reader.GetOrdinal("LoginUserId")),

@@ -25,6 +25,12 @@ namespace AutomationAPI.Repositories.Interfaces
         // The only methods that ever return a decrypted password.
         Task<LoginUserCredentials?> GetCredentialsAsync(int loginUserId);
 
+        // Added so callers (currently just the audit log instrumentation in
+        // LoginUserController) that only have a LoginUserId - not an EnvironmentId +
+        // PortalUserId pair - can still look up a readable name. Never returns a
+        // password.
+        Task<LoginUserModel?> GetByIdAsync(int loginUserId);
+
         // Used only by BaseFeatureFixture.LoginByProfile's mid-test role-switch - a
         // genuinely different, unattended use case from the initial Run Now/Schedule
         // login (see usp_LoginUserResolveByRole).

@@ -472,6 +472,34 @@ export interface IUserNotification {
   createdOn: string;
 }
 
+export interface IAuditLogEntry {
+  auditLogId: number;
+  entityType: string;
+  entityId?: number;
+  entityName: string;
+  action: string;
+  actorUserId?: number;
+  actorUserName: string;
+  details?: string;
+  createdOn: string;
+}
+
+export interface IAuditLogFilter {
+  entityType?: string;
+  entityId?: number;
+  actorUserId?: number;
+  action?: string;
+  fromDate?: string;
+  toDate?: string;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
+export interface IAuditLogPagedResult {
+  items: IAuditLogEntry[];
+  totalCount: number;
+}
+
 export interface IRecurringSchedule {
   recurringScheduleId: number;
   assignmentId: number;

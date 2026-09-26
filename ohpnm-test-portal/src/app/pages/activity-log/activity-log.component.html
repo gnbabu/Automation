@@ -1,0 +1,117 @@
+<div class="environment-management-container">
+  <div class="header-section d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h1 class="mb-1">Activity Log</h1>
+      <small class="text-muted">Who created, changed, or deleted what, and when</small>
+    </div>
+  </div>
+
+  <div class="brand-header-underline mb-3"></div>
+
+  <!-- Filters -->
+  <div class="filter-card d-flex flex-wrap gap-3 align-items-end mb-4">
+    <div>
+      <label class="form-label">Entity Type</label>
+      <app-dropdown
+        [options]="entityTypes"
+        [textAccessor]="identityTextAccessor"
+        placeholder="All Types"
+        [(selected)]="filters.entityType"
+        (selectionChange)="load()"
+      ></app-dropdown>
+    </div>
+    <div>
+      <label class="form-label">Action</label>
+      <app-dropdown
+        [options]="actions"
+        [textAccessor]="identityTextAccessor"
+        placeholder="All Actions"
+        [(selected)]="filters.action"
+        (selectionChange)="load()"
+      ></app-dropdown>
+    </div>
+    <div>
+      <label class="form-label">User</label>
+      <app-dropdown
+        [options]="users"
+        [textAccessor]="userTextAccessor"
+        bindValue="userId"
+        placeholder="All Users"
+        [(selected)]="filters.actorUserId"
+        (selectionChange)="load()"
+      ></app-dropdown>
+    </div>
+    <div>
+      <label class="form-label">From</label>
+      <input type="date" class="form-control" [(ngModel)]="filters.fromDate" (change)="load()" />
+    </div>
+    <div>
+      <label class="form-label">To</label>
+      <input type="date" class="form-control" [(ngModel)]="filters.toDate" (change)="load()" />
+    </div>
+    <div>
+      <button class="btn btn-outline-secondary" (click)="clearFilters()">
+        <i class="fas fa-times me-1"></i> Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="state-panel text-center py-5">
+    <div class="spinner-border text-danger mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div class="card section-card" *ngIf="!loading">
+    <div class="card-body p-0">
+      <app-data-grid
+        [columns]="columns"
+        [data]="entries"
+        [pagingEnabled]="true"
+        [pageSize]="20"
+        [sortingMode]="'client'"
+        [noDataMessage]="'No activity recorded yet'"
+      ></app-data-grid>
+    </div>
+  </div>
+</div>
+
+<ng-template #whenTemplate let-row let-value="value">
+  {{ value | date: "dd-MMM-yyyy HH:mm:ss" }}
+</ng-template>
+
+<ng-template #actorTemplate let-row let-value="value">
+  <span [class.text-muted]="value === 'System'">
+    <i class="fas" [ngClass]="value === 'System' ? 'fa-robot' : 'fa-user'"></i>
+    {{ value }}
+  </span>
+</ng-template>
+
+<ng-template #actionTemplate let-row let-value="value">
+  <span class="badge" [ngClass]="actionBadgeClass(value)">{{ value }}</span>
+</ng-template>
+
+<ng-template #entityTemplate let-row let-value="value">
+  <div class="entity-cell">
+    <span class="fw-semibold">{{ value }}</span>
+    <span class="text-muted small" *ngIf="row.entityId"> (#{{ row.entityId }})</span>
+  </div>
+</ng-template>
+
+<ng-template #detailsTemplate let-row>
+  <div class="details-cell" *ngIf="parsedDetails(row.details) as changes">
+    <button
+      *ngIf="changes.length"
+      type="button"
+      class="btn btn-link btn-sm p-0"
+      (click)="toggleExpand(row)"
+    >
+      {{ expandedRowId === row.auditLogId ? 'Hide' : 'View' }} ({{ changes.length }})
+    </button>
+    <span *ngIf="!changes.length" class="text-muted small">—</span>
+    <ul class="details-list small mb-0 mt-1" *ngIf="expandedRowId === row.auditLogId">
+      <li *ngFor="let c of changes"><strong>{{ c.label }}:</strong> {{ c.value }}</li>
+    </ul>
+  </div>
+</ng-template>

@@ -1,5 +1,7 @@
 using AutomationAPI.Repositories;
 using AutomationAPI.Repositories.Interfaces;
+using AutomationAPI.Repositories.Helpers;
+using AutomationAPI.Repositories.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,15 +14,18 @@ namespace AutomationAPI.Controllers
     {
         private readonly IRecurringScheduleRepository _repo;
         private readonly ITestCaseAssignmentRepository _assignmentRepo;
+        private readonly IAuditLogService _auditLog;
         private readonly ILogger<RecurringScheduleController> _logger;
 
         public RecurringScheduleController(
             IRecurringScheduleRepository repo,
             ITestCaseAssignmentRepository assignmentRepo,
+            IAuditLogService auditLog,
             ILogger<RecurringScheduleController> logger)
         {
             _repo = repo;
             _assignmentRepo = assignmentRepo;
+            _auditLog = auditLog;
             _logger = logger;
         }
 
@@ -74,6 +79,11 @@ namespace AutomationAPI.Controllers
                     request.TimeOfDay, request.Browser, request.LoginUserId, request.EndDate, nextRunDate,
                     User.Identity?.Name ?? "system");
 
+                var created = await _repo.GetByIdAsync(id);
+                await _auditLog.LogAsync("RecurringSchedule", id, created?.AssignmentName ?? $"Assignment #{request.AssignmentId}", "Created",
+                    this.GetAuditUserId(), this.GetAuditUserName(),
+                    snapshot: new { assignmentId = request.AssignmentId, recurrenceType = request.RecurrenceType, daysOfWeek = request.DaysOfWeek, dayOfMonth = request.DayOfMonth, timeOfDay = request.TimeOfDay, browser = request.Browser });
+
                 return Ok(new { RecurringScheduleId = id });
             }
             catch (Exception ex)
@@ -108,6 +118,23 @@ namespace AutomationAPI.Controllers
                 await _repo.UpdateAsync(id, request.RecurrenceType, request.DaysOfWeek, request.DayOfMonth,
                     request.TimeOfDay, request.Browser, request.LoginUserId, request.EndDate, nextRunDate);
 
+                var changes = new List<AuditFieldChange>();
+                if (!string.Equals(existing.RecurrenceType, request.RecurrenceType, StringComparison.Ordinal))
+                    changes.Add(new AuditFieldChange { Field = "RecurrenceType", Old = existing.RecurrenceType, New = request.RecurrenceType });
+                if (!string.Equals(existing.DaysOfWeek, request.DaysOfWeek, StringComparison.Ordinal))
+                    changes.Add(new AuditFieldChange { Field = "DaysOfWeek", Old = existing.DaysOfWeek, New = request.DaysOfWeek });
+                if (existing.DayOfMonth != request.DayOfMonth)
+                    changes.Add(new AuditFieldChange { Field = "DayOfMonth", Old = existing.DayOfMonth, New = request.DayOfMonth });
+                if (existing.TimeOfDay != request.TimeOfDay)
+                    changes.Add(new AuditFieldChange { Field = "TimeOfDay", Old = existing.TimeOfDay.ToString(), New = request.TimeOfDay.ToString() });
+                if (!string.Equals(existing.Browser, request.Browser, StringComparison.Ordinal))
+                    changes.Add(new AuditFieldChange { Field = "Browser", Old = existing.Browser, New = request.Browser });
+                if (existing.EndDate != request.EndDate)
+                    changes.Add(new AuditFieldChange { Field = "EndDate", Old = existing.EndDate, New = request.EndDate });
+
+                await _auditLog.LogAsync("RecurringSchedule", id, existing.AssignmentName, "Updated",
+                    this.GetAuditUserId(), this.GetAuditUserName(), changes: changes);
+
                 return Ok();
             }
             catch (Exception ex)
@@ -141,21 +168,31 @@ namespace AutomationAPI.Controllers
         [HttpPost("{id:int}/pause")]
         public async Task<IActionResult> Pause(int id)
         {
+            var existing = await _repo.GetByIdAsync(id);
             await _repo.SetActiveAsync(id, false);
+            await _auditLog.LogAsync("RecurringSchedule", id, existing?.AssignmentName ?? $"Schedule #{id}", "Paused",
+                this.GetAuditUserId(), this.GetAuditUserName());
             return Ok();
         }
 
         [HttpPost("{id:int}/resume")]
         public async Task<IActionResult> Resume(int id)
         {
+            var existing = await _repo.GetByIdAsync(id);
             await _repo.SetActiveAsync(id, true);
+            await _auditLog.LogAsync("RecurringSchedule", id, existing?.AssignmentName ?? $"Schedule #{id}", "Resumed",
+                this.GetAuditUserId(), this.GetAuditUserName());
             return Ok();
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
+            var existing = await _repo.GetByIdAsync(id);
             await _repo.DeleteAsync(id);
+            await _auditLog.LogAsync("RecurringSchedule", id, existing?.AssignmentName ?? $"Schedule #{id}", "Deleted",
+                this.GetAuditUserId(), this.GetAuditUserName(),
+                snapshot: new { assignmentName = existing?.AssignmentName, recurrenceType = existing?.RecurrenceType });
             return Ok();
         }
 

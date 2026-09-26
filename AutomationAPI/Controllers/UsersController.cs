@@ -1,5 +1,6 @@
 ﻿using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using AutomationAPI.Repositories.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -12,11 +13,13 @@ namespace AutomationAPI.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
+        private readonly IAuditLogService _auditLog;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IUserRepository userRepository, ILogger<UsersController> logger)
+        public UsersController(IUserRepository userRepository, IAuditLogService auditLog, ILogger<UsersController> logger)
         {
             _userRepository = userRepository;
+            _auditLog = auditLog;
             _logger = logger;
         }
 
@@ -60,6 +63,9 @@ namespace AutomationAPI.Controllers
             try
             {
                 var userId = await _userRepository.CreateUserAsync(user);
+                await _auditLog.LogAsync("User", userId, user.UserName, "Created",
+                    this.GetAuditUserId(), this.GetAuditUserName(),
+                    snapshot: new { userName = user.UserName, email = user.Email, roleName = user.RoleName });
                 return CreatedAtAction(nameof(GetUserById), new { id = userId }, user);
             }
             catch (Exception ex)
@@ -75,7 +81,25 @@ namespace AutomationAPI.Controllers
         {
             try
             {
+                var existing = user.UserId.HasValue ? await _userRepository.GetUserByIdAsync(user.UserId.Value) : null;
+
                 await _userRepository.UpdateUserAsync(user);
+
+                var changes = new List<AuditFieldChange>();
+                if (existing != null)
+                {
+                    if (!string.Equals(existing.RoleName, user.RoleName, StringComparison.Ordinal))
+                        changes.Add(new AuditFieldChange { Field = "RoleName", Old = existing.RoleName, New = user.RoleName });
+                    if (existing.Active != user.Active)
+                        changes.Add(new AuditFieldChange { Field = "Active", Old = existing.Active, New = user.Active });
+                    if (!string.Equals(existing.Email, user.Email, StringComparison.Ordinal))
+                        changes.Add(new AuditFieldChange { Field = "Email", Old = existing.Email, New = user.Email });
+                    if (!string.Equals(existing.PriorityName, user.PriorityName, StringComparison.Ordinal))
+                        changes.Add(new AuditFieldChange { Field = "PriorityName", Old = existing.PriorityName, New = user.PriorityName });
+                }
+                await _auditLog.LogAsync("User", user.UserId, user.UserName, "Updated",
+                    this.GetAuditUserId(), this.GetAuditUserName(), changes: changes);
+
                 return NoContent();
             }
             catch (Exception ex)
@@ -91,7 +115,11 @@ namespace AutomationAPI.Controllers
         {
             try
             {
+                var existing = await _userRepository.GetUserByIdAsync(id);
                 await _userRepository.DeleteUserAsync(id);
+                await _auditLog.LogAsync("User", id, existing?.UserName ?? $"User #{id}", "Deleted",
+                    this.GetAuditUserId(), this.GetAuditUserName(),
+                    snapshot: new { userName = existing?.UserName, email = existing?.Email, roleName = existing?.RoleName });
                 return NoContent();
             }
             catch (Exception ex)
@@ -146,6 +174,12 @@ namespace AutomationAPI.Controllers
                 }
                 await _userRepository.ChangePasswordAsync(request);
 
+                // Logs the event only, never any password value - a self-service action
+                // (the caller changing their own password), so the actor is always the
+                // caller themselves.
+                await _auditLog.LogAsync("User", this.GetAuditUserId(), this.GetAuditUserName(), "PasswordChanged",
+                    this.GetAuditUserId(), this.GetAuditUserName());
+
                 return NoContent();
             }
             catch (InvalidOperationException ex)
@@ -167,7 +201,11 @@ namespace AutomationAPI.Controllers
         {
             try
             {
+                var existing = await _userRepository.GetUserByIdAsync(request.UserId);
                 await _userRepository.SetUserActiveStatusAsync(request.UserId, request.Active);
+                await _auditLog.LogAsync("User", request.UserId, existing?.UserName ?? $"User #{request.UserId}",
+                    request.Active ? "Enabled" : "Disabled",
+                    this.GetAuditUserId(), this.GetAuditUserName());
                 return NoContent();
             }
             catch (Exception ex)
