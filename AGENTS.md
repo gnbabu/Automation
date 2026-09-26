@@ -3921,3 +3921,20 @@ net for narrower table views (e.g. a squeezed tablet-width table) rather than th
 fix. A reminder that `GridColumn.width` values written *before* Phase 2 made the shared
 grid actually honor that property should be sanity-checked against their real content
 once they start being enforced, not assumed still correct.
+
+### Second regression found on the same re-verification pass: Bulk Run Now / Bulk Schedule
+On the Test Case Execution Panel at 390px, "Bulk Run Now (0)" and "Bulk Schedule (0)"
+rendered as two full-width buttons stacked vertically instead of side by side, even though
+their container (`.col-md-3.d-flex.justify-content-end.gap-2`, confirmed via the browser's
+own element inspector to have exactly the expected classes/DOM structure, no unexpected
+wrapper) should have laid them out in a row. The exact root cause wasn't conclusively
+pinned down (no scoped or global CSS was found setting `flex-direction: column` or
+`width: 100%` on either the container or the buttons - the DOM/classes looked correct by
+every check made). Rather than continue guessing, added a dedicated `.bulk-actions-col`
+class (previously identified only by its combined utility classes) with an explicit,
+`!important`-backed `flex-wrap: nowrap` plus `flex: 1 1 auto` on both buttons - this
+guarantees the intended side-by-side, compact layout regardless of whatever the underlying
+cause was, and was confirmed fixed at mobile/tablet/desktop. If a similar
+"correct-looking classes, wrong rendered layout" case turns up again, it's worth checking
+Angular's build output / browser cache more directly (e.g. inspecting the actual computed
+`flex-direction` in dev tools) rather than assuming the source CSS is the full picture.

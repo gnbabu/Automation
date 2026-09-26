@@ -22,6 +22,31 @@
   font-size: 0.9rem;
 }
 
+/* Bulk actions (Bulk Run Now / Bulk Schedule) - forces a compact, side-by-side row
+   regardless of viewport width. This column is empty-column-padded to col-md-3 (25%) for
+   desktop alignment, but on mobile a bare Bootstrap column defaults to width: 100% - two
+   buttons in a d-flex row should still lay out side by side within that, but explicit
+   flex-wrap: nowrap plus tighter, consistent button sizing here removes any ambiguity. */
+.bulk-actions-col {
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+}
+
+.bulk-actions-col .btn-purple,
+.bulk-actions-col .btn-primary {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding: 8px 10px;
+}
+
+@media (max-width: 767.98px) {
+  .bulk-actions-col {
+    width: 100%;
+  }
+}
+
 /* Filter Card */
 .filter-card {
   background: #ffffff;
