@@ -332,7 +332,14 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
         header: 'Actions',
         sortable: false,
         cellTemplate: this.actionsTemplate, // 🔥 new template
-        width: '180px',
+        // 180px was never actually enforced before the shared grid started honoring
+        // col.width - once it was, it turned out to be too narrow for "Run Now" +
+        // "Schedule" + the two conditional screenshot/logs icons side by side, so the
+        // column's own flex-wrap safety net (added for genuinely narrow tablet views)
+        // was kicking in on desktop too, where there's actually plenty of room. 300px
+        // comfortably fits all four on one line; flex-wrap remains as a fallback only
+        // for narrower table views.
+        width: '300px',
       },
     ];
   }

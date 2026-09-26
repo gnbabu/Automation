@@ -3902,3 +3902,22 @@ via screenshot testing.
   badge's own text wrapped onto two lines ("10 / 10" / "configured") instead of the whole
   badge moving to a new line. Fixed both the missing `white-space: nowrap` on the badge and
   added `flex-wrap` to `.tdm-table-header` so the *row* wraps, not the badge's text.
+
+### Regression found after this checkpoint, while re-testing on desktop
+Test Case Execution Panel's Actions column started showing "Run Now"/"Schedule" stacked on
+top of each other on **desktop** (plenty of table width available) instead of side by side.
+Root cause: the Actions column's declared `width: '180px'` (set in `test-case-execution-
+panel.component.ts`, part of the original column config) was never actually *enforced*
+before Phase 2 added `[style.width]`/`[style.min-width]` bindings to the shared grid - once
+it was, 180px turned out to always have been too narrow for "Run Now" + "Schedule" + the
+two conditional screenshot/logs icons side by side; this was invisible before Phase 2
+(the column just sized itself freely) and invisible again after Phase 2's `flex-wrap`
+fix for the *narrow-column-overflow* bug (Phase 2's own section above) - `flex-wrap`
+correctly stopped the content from spilling past the header, but on a wide desktop table it
+also means squeezing into 180px and wrapping vertically instead of the column simply being
+allowed to size wider than that. Fixed by increasing the declared width to `300px`
+(comfortably fits all four elements on one line); `flex-wrap` remains as a fallback safety
+net for narrower table views (e.g. a squeezed tablet-width table) rather than the primary
+fix. A reminder that `GridColumn.width` values written *before* Phase 2 made the shared
+grid actually honor that property should be sanity-checked against their real content
+once they start being enforced, not assumed still correct.
