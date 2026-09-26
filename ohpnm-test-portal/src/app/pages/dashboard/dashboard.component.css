@@ -77,7 +77,12 @@
   overflow-y: auto;
 }
 :host ::ng-deep select.form-select {
-  width: 350px !important;
+  /* max-width (not width) - was a hard 350px regardless of viewport, wider on its own
+     than any phone in the 320-430px test range, guaranteed page overflow contributor.
+     100% lets it shrink within its actual container (e.g. .filter-card's flex-wrap row)
+     on narrow screens while keeping the same 350px look on desktop/tablet. */
+  width: 100%;
+  max-width: 350px;
   height: 44px !important;
 }
 
@@ -120,7 +125,10 @@
   color: #1f2937; /* dark grey */
 }
 
-/* Priority badges */
+/* Priority badges - display/min-width/text-align give these a consistent footprint
+   matching .testcase-status's own identical fix, so a short label ("High") and a longer
+   one ("Assigned") sitting right below it in the mobile card view don't render as
+   noticeably different-sized pills. */
 .priority-high {
   background-color: #fee2e2;
   color: #b91c1c;
@@ -128,6 +136,9 @@
   padding: 5px 12px;
   border-radius: 50px;
   font-size: 0.9rem;
+  display: inline-block;
+  min-width: 90px;
+  text-align: center;
 }
 
 .priority-medium {
@@ -137,6 +148,9 @@
   padding: 5px 12px;
   border-radius: 50px;
   font-size: 0.9rem;
+  display: inline-block;
+  min-width: 90px;
+  text-align: center;
 }
 
 .priority-low {
@@ -146,6 +160,9 @@
   padding: 5px 12px;
   border-radius: 50px;
   font-size: 0.9rem;
+  display: inline-block;
+  min-width: 90px;
+  text-align: center;
 }
 
 /* Status */
@@ -223,7 +240,12 @@
   font-weight: 600;
 }
 :host ::ng-deep select.form-select {
-  width: 350px !important;
+  /* max-width (not width) - was a hard 350px regardless of viewport, wider on its own
+     than any phone in the 320-430px test range, guaranteed page overflow contributor.
+     100% lets it shrink within its actual container (e.g. .filter-card's flex-wrap row)
+     on narrow screens while keeping the same 350px look on desktop/tablet. */
+  width: 100%;
+  max-width: 350px;
   height: 44px !important;
 }
 
@@ -262,6 +284,12 @@
   padding: 6px 14px !important;
   border-radius: 50px !important;
   font-size: 0.9rem;
+  /* Same fix as test-case-execution-panel.component.css's identical rule - without a
+     fixed footprint, a longer status word renders a visibly wider pill than priority's
+     shorter one sitting right above it in the mobile card view. */
+  display: inline-block;
+  min-width: 90px;
+  text-align: center;
 }
 /* These previously only set spacing/radius, never an actual color - Export CSV/PDF and
    Refresh rendered in Bootstrap's stock blue instead of this app's own purple branding

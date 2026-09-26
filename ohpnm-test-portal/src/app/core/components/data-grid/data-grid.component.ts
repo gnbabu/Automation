@@ -33,6 +33,12 @@ export class DataGridComponent implements AfterViewInit, OnInit, OnChanges {
   @Input() totalRecords = 0;
   @Input() selectionEnabled: boolean = false;
   @Input() theme: 'purple' | 'light' = 'light';
+  // Below 768px, renders each row as a stacked label/value card instead of forcing the
+  // table into a tiny horizontal-scroll strip (per the task's explicit "don't just shrink
+  // the table" requirement). Defaults on since it's driven entirely by the same `columns`
+  // config every caller already provides - set to false to keep the old table-only (with
+  // horizontal scroll) behavior for a grid that's simple/narrow enough not to need it.
+  @Input() mobileCardView: boolean = true;
 
   // Two-way binding property
   @Input() selectedRows: any[] = [];

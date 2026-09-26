@@ -199,7 +199,10 @@
 
 <!-- Action Buttons Template -->
 <ng-template #actionsTemplate let-row>
-  <div class="d-flex gap-2">
+  <!-- flex-wrap - the Actions column has a fixed 180px width (see column config); two
+       text buttons plus two icon buttons don't comfortably fit on one line at that width,
+       so this wraps onto a second line instead of overflowing the cell/column boundary. -->
+  <div class="d-flex gap-2 flex-wrap">
     <!-- Run Now -->
     <button
       class="btn-purple"

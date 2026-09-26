@@ -376,10 +376,17 @@ body {
   .wrapper .sidebar,
   .wrapper.collapsed .sidebar {
     position: fixed !important;
-    top: 0;
+    /* top:0 (with the drawer's own z-index below the mobile header's) put the sidebar's
+       own top-20px-positioned children - the notification bell (left:15px) and the
+       mobile close button (right:15px) - directly underneath the opaque, higher-z-index
+       mobile header bar covering that same 0-56px strip. They were genuinely rendering,
+       just completely hidden behind it. Starting the drawer below the header instead
+       (and shrinking its height to match) fixes this without needing to change either
+       button's own top offset. */
+    top: var(--mobile-header-height);
     left: 0;
     width: min(280px, 85vw);
-    height: 100vh;
+    height: calc(100vh - var(--mobile-header-height));
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     z-index: 1030;
@@ -387,6 +394,65 @@ body {
 
   .wrapper .sidebar.mobile-open {
     transform: translateX(0);
+  }
+
+  /* Belt-and-suspenders over the .toggle-btn's own d-none d-md-inline-flex utility
+     classes (left-sidebar.component.html) - explicitly forcing it here rather than
+     trusting Bootstrap's utilities alone, since this exact button already needed a
+     similar !important override earlier for position: fixed vs Bootstrap's
+     .position-relative. Without this, it can end up still rendered/clickable at mobile
+     width, sitting on top of (and blocking) .mobile-close-btn in the same top-right
+     corner, making the close (X) button look like it's "not there" even though it's
+     correctly in the DOM. */
+  .toggle-btn {
+    display: none !important;
+  }
+
+  /* isCollapsed is a single boolean shared across desktop/tablet/mobile, but its *meaning*
+     is different per breakpoint (desktop: collapsed=narrow icon rail; tablet: collapsed=
+     temporarily expanded, see the tablet media query above) - it's easy to end up with a
+     leftover true value from testing/using the toggle at a wider breakpoint, then viewing
+     the site at mobile width in the very same session/tab (e.g. resizing down, or
+     resuming a session) without a full reload. Without this, the desktop-authored
+     .wrapper.collapsed rules earlier in this file (assuming collapsed always means
+     "hide text/shrink to icon rail") would silently apply to the mobile drawer too,
+     hiding all its labels/logo/profile name and shrinking its nav links to a narrow
+     icon column even though it's fully open. The off-canvas drawer has no "collapsed"
+     concept of its own at all - it's always either fully open (all text visible) or
+     fully closed (off-screen) - so this unconditionally restores the normal/expanded
+     appearance on mobile regardless of isCollapsed's leftover value from another
+     breakpoint. */
+  .wrapper.collapsed .hide-on-collapse {
+    opacity: 1;
+    visibility: visible;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .wrapper.collapsed .logo-text,
+  .wrapper.collapsed .profile-info {
+    opacity: 1;
+  }
+
+  .wrapper.collapsed .sidebar-link {
+    justify-content: flex-start;
+    width: auto;
+  }
+
+  .wrapper.collapsed .sidebar-link i {
+    margin-right: 1rem !important;
+    font-size: 1rem;
+  }
+
+  .wrapper.collapsed .profile-img-wrapper {
+    padding: 4px;
+  }
+
+  .wrapper.collapsed .logo-underline {
+    opacity: 1;
+    width: 100%;
   }
 
   .mobile-close-btn {

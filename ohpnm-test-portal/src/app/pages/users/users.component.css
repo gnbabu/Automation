@@ -33,7 +33,12 @@
 
 .filter-select,
 .search {
-  width: 350px !important;
+  /* max-width (not width) - the parent .filter-card already has flex-wrap, but wrapping
+     only helps once each item is narrow enough to fit a row on its own; a hard 350px was
+     still wider than any phone in the 320-430px test range even after wrapping onto its
+     own line, so it overflowed the page regardless. 100% lets each one shrink to fit. */
+  width: 100%;
+  max-width: 350px;
   height: 44px;
 }
 

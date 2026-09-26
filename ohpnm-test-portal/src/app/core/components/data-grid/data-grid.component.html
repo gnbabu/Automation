@@ -1,10 +1,9 @@
 <div [ngClass]="theme === 'purple' ? 'app-grid' : 'table-card'">
-  <!-- Pagination Header -->
-  <div
-    class="d-flex justify-content-between align-items-center mb-2 pagination-header"
-    *ngIf="pagingEnabled"
-  >
-    <div>
+  <!-- Pagination Header - stacks (Page Size above the page-info text) below 576px
+       instead of squeezing both onto one justify-content-between row, matching the
+       task's own simplified mobile pagination mockup. -->
+  <div class="pagination-header" *ngIf="pagingEnabled">
+    <div class="page-size-row">
       Page Size:
       <select
         [(ngModel)]="pageSize"
@@ -16,20 +15,71 @@
         </option>
       </select>
     </div>
-    <div>
+    <div class="page-info-row">
       Showing page {{ currentPage }} of {{ totalPages() }} (Total Records:
       {{ pagingMode === "server" ? totalRecords : data.length }})
     </div>
   </div>
 
-  <!-- Data Table -->
-  <table
-    [ngClass]="
-      theme === 'purple'
-        ? 'table table-bordered table-striped grid-table'
-        : 'table align-middle'
-    "
-  >
+  <!-- Mobile card view (<768px) - one stacked label/value card per row instead of
+       squeezing the table into an unreadably narrow horizontal-scroll strip, per the
+       task's explicit "don't just shrink the table" requirement. Opt-out via
+       [mobileCardView]="false" for a grid simple/narrow enough not to need it. -->
+  <div class="grid-cards d-md-none" *ngIf="mobileCardView">
+    <div class="grid-card-empty text-center text-muted" *ngIf="pagedData.length === 0">
+      {{ noDataMessage || "No records found" }}
+    </div>
+
+    <div class="grid-card" *ngFor="let row of pagedData; let i = index">
+      <div class="grid-card-select" *ngIf="selectionEnabled">
+        <input
+          type="checkbox"
+          class="checkbox-custom"
+          [(ngModel)]="row.selected"
+          [disabled]="!effectiveRowSelectableFn(row)"
+          (change)="onRowSelect(row)"
+        />
+      </div>
+
+      <div class="grid-card-field" *ngFor="let col of columns; let colIndex = index">
+        <div class="grid-card-label">{{ col.header }}</div>
+        <div class="grid-card-value" [class.grid-card-value-primary]="colIndex === 0">
+          <ng-container *ngIf="col.cellTemplate; else defaultMobileCell">
+            <ng-container
+              *ngTemplateOutlet="
+                col.cellTemplate;
+                context: { $implicit: row, value: row[col.field] }
+              "
+            ></ng-container>
+          </ng-container>
+
+          <ng-template #defaultMobileCell>
+            <ng-container [ngSwitch]="col.type">
+              <span *ngSwitchCase="'date'">{{ row[col.field] | date : "MM-dd-yyyy" }}</span>
+              <span *ngSwitchCase="'datetime'">{{ row[col.field] | date : "MM-dd-yyyy HH:mm:ss" }}</span>
+              <span *ngSwitchDefault class="grid-card-text">{{ row[col.field] }}</span>
+            </ng-container>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Table - desktop/tablet always; mobile too when mobileCardView is opted out.
+       The horizontal-scroll container wraps *only* the table itself (not the pagination
+       header above or the pagination footer below) - previously .table-card/.app-grid's
+       own overflow-x wrapped the whole card, so scrolling right to reach a wide table's
+       last column dragged the "Showing page X of Y (Total Records: N)" text out of view
+       with it, looking like stray cut-off text rather than a readable, always-visible
+       header. -->
+  <div class="grid-table-scroll" [class.d-none]="mobileCardView" [class.d-md-block]="mobileCardView">
+    <table
+      [ngClass]="
+        theme === 'purple'
+          ? 'table table-bordered table-striped grid-table'
+          : 'table align-middle'
+      "
+    >
     <thead class="table-light">
       <tr>
         <!-- Select All Checkbox -->
@@ -51,6 +101,8 @@
           *ngFor="let col of columns"
           (click)="col.sortable ? changeSort(col.field) : null"
           [style.cursor]="col.sortable ? 'pointer' : 'default'"
+          [style.width]="col.width"
+          [style.min-width]="col.width"
         >
           {{ col.header }}
           <span *ngIf="col.sortable">
@@ -87,7 +139,7 @@
         </td>
 
         <!-- Row Cells -->
-        <td *ngFor="let col of columns">
+        <td *ngFor="let col of columns" [style.width]="col.width" [style.min-width]="col.width">
           <ng-container *ngIf="col.cellTemplate; else defaultCell">
             <ng-container
               *ngTemplateOutlet="
@@ -126,9 +178,12 @@
         </td>
       </tr>
     </tbody>
-  </table>
+    </table>
+  </div>
 
-  <!-- Pagination -->
+  <!-- Pagination - the full list of page-number buttons is hidden below 576px (only
+       Previous/current-page/Next remain, per the task's simplified mobile pagination
+       mockup) so a grid with many pages doesn't overflow a phone-width nav bar. -->
   <div class="d-flex justify-content-end mt-3">
     <nav *ngIf="pagingEnabled && totalPages() > 1">
       <ul class="pagination">
@@ -137,8 +192,11 @@
             >Previous</a
           >
         </li>
+        <li class="page-item disabled d-sm-none">
+          <a class="page-link">{{ currentPage }} / {{ totalPages() }}</a>
+        </li>
         <li
-          class="page-item"
+          class="page-item d-none d-sm-block"
           *ngFor="let p of [].constructor(totalPages()); let i = index"
           [class.active]="i + 1 === currentPage"
         >

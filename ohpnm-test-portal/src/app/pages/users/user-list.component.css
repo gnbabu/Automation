@@ -21,6 +21,12 @@
   display: flex;
   align-items: center; /* Vertically align everything */
   gap: 10px; /* Space between items */
+  /* The shared grid's own table td { max-width: 200px; overflow: visible } (data-grid.
+     component.css) caps this cell's own boundary, but doesn't stop unwrapped flex
+     content from visually spilling past it - Edit + the toggle switch + Reset PW is
+     wider than 200px. flex-wrap lets it wrap onto a second line within the cell's own
+     boundary instead of overflowing past the header above it. */
+  flex-wrap: wrap;
 }
 
 .switch-wrapper {

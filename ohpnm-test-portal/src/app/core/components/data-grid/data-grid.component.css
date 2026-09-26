@@ -118,6 +118,17 @@
   padding: 20px 24px;
 }
 
+/* Wraps *only* the <table> - deliberately not the pagination header above or footer
+   below, both of which must stay fully visible/readable without needing to scroll
+   sideways with the table. Closes the same overflow gap .table-card used to attempt at
+   the whole-card level (confirmed two real pages, Notifications and Release Details'
+   sign-off/notification grids, never wrapped their grid in Bootstrap's own
+   .table-responsive either) without dragging the "Showing page X of Y" text along with
+   a wide table's horizontal scroll. */
+.grid-table-scroll {
+  overflow-x: auto;
+}
+
 .table-card .table thead th {
   background-color: #f0f3f7 !important;
   color: #374151;
@@ -161,4 +172,95 @@ table td {
 
 .pagination-header .form-select {
   width: auto !important;
+}
+
+/* Base flex row layout for the pagination header - previously supplied inline via
+   Bootstrap's d-flex justify-content-between align-items-center mb-2 utility classes on
+   the element itself; moved here so the mobile override below can restack it to a column
+   without needing !important to fight those utilities' own !important. */
+.pagination-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 575.98px) {
+  .pagination-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-info-row {
+    font-size: 0.85rem;
+  }
+}
+
+/* Mobile card view */
+.grid-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grid-card-empty {
+  padding: 24px 12px;
+}
+
+.grid-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.grid-card-select {
+  margin-bottom: 8px;
+}
+
+.grid-card-field {
+  padding: 6px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.grid-card-field:last-child {
+  border-bottom: none;
+}
+
+.grid-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+.grid-card-value {
+  font-size: 0.95rem;
+  color: #1f2937;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* The first column is usually the row's primary identifier (an ID, name, etc.) - a
+   slightly bolder/larger treatment gives the card a visual "title" without hard-coding
+   which specific field that is for every different grid using this shared component. */
+.grid-card-value-primary {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.grid-card-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.grid-card ::ng-deep a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }

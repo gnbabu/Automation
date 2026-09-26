@@ -82,3 +82,34 @@
   margin-bottom: 8px;
   display: block;
 }
+
+/* Mobile: the fixed 3-column grid (70px time | 28px icon | 1fr content) squeezes the
+   step name/message into an increasingly narrow last column as the viewport shrinks -
+   restacks to "time + icon on one line, content below" (matching the task's own mobile
+   log mockup) via named grid areas rather than changing the component's DOM structure. */
+@media (max-width: 575.98px) {
+  .log-row {
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      "time icon"
+      "content content";
+    gap: 4px 10px;
+  }
+
+  .log-time {
+    grid-area: time;
+  }
+
+  .log-icon {
+    grid-area: icon;
+    text-align: left;
+  }
+
+  .log-content {
+    grid-area: content;
+  }
+
+  .log-title {
+    flex-wrap: wrap;
+  }
+}

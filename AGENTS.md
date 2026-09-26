@@ -3737,3 +3737,110 @@ All 7 fixes were found through **actual browser screenshots at each breakpoint**
 code review - several (`#1`, `#3`, `#6`) looked like they should have worked from reading
 the CSS alone and only broke visibly once tested for real, which is why this section
 documents them in this much detail for future reference.
+
+### An 8th shell bug, found later while testing Phase 2's shared-component work
+Discovered while re-testing the mobile drawer after Phase 2 changes: `isCollapsed` is a
+single `LayoutComponent` boolean shared across all three breakpoints, but its *meaning*
+differs - desktop: collapsed=narrow icon rail; tablet: collapsed=temporarily expanded
+(inverted, see above); the off-canvas mobile drawer has no "collapsed" concept of its own
+at all. Leaving `isCollapsed=true` from testing the tablet toggle, then viewing the site at
+mobile width in the same tab without a reload, made the desktop-authored `.wrapper.collapsed`
+rules fire on the mobile drawer too - hiding all its nav-item labels/logo/profile name and
+narrowing links to an icon column despite the drawer being fully open. Fixed with the same
+kind of explicit reversal block as the tablet fix, this time inside the mobile media query,
+unconditionally restoring full-text appearance regardless of `isCollapsed`'s leftover value
+(the drawer is always either fully open with full labels, or fully closed off-screen - never
+an icon rail). While fixing this, two further, smaller bugs surfaced in the same investigation:
+- `.toggle-btn`'s own `d-none d-md-inline-flex` utility classes weren't reliably hiding it
+  at mobile width in practice (confirmed via element-inspector: clicking where the mobile
+  close button should be resolved to `.toggle-btn` instead) - given this exact button
+  already needed a `!important` override earlier in this same investigation for the
+  `position: fixed` vs `.position-relative` conflict, stopped trusting Bootstrap's
+  utilities alone for it and added an explicit `.toggle-btn { display: none !important; }`
+  inside the mobile media query instead.
+- Even with `.toggle-btn` correctly hidden, the notification bell (`left: 15px`) and the
+  mobile close button (`right: 15px`) - both positioned `top: 20px` relative to `.sidebar`
+  - were still invisible. Root cause: the drawer's `.sidebar` had `top: 0` with `z-index:
+  1030`, directly underneath the fixed `MobileHeaderComponent` bar (`z-index: 1040`)
+  covering that same 0-56px screen strip - both buttons were genuinely rendering, just
+  fully hidden behind the opaque header bar sitting on top of them. Fixed by starting the
+  drawer *below* the header instead (`top: var(--mobile-header-height)`, height reduced to
+  match) rather than adjusting either button's own offset.
+
+## Responsive redesign - Phase 2: Shared Components
+
+Checkpointed with the user after Phase 1 (app shell), per the phased-rollout-with-
+checkpoints approach. This phase covers the shared `DataGridComponent` (used by 8+ pages),
+`execution-logs-viewer`, and a few cross-cutting fixes (hard-coded dropdown widths, badge
+sizing) found while verifying the grid changes against real pages.
+
+### `DataGridComponent` (`core/components/data-grid/`)
+- **`.table-card` (light theme) had no `overflow-x` handling at all**, unlike the
+  `'purple'` theme's `.app-grid` (which already had `overflow: auto`) - relied entirely on
+  the *calling* page wrapping it in Bootstrap's own `.table-responsive`. Confirmed two real
+  pages never did (`notifications.component.html`, and both grids in `release-details.
+  component.html`), so their tables genuinely overflowed the page on narrow screens.
+- **New `[mobileCardView]` input (default `true`)**: below 768px, each row renders as a
+  stacked label/value card (driven entirely by the existing `columns` config - reuses
+  `cellTemplate`/`type` exactly like the table does, so no caller-side changes needed
+  unless a specific grid wants to opt out via `[mobileCardView]="false"`) instead of
+  forcing the table into an unreadable horizontal-scroll strip, per the task's explicit
+  "don't just shrink the table" requirement. The first column's value gets a bolder/larger
+  treatment (a lightweight "title" look) without hard-coding which field that is for every
+  different grid using this shared component.
+- **Pagination header restacks** (Page Size above the "Showing page X of Y" text, was a
+  single `justify-content: space-between` row) below 576px, and the **full page-number
+  button list is hidden** below 576px (only Previous/current-page-indicator/Next remain) -
+  a grid with many pages no longer overflows a phone-width nav bar.
+- **Real bug found via screenshot, initially misread as a stray "1)" fragment of text
+  floating above a table**: turned out to be the tail end of "(Total Records: N)" - the
+  pagination header's own overflow gap fix above originally wrapped the *entire* card
+  (header + table + footer together) in one `overflow-x: auto` container, so scrolling
+  right to reach a wide table's last column dragged the "Showing page X of Y" text
+  sideways with it. Fixed by moving the horizontal-scroll container (`.grid-table-scroll`)
+  to wrap *only* the `<table>` itself, leaving the pagination header/footer outside it and
+  always fully visible regardless of the table's own scroll position.
+- **`GridColumn.width` was defined in the interface and set by several callers (e.g. an
+  Actions column configured for `180px`) but was never actually consumed anywhere in the
+  template** - confirmed by grep. Added `[style.width]`/`[style.min-width]` bindings to
+  both `<th>` and `<td>` so a column's declared width is finally honored.
+- **Multi-button Actions cells could visually spill past their own column's header
+  boundary**: a separate, pre-existing global rule (`table td { max-width: 200px; overflow:
+  visible; }`) caps a cell's own box at 200px, but doesn't stop unwrapped flex content
+  (e.g. two text buttons + two icon buttons) from rendering wider than that and spilling
+  past it, while the `<th>` above it (no such cap, short header text) renders at the
+  narrower, "correct" width - looking like a header/row misalignment. Fixed on a per-page
+  basis by adding `flex-wrap: wrap` to the specific actions button-group wrapper (`test-
+  case-execution-panel.component.html`'s and `user-list.component.html`'s own action
+  templates) so content wraps onto a second line within its own cell instead of
+  overflowing past the header above it.
+
+### `execution-logs-viewer` (`common-components/`)
+`.log-row`'s fixed 3-column grid (`70px time | 28px icon | 1fr content`) restacks to "time
++ icon on one line, content below" below 576px via named CSS grid areas (no DOM changes) -
+matches the task's own mobile log mockup exactly, without truncating any log message text.
+
+### Cross-cutting fixes found while verifying the grid/badge changes against real pages
+- Hard-coded `width: 350px !important` on release/filter `<select>`/`<app-dropdown>`
+  elements (`dashboard.component.css` x2, `test-case-execution-panel.component.css`,
+  `users.component.css`) - alone wider than any phone in the 320-430px test range,
+  guaranteed page-overflow contributors. Changed to `width: 100%; max-width: 350px;` so
+  each shrinks to fit its actual container on narrow screens while keeping the same look
+  on desktop/tablet. (`test-case-assignment-user.component.css`'s own narrower 190px filter
+  row was left untouched - it already has a deliberate, working "controlled horizontal
+  scroll within the filter bar" pattern, `flex-wrap: nowrap !important` + `overflow-x:
+  auto`, which the task explicitly allows for exactly this kind of case.)
+- Priority/Status badges (`.priority-high/-medium/-low`, `.testcase-status` in both
+  `dashboard.component.css` and `test-case-execution-panel.component.css`) had no fixed
+  footprint, so a longer status word (e.g. "ASSIGNED") rendered a visibly wider pill than
+  a shorter one (e.g. priority's "High") sitting right above it in the new mobile card
+  view - added `display: inline-block; min-width: 90px; text-align: center;` to all of
+  them for a consistent look regardless of text length.
+
+### Deferred to Phase 3
+Auditing modals (`confirm-dialog`, `run-now-dialog`, `schedule-testcases-dialog`, `test-
+screenshot-gallery`) and the `AppDropdownComponent`/`AppMultiselectDropdownComponent`'s own
+`min-width`/fixed-width usages for mobile fit was planned for Phase 2 but not reached in
+this pass - carried forward into Phase 3 (individual screens) instead, since Bootstrap's
+own `.modal-dialog` is already responsive by default and these are lower-risk/lower-
+confirmed-impact than the grid/shell issues actually found and fixed above.
