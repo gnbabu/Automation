@@ -81,6 +81,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .field-count-badge {
@@ -91,6 +93,11 @@
   padding: 4px 12px;
   border-radius: 50px;
   display: inline-block;
+  /* Without this, a narrow flex row (e.g. "Section Overview" title + this badge with
+     not enough room to fit both on one line) wraps the badge's own text onto two lines
+     ("10 / 10" then "configured" below it) instead of just moving the whole badge to a
+     new line - .tdm-table-header's own flex-wrap (above) handles that case correctly. */
+  white-space: nowrap;
 }
 
 /* =============================

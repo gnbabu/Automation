@@ -3844,3 +3844,61 @@ screenshot-gallery`) and the `AppDropdownComponent`/`AppMultiselectDropdownCompo
 this pass - carried forward into Phase 3 (individual screens) instead, since Bootstrap's
 own `.modal-dialog` is already responsive by default and these are lower-risk/lower-
 confirmed-impact than the grid/shell issues actually found and fixed above.
+
+## Responsive redesign - Phase 3: Individual screens + deferred audits
+
+Checkpointed with the user after Phase 2 (shared components). Covers every remaining page
+plus the modal/dropdown audits deferred from Phase 2. Most pages turned out to already be
+well-built (Bootstrap grid columns that stack automatically below their breakpoint, or an
+existing deliberate horizontal-scroll pattern) - this phase's actual code changes are
+mostly small, targeted `flex-wrap` additions and two real badge/button text-wrap bugs found
+via screenshot testing.
+
+### Pages found to already be well-built (no/minimal changes needed)
+- **Test Data Management**: Environment/Flow/Section dropdowns already use `.row.g-3
+  .col-md-4`; the key/value row editor already had its own `@media (max-width: 700px) {
+  flex-direction: column }`; section chips already `flex-wrap`. Only added `flex-wrap` to
+  the "Copy from environment" dropdown+button row for very narrow screens.
+- **Release Management** (list/form/details), **Environment Management**, **Settings**:
+  already fully driven by Bootstrap's `col-12 col-md-6 col-lg-4`/`col-md-6`-style grid
+  classes throughout, which stack automatically - the 3-card-per-row release/environment
+  grids, the 2-column release/environment forms, and Settings' profile/photo split all
+  needed no structural changes.
+- **`run-now-dialog`/`schedule-testcases-dialog`**: plain Bootstrap `.modal-dialog`
+  (`schedule-testcases-dialog` is `modal-lg`) with `.row`/`col-md-*` fields inside - both
+  responsive by default, no changes needed.
+- **`AppDropdownComponent`**: host is already `display: block; width: 100%`, stretches to
+  fill its container - no fixed/min-width anywhere.
+- **Auth screens**: the decorative `login-carousel-view` (flagged in an earlier audit for
+  `position: absolute`/hard-coded `width: *px` usages) turned out to be irrelevant - its
+  parent column in `login.component.html` is `d-none d-lg-flex`, so the whole component
+  never even renders below the `lg` (992px) breakpoint; the login form itself is
+  `col-lg-6 col-md-12`, already full-width below that.
+- **`test-case-assignment-user`'s filter row**: kept its existing deliberate
+  `flex-wrap: nowrap !important` + `overflow-x: auto` pattern as-is (5 filters + a stats/
+  progress-bar box) rather than converting it to stack, since it's already a working,
+  intentional "controlled horizontal scroll" design the task itself allows for.
+
+### Real fixes made
+- Added `flex-wrap` to several header/button-row `d-flex` containers that had none (Test
+  Case Assignment's Save/Reset row, Flow & Section Management's 3-button flow-actions row,
+  Release Details' title+Back/Edit header, Dashboard's release-info+Export row and its
+  inner release-selector group, Notifications' title+controls header, Environment
+  Management's card action row) - low-risk, no visual change at any width wide enough to
+  already fit everything on one line.
+- **`AppMultiselectDropdownComponent`** (`min-width: 300px`, wider than the smallest test
+  viewports after typical padding) - confirmed via grep it isn't actually used anywhere in
+  the app yet, so this had zero current user-facing impact, but fixed anyway (`max-width`
+  instead) for whenever a caller does add it.
+- **Standardized the "Cancel + primary action" form-footer row** (`d-flex
+  justify-content-end mt-4 gap-2`, found identically in `environment-form`, `release-form`,
+  `recurring-schedule-form`, and `add-edit-user`) to also have `flex-wrap` - found via
+  screenshot at 390px: `.btn-purple` has no `white-space: nowrap`, and without room for
+  both buttons on one line, "Update Environment" wrapped its own text onto two lines inside
+  a compressed button instead of the row simply stacking Cancel above/below it.
+- **Test Data Management's field-count badge** (`.field-count-badge`, e.g. "10 / 10
+  configured") - found via screenshot: `display: inline-block` with no `white-space:
+  nowrap`, so in a tight `.tdm-table-header` flex row (title + badge, no `flex-wrap`) the
+  badge's own text wrapped onto two lines ("10 / 10" / "configured") instead of the whole
+  badge moving to a new line. Fixed both the missing `white-space: nowrap` on the badge and
+  added `flex-wrap` to `.tdm-table-header` so the *row* wraps, not the badge's text.

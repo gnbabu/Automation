@@ -1,7 +1,11 @@
 .dropdown-container {
   position: relative;
   width: 100%;
-  min-width: 300px;
+  /* max-width (not min-width) - not currently used anywhere in the app, but a hard
+     min-width: 300px would be wider than the smallest test viewports (320-360px) after
+     typical container padding. Fixed for future-proofing since a caller could add this
+     component at any time. */
+  max-width: 300px;
 }
 
 .dropdown-toggle {
