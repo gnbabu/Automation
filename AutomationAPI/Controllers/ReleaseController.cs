@@ -1,6 +1,7 @@
 using AutomationAPI.Repositories;
 using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using AutomationAPI.Repositories.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +19,7 @@ namespace AutomationAPI.Controllers
         private readonly IReleaseReadinessService _readinessService;
         private readonly IReleaseNotificationService _notificationService;
         private readonly ITestSuitesRepository _testSuitesRepository;
+        private readonly IAuditLogService _auditLog;
         private readonly ILogger<ReleaseController> _logger;
         private readonly IConfiguration _configuration;
 
@@ -28,6 +30,7 @@ namespace AutomationAPI.Controllers
             IReleaseReadinessService readinessService,
             IReleaseNotificationService notificationService,
             ITestSuitesRepository testSuitesRepository,
+            IAuditLogService auditLog,
             ILogger<ReleaseController> logger,
             IConfiguration configuration)
         {
@@ -37,6 +40,7 @@ namespace AutomationAPI.Controllers
             _readinessService = readinessService;
             _notificationService = notificationService;
             _testSuitesRepository = testSuitesRepository;
+            _auditLog = auditLog;
             _logger = logger;
             _configuration = configuration;
         }
@@ -119,6 +123,11 @@ namespace AutomationAPI.Controllers
 
             var created = await _repo.GetByIdAsync(newId);
             await PopulateFolderInfoAsync(created);
+
+            await _auditLog.LogAsync("Release", newId, $"{request.ReleaseName} v{request.Version}", "Created",
+                this.GetAuditUserId(), this.GetAuditUserName(),
+                snapshot: new { releaseName = request.ReleaseName, version = request.Version, environmentName = env.EnvironmentName });
+
             return Ok(created);
         }
 
@@ -176,6 +185,32 @@ namespace AutomationAPI.Controllers
 
             var updated = await _repo.GetByIdAsync(id);
             await PopulateFolderInfoAsync(updated);
+
+            // Enable/Disable (the frontend's toggle button) is just Update with IsActive
+            // flipped and nothing else changed - detected here rather than via a separate
+            // endpoint, so it gets its own clearer Action label instead of a generic
+            // "Updated" with a one-line diff.
+            var changes = new List<AuditFieldChange>();
+            if (!string.Equals(existing.Description, request.Description, StringComparison.Ordinal))
+                changes.Add(new AuditFieldChange { Field = "Description", Old = existing.Description, New = request.Description });
+            if (!string.IsNullOrWhiteSpace(request.ReleaseLifecycle) && !string.Equals(existing.ReleaseLifecycle, request.ReleaseLifecycle, StringComparison.Ordinal))
+                changes.Add(new AuditFieldChange { Field = "ReleaseLifecycle", Old = existing.ReleaseLifecycle, New = request.ReleaseLifecycle });
+
+            var isActiveChanged = request.IsActive.HasValue && request.IsActive.Value != existing.IsActive;
+            var entityName = $"{existing.ReleaseName} v{existing.Version}";
+            if (isActiveChanged && changes.Count == 0)
+            {
+                await _auditLog.LogAsync("Release", id, entityName, request.IsActive.Value ? "Enabled" : "Disabled",
+                    this.GetAuditUserId(), this.GetAuditUserName());
+            }
+            else
+            {
+                if (isActiveChanged)
+                    changes.Add(new AuditFieldChange { Field = "IsActive", Old = existing.IsActive, New = request.IsActive });
+                await _auditLog.LogAsync("Release", id, entityName, "Updated",
+                    this.GetAuditUserId(), this.GetAuditUserName(), changes: changes);
+            }
+
             return Ok(updated);
         }
 
@@ -214,6 +249,10 @@ namespace AutomationAPI.Controllers
                     _logger.LogWarning(ex, "Release {ReleaseId} was deleted, but its folder could not be removed", id);
                 }
             }
+
+            await _auditLog.LogAsync("Release", id, $"{release.ReleaseName} v{release.Version}", "Deleted",
+                this.GetAuditUserId(), this.GetAuditUserName(),
+                snapshot: new { releaseName = release.ReleaseName, version = release.Version, environmentName = release.EnvironmentName });
 
             return Ok(new { Message = "Release deleted successfully." });
         }
@@ -267,6 +306,10 @@ namespace AutomationAPI.Controllers
 
             var updated = await _repo.GetByIdAsync(id);
             await PopulateFolderInfoAsync(updated);
+
+            await _auditLog.LogAsync("Release", id, $"{release.ReleaseName} v{release.Version}", "Activated",
+                this.GetAuditUserId(), this.GetAuditUserName());
+
             return Ok(new { Release = updated, Notification = notifyResult });
         }
 
@@ -312,6 +355,12 @@ namespace AutomationAPI.Controllers
 
             var updated = await _repo.GetByIdAsync(id);
             await PopulateFolderInfoAsync(updated);
+
+            await _auditLog.LogAsync("Release", id, $"{release.ReleaseName} v{release.Version}",
+                request.SignOffStatus.Equals("Approved", StringComparison.OrdinalIgnoreCase) ? "SignedOff" : "Rejected",
+                this.GetAuditUserId(), this.GetAuditUserName(),
+                snapshot: !string.IsNullOrWhiteSpace(request.Comments) ? new { comments = request.Comments } : null);
+
             return Ok(updated);
         }
 

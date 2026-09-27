@@ -12,6 +12,7 @@ import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropd
 // app install has logged nothing yet and would otherwise show an empty, useless filter.
 const KNOWN_ACTIONS = [
   'Created', 'Updated', 'Deleted', 'Enabled', 'Disabled', 'Paused', 'Resumed', 'PasswordChanged',
+  'Activated', 'SignedOff', 'Rejected', 'Reset',
 ];
 
 @Component({
@@ -116,10 +117,14 @@ export class ActivityLogComponent implements OnInit {
       case 'created':
       case 'enabled':
       case 'resumed':
+      case 'activated':
+      case 'signedoff':
         return 'bg-success';
       case 'deleted':
       case 'disabled':
       case 'paused':
+      case 'rejected':
+      case 'reset':
         return 'bg-danger';
       case 'updated':
       case 'passwordchanged':

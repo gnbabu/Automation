@@ -1,5 +1,6 @@
 ﻿using AutomationAPI.Repositories.Interfaces;
 using AutomationAPI.Repositories.Models;
+using AutomationAPI.Repositories.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,16 +14,19 @@ namespace AutomationAPI.Controllers
     {
         private readonly ITestCaseAssignmentRepository _repository;
         private readonly IReleaseRepository _releaseRepository;
+        private readonly IAuditLogService _auditLog;
         private readonly ILogger<TestCaseAssignmentsController> _logger;
 
         private static readonly string[] AssignableReleaseLifecycles = { "Active", "Completed" };
 
         public TestCaseAssignmentsController(ITestCaseAssignmentRepository repository,
                                             IReleaseRepository releaseRepository,
+                                            IAuditLogService auditLog,
                                             ILogger<TestCaseAssignmentsController> logger)
         {
             _repository = repository;
             _releaseRepository = releaseRepository;
+            _auditLog = auditLog;
             _logger = logger;
         }
 
@@ -71,6 +75,25 @@ namespace AutomationAPI.Controllers
                 var message = lockedCount > 0
                     ? $"Assignment and test cases synced successfully. {lockedCount} test case(s) could not be changed because they have already been executed."
                     : "Assignment and test cases synced successfully.";
+
+                // "Reset Assignments" reuses this same endpoint with an empty TestCases
+                // list and AssignmentStatus='Removed' (see test-case-assignment-user.
+                // component.ts's onResetAssignments) rather than a dedicated endpoint -
+                // distinguished here so it gets its own clearer Action label.
+                var testCaseCount = request.TestCases?.Count() ?? 0;
+                var entityName = $"{request.ReleaseName} \u2192 {release.EnvironmentName} (User #{request.AssignedUser})";
+                if (testCaseCount == 0 && string.Equals(request.AssignmentStatus, "Removed", StringComparison.OrdinalIgnoreCase))
+                {
+                    await _auditLog.LogAsync("TestCaseAssignment", null, entityName, "Reset",
+                        this.GetAuditUserId(), this.GetAuditUserName(),
+                        snapshot: new { releaseId = request.ReleaseId, assignedUser = request.AssignedUser });
+                }
+                else
+                {
+                    await _auditLog.LogAsync("TestCaseAssignment", null, entityName, "Updated",
+                        this.GetAuditUserId(), this.GetAuditUserName(),
+                        snapshot: new { releaseId = request.ReleaseId, assignedUser = request.AssignedUser, testCaseCount, lockedCount });
+                }
 
                 return Ok(new
                 {

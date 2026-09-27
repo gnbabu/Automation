@@ -3937,6 +3937,7 @@ guarantees the intended side-by-side, compact layout regardless of whatever the 
 cause was, and was confirmed fixed at mobile/tablet/desktop. If a similar
 "correct-looking classes, wrong rendered layout" case turns up again, it's worth checking
 Angular's build output / browser cache more directly (e.g. inspecting the actual computed
+`flex-direction` in dev tools) rather than assuming the source CSS is the full picture.
 
 ## Audit Log ("Activity Log") - Phase A
 
@@ -4046,4 +4047,37 @@ Recurring Schedule or audit-log bug at all - the exact same test case, browser, 
 user succeeded moments later when run manually through the identical `TestQueueWorker`
 pipeline both paths share) - noted here in case the same test case fails again and this
 history is useful context, not because anything about this feature needed fixing.
-`flex-direction` in dev tools) rather than assuming the source CSS is the full picture.
+
+### Phase B - Release lifecycle + Test Case Assignment
+Instrumented the two areas deferred from Phase A:
+- `ReleaseController` - Create/Delete (snapshot); Update (diff on Description/
+  ReleaseLifecycle, **plus** a special case: the frontend's Enable/Disable toggle button
+  is just `Update` with only `IsActive` flipped and nothing else changed - detected here
+  and logged as its own clearer `'Enabled'`/`'Disabled'` Action instead of a generic
+  `'Updated'` with a one-line diff); Activate (`'Activated'`); SignOff
+  (`'SignedOff'`/`'Rejected'` depending on `SignOffStatus`, with any rejection/approval
+  comments in `Details`).
+- `TestCaseAssignmentsController.CreateOrUpdateAssignmentWithTestCasesAsync` - the one
+  endpoint both Save Assignments *and* Reset Assignments actually call (see `test-case-
+  assignment-user.component.ts`'s `onSaveAssignments`/`onResetAssignments` - Reset just
+  sends the same request with an empty `TestCases` list and `AssignmentStatus='Removed'`,
+  there's no separate endpoint) - distinguished by that same empty-list-plus-status
+  signature so Reset gets its own `'Reset'` Action instead of a generic `'Updated'`.
+
+### Real bug found via a live "change a Release description" test: JSON casing mismatch
+`AuditLogService.LogAsync`'s `JsonSerializer.Serialize(...)` call used **default**
+`System.Text.Json` options - `Program.cs`'s `AddJsonOptions` (camelCase for the whole
+ASP.NET Core response pipeline) only applies to controller action results, not to a plain
+`JsonSerializer.Serialize()` call made elsewhere in the code. Every `Details` diff/
+snapshot was therefore persisted **PascalCase** (`Field`/`Old`/`New`), while the Activity
+Log frontend's `parsedDetails()` reads them **lowercase** (`field`/`old`/`new`) to match
+every other API response's casing - the symptom was a real "Updated Release" entry
+showing a blank field name and "— → —" for every value, reported as happening for other
+entity types too (it affected every single Update/Create/Delete entry written before the
+fix, across every module, not just Release). Fixed by explicitly passing a `camelCase`
+`JsonSerializerOptions` to that specific `Serialize()` call. Rows written *before* this
+fix still have the old PascalCase JSON in the database and will keep displaying
+incorrectly (not retroactively migrated) - only new writes are affected by the fix.
+Verified via direct SQL that a fresh entry after the fix landed with correct casing.
+
+Deferred to a later phase: Test Data Management field-level changes.

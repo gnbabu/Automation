@@ -10,6 +10,18 @@ namespace AutomationAPI.Repositories
     // can never affect the real mutation a caller is logging alongside.
     public class AuditLogService : IAuditLogService
     {
+        // Program.cs's AddJsonOptions (camelCase-by-default for the whole ASP.NET Core
+        // response pipeline) only applies to controller action results - it does NOT
+        // apply to a plain JsonSerializer.Serialize() call made elsewhere in the code.
+        // Without this, Field/Old/New (and every snapshot property) would be persisted
+        // PascalCase, but the Activity Log frontend reads them lowercase (field/old/new)
+        // to match every other API response's casing - found via a real "Updated"
+        // Release entry showing a blank field name and "— → —" for every value.
+        private static readonly JsonSerializerOptions CamelCaseOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        };
+
         private readonly IAuditLogRepository _repo;
         private readonly ILogger<AuditLogService> _logger;
 
@@ -31,11 +43,11 @@ namespace AutomationAPI.Repositories
                 {
                     var changeList = changes.ToList();
                     if (changeList.Count > 0)
-                        details = JsonSerializer.Serialize(new { changes = changeList });
+                        details = JsonSerializer.Serialize(new { changes = changeList }, CamelCaseOptions);
                 }
                 else if (snapshot != null)
                 {
-                    details = JsonSerializer.Serialize(snapshot);
+                    details = JsonSerializer.Serialize(snapshot, CamelCaseOptions);
                 }
 
                 await _repo.InsertAsync(
