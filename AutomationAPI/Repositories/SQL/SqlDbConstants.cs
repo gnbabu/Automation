@@ -95,7 +95,7 @@
         public const string ReleaseNotificationGetByRelease = "[aut].[usp_ReleaseNotification_GetByRelease]";
         public const string ReleaseNotificationMarkSent = "[aut].[usp_ReleaseNotification_MarkSent]";
 
-        // Test Execution Failure Notification (Scheduled runs only - see AGENTS.md)
+        // Test Execution Failure Notification (Scheduled runs only)
         public const string TestExecutionNotificationAdd = "[aut].[usp_TestExecutionNotification_Add]";
         public const string TestExecutionNotificationMarkSent = "[aut].[usp_TestExecutionNotification_MarkSent]";
 
@@ -131,7 +131,7 @@
         public const string EnvironmentHardDelete = "[aut].[usp_EnvironmentHardDelete]";
 
         // Login User Management (per-environment credentials, selected explicitly at Run
-        // Now/Schedule time - see AGENTS.md)
+        // Now/Schedule time
         public const string LoginUserCreate = "[aut].[usp_LoginUserCreate]";
         public const string LoginUserUpdate = "[aut].[usp_LoginUserUpdate]";
         public const string LoginUserSoftDelete = "[aut].[usp_LoginUserSoftDelete]";

@@ -27,7 +27,7 @@ namespace AutomationAPI.Controllers
         // Unfiltered - every login user for the environment, any owner. No longer
         // called by the Portal's own UI after the self-service change (Run Now/Schedule
         // and the management screen both use the ownership-filtered endpoints below
-        // instead) - left in place/unused rather than removed (see AGENTS.md).
+        // instead) - left in place/unused rather than removed.
         [HttpGet("environment/{environmentId:int}")]
         public async Task<IActionResult> GetByEnvironment(int environmentId)
         {
@@ -41,7 +41,7 @@ namespace AutomationAPI.Controllers
         // Self-service: only the caller's own login user(s) for this environment. Used
         // by the Credential Configuration screen and by Run Now/Schedule's dropdown
         // resolution - every user manages/selects only their own credential, never
-        // someone else's (see AGENTS.md).
+        // someone else's.
         [HttpGet("environment/{environmentId:int}/mine")]
         public async Task<IActionResult> GetMineForEnvironment(int environmentId)
         {

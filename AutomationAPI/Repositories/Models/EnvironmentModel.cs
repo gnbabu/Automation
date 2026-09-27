@@ -8,31 +8,13 @@ namespace AutomationAPI.Repositories.Models
         public string EnvironmentName { get; set; }
         public string Description { get; set; }
         public bool IsActive { get; set; }
-
-        // Nullable - falls back to Selenium.BaseComponents.Data.Users/LoginService's
-        // hard-coded URL switch when not set (see AGENTS.md).
         public string? EnvironmentUrl { get; set; }
-
-        // Defaults true (matches every existing environment's actual behavior today).
-        // When false, Selenium tests skip the login step entirely rather than resolving
-        // credentials.
         public bool RequiresAuthentication { get; set; } = true;
-
         public int CreatedBy { get; set; }
         public DateTime CreatedOn { get; set; }
-
-        // Joined User info
         public string UserName { get; set; }
         public string Email { get; set; }
-
-        // Who last edited/disabled this environment (nullable - never modified since
-        // creation, or created before ModifiedBy tracking was added).
         public string? ModifiedByName { get; set; }
-
-        // How many Releases currently use this environment - filesystem/DB-derived,
-        // used by the frontend to show "N releases use this environment" and to gate the
-        // Delete button (mirrors the guard already enforced server-side in
-        // usp_EnvironmentHardDelete).
         public int ReleaseCount { get; set; }
     }
 
@@ -59,9 +41,6 @@ namespace AutomationAPI.Repositories.Models
 
         public bool? IsActive { get; set; }
 
-        // Acting user for Update/SoftDelete calls - who made this change, not who
-        // originally created the environment (CreatedBy above is unrelated/unused on
-        // update - the SP never touches it).
         public int? ModifiedBy { get; set; }
     }
 

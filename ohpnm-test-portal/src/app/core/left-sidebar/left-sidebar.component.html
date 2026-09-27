@@ -2,29 +2,49 @@
   class="sidebar d-flex flex-column flex-shrink-0 position-relative"
   [class.mobile-open]="isMobileOpen"
 >
-  <button class="toggle-btn d-none d-md-inline-flex" type="button" (click)="toggle.emit()">
+  <button
+    class="toggle-btn d-none d-md-inline-flex"
+    type="button"
+    (click)="toggle.emit()"
+  >
     <i class="fas fa-chevron-left"></i>
   </button>
 
-  <!-- Mobile-only close (X) - the chevron toggle above is desktop/tablet-only (see its
-       d-none d-md-inline-flex classes); on mobile the drawer is closed via this, the
-       overlay behind it, or picking a nav item (navigate.emit() below). -->
-  <button class="mobile-close-btn d-md-none" type="button" (click)="navigate.emit()" aria-label="Close navigation menu">
+  <button
+    class="mobile-close-btn d-md-none"
+    type="button"
+    (click)="navigate.emit()"
+    aria-label="Close navigation menu"
+  >
     <i class="fas fa-times"></i>
   </button>
 
-  <button class="notification-bell-btn" type="button" (click)="toggleNotificationPanel()">
+  <button
+    class="notification-bell-btn"
+    type="button"
+    (click)="toggleNotificationPanel()"
+  >
     <i class="fas fa-bell"></i>
-    <span class="notification-badge" *ngIf="unreadCount > 0">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+    <span class="notification-badge" *ngIf="unreadCount > 0">{{
+      unreadCount > 9 ? "9+" : unreadCount
+    }}</span>
   </button>
 
   <div class="notification-panel" *ngIf="isNotificationPanelOpen">
     <div class="notification-panel-header">
       <span>Notifications</span>
-      <button type="button" class="mark-all-read-btn" (click)="markAllAsRead($event)">Mark all as read</button>
+      <button
+        type="button"
+        class="mark-all-read-btn"
+        (click)="markAllAsRead($event)"
+      >
+        Mark all as read
+      </button>
     </div>
     <div class="notification-panel-body">
-      <div class="notification-empty" *ngIf="!recentNotifications.length">No notifications yet</div>
+      <div class="notification-empty" *ngIf="!recentNotifications.length">
+        No notifications yet
+      </div>
       <div
         class="notification-item"
         *ngFor="let notification of recentNotifications"
@@ -34,12 +54,20 @@
         <span class="notification-dot" *ngIf="!notification.isRead"></span>
         <div class="notification-item-content">
           <div class="notification-item-title">{{ notification.title }}</div>
-          <div class="notification-item-time">{{ notification.createdOn | date: 'dd-MMM-yyyy HH:mm' }}</div>
+          <div class="notification-item-time">
+            {{ notification.createdOn | date: "dd-MMM-yyyy HH:mm" }}
+          </div>
         </div>
       </div>
     </div>
     <div class="notification-panel-footer">
-      <button type="button" class="view-all-btn" (click)="viewAllNotifications()">View all notifications</button>
+      <button
+        type="button"
+        class="view-all-btn"
+        (click)="viewAllNotifications()"
+      >
+        View all notifications
+      </button>
     </div>
   </div>
 
@@ -62,9 +90,6 @@
     </div>
   </div>
 
-  <!-- Single delegated handler (rather than one on each of the 11 links below) - closes
-       the mobile drawer no matter which nav item (including Logout) was picked. Harmless
-       on desktop/tablet since isMobileOpen there is always false already. -->
   <div class="nav flex-column" (click)="navigate.emit()">
     <a
       [routerLink]="['/dashboard']"

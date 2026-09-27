@@ -16,7 +16,7 @@ namespace AutomationAPI.Repositories.TestRunner
     // every user/Release. Falls back to in-process execution only if the isolated process
     // can't load NUnit.Framework at all - which happens when the Release folder has just
     // the bare test DLL rather than a full publish output (.deps.json + dependencies)
-    // alongside it. See AGENTS.md for why this fallback exists and what's required for
+    // alongside it. for why this fallback exists and what's required for
     // isolated execution to actually take effect in production.
     public class NUnitEngineTestRunner : ITestRunner
     {

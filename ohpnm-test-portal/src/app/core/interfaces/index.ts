@@ -79,8 +79,6 @@ export interface IChangePasswordRequest {
   userId: number | undefined;
 }
 
-// No userId field - the server always derives the caller's identity from their JWT
-// (see UsersController.UpdateOwnProfile), never from this request body.
 export interface IUpdateOwnProfileRequest {
   photo?: string;
   phoneNumber?: string;
@@ -167,10 +165,6 @@ export interface ITestCaseModel {
   assignedUsers: any[];
   assignedUserName: string;
   selected?: boolean;
-  // Current execution status for the currently selected tester's own assignment of this
-  // test case (undefined/empty if unassigned). Safe to be unambiguous here because the
-  // grid only ever shows a test case if it's unassigned or assigned to the current
-  // tester (see tryLoadTestCases()'s Step 4 filter) - never another tester's.
   testCaseStatus?: string;
 }
 
@@ -235,8 +229,6 @@ export interface ISingleRunNowRequest {
   assignmentId: number;
   assignmentTestCaseId: number;
   browser: string;
-  // Set only when the target environment requires authentication - the login user
-  // explicitly picked at Run Now time (see AGENTS.md).
   loginUserId?: number;
 }
 
@@ -311,7 +303,6 @@ export interface ITestCaseExecutionLog {
   createdAt: string;
 }
 
-// models/environment.model.ts
 export interface IEnvironmentModel {
   environmentId: number;
   environmentName: string;
@@ -321,22 +312,12 @@ export interface IEnvironmentModel {
   createdOn: string;
   userName: string;
   email: string;
-  // Who last edited/disabled this environment - null if never modified since creation.
   modifiedByName?: string | null;
-  // How many Releases currently use this environment - used to show "N releases use
-  // this environment" and to gate the Delete button client-side (server-side guard
-  // already enforces this in usp_EnvironmentHardDelete).
   releaseCount: number;
-  // Nullable - falls back to the Selenium framework's own hard-coded URL switch when
-  // not set.
   environmentUrl?: string | null;
-  // Defaults true (matches every existing environment's actual behavior today). When
-  // false, Run Now/Schedule show no Login User selection at all and the test skips the
-  // login step entirely.
   requiresAuthentication: boolean;
 }
 
-// models/environment-request.dto.ts
 export interface IEnvironmentRequestDto {
   environmentId?: number;
   environmentName: string;
@@ -347,18 +328,11 @@ export interface IEnvironmentRequestDto {
   requiresAuthentication?: boolean;
 }
 
-// ============ Login User Management ============
-// A per-environment login credential, selected explicitly at Run Now/Schedule time -
-// never carries a password (see AGENTS.md).
 export interface ILoginUserModel {
   loginUserId: number;
   environmentId: number;
-  // Optional label: "whose credential is this" - not a matching key.
   portalUserId?: number | null;
   portalUserName?: string | null;
-  // Free text label, e.g. "TechAdmin", "CredSpec" - matches whatever string a test's
-  // own [TestFixture("...")] declares. Not auto-enforced; shown so the person picking a
-  // login user can tell which credential is meant for which role.
   userRole: string;
   userName: string;
   isActive: boolean;
@@ -372,9 +346,6 @@ export interface ILoginUserRequestDto {
   portalUserId?: number | null;
   userRole: string;
   userName: string;
-  // Plaintext, write-only - encrypted server-side. Optional on update: leaving it
-  // blank keeps the existing password unchanged (the UI never pre-fills/shows an
-  // existing password to re-submit).
   password?: string;
   isActive?: boolean;
 }
@@ -399,13 +370,8 @@ export interface IReleaseModel {
   modifiedOn?: string;
   activatedBy: string;
   activatedOn?: string;
-  // Cheap, filesystem-based readiness indicator for list/detail badges (no reflection).
   dllFileCount: number;
   folderReady: boolean;
-  // Test summary - despite the name, totalTests is really "total *assigned* test
-  // cases" (Passed/Failed/Skipped/Running only make sense for assigned+executed tests
-  // anyway); totalDiscoveredTests below is the real total test cases found in the
-  // Release's DLLs regardless of assignment.
   totalTests: number;
   passedTests: number;
   failedTests: number;
@@ -526,7 +492,6 @@ export interface IRecurringSchedule {
   createdOn: string;
 }
 
-// aut.RecurringScheduleRunHistory - one row per RecurringScheduleWorker firing attempt.
 export interface IRecurringScheduleRunHistory {
   runHistoryId: number;
   recurringScheduleId: number;
@@ -562,8 +527,6 @@ export interface IAssignmentOption {
   releaseLifecycle: string;
 }
 
-// Read-only readiness check: DLLs are placed in the release folder by the existing
-// controlled build/deployment process, not uploaded through this application.
 export interface IReleaseReadiness {
   folderExists: boolean;
   dllFiles: string[];

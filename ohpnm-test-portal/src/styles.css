@@ -61,13 +61,6 @@ body {
   margin: 4px 16px;
   white-space: nowrap;
   overflow: hidden;
-  /* display:flex (was display:block, relying on the icon/text's own inline baseline
-     alignment - FontAwesome icons don't reliably sit on the text baseline, so they could
-     look slightly off-center vertically, more noticeable now that the active state got a
-     bolder highlight above) guarantees the icon and label both align to the same center
-     line regardless of font metrics. It also finally makes the collapsed/icon-rail
-     state's own justify-content/align-items:center rules below actually take effect -
-     they were previously silent no-ops against a block-level element. */
   display: flex;
   align-items: center;
   text-decoration: none;
@@ -83,19 +76,6 @@ body {
 
 .sidebar-link.active {
   color: #ffffff;
-  /* A flat 10% white overlay (as used on hover, above) reads fine near the sidebar's own
-     dark navy gradient start, but the gradient (linear-gradient(135deg, #1a1c2e ->
-     #34495e)) is already noticeably lighter by the time it reaches items further down the
-     list - at that point the same 10% overlay barely changes the background at all,
-     making the active item look unhighlighted despite the class being applied correctly.
-     A stronger, flat brand-teal-tinted background plus a solid left accent bar stays
-     equally visible regardless of where the item sits along that gradient.
-     An inset box-shadow (rather than border-left) draws the accent bar without adding
-     any layout width/padding of its own - a real border-left here would've needed a
-     matching padding-left reduction to avoid shifting the text/icon, but .sidebar-link's
-     own Bootstrap .p-3 utility sets padding with !important, silently winning over any
-     non-!important compensation and shifting the active item's content out of alignment
-     with every other (inactive) link. */
   background: rgba(26, 188, 156, 0.22);
   box-shadow: inset 3px 0 0 #1abc9c;
 }
@@ -121,9 +101,6 @@ body {
   z-index: 100;
   cursor: pointer;
   transition: transform 0.3s ease;
-  /* Needed now that the button uses Bootstrap's d-md-inline-flex utility (see left-
-     sidebar.component.html) to hide it on mobile - without explicit centering, the
-     chevron icon renders off-center/clipped inside the 30px circle as a flex item. */
   align-items: center;
   justify-content: center;
   color: #1a1c2e;
@@ -137,13 +114,6 @@ body {
 .wrapper.collapsed .hide-on-collapse {
   opacity: 0;
   visibility: hidden;
-  /* .sidebar-link is now display:flex (see .sidebar-link above) so this label span is a
-     flex item alongside the icon - visibility:hidden alone still reserves its full
-     natural width (the un-clamped text, e.g. "Flow & Section Management") in the flex
-     row, so .wrapper.collapsed .sidebar-link's justify-content:center ends up centering
-     that whole (icon + invisible-but-space-taking label) group instead of just the icon,
-     visibly shoving the icon off to one side. Collapsing it to zero width removes it from
-     that flex-space calculation entirely. */
   width: 0;
   margin: 0;
   padding: 0;
@@ -277,8 +247,6 @@ body {
   .wrapper:not(.collapsed) .hide-on-collapse {
     opacity: 0;
     visibility: hidden;
-    /* Same fix as .wrapper.collapsed .hide-on-collapse above, for the tablet rail's
-       inverted default state. */
     width: 0;
     margin: 0;
     padding: 0;
@@ -361,28 +329,9 @@ body {
     padding-top: var(--mobile-header-height);
   }
 
-  /* Off-canvas: taken out of the .wrapper flex flow entirely (fixed positioning) so it
-     never consumes layout width - .main-content is always full viewport width on mobile,
-     matching the task's hard "content never hidden underneath/squeezed by the sidebar"
-     requirement. Deliberately ignores the desktop/tablet .collapsed icon-rail state here
-     (see the width overrides below) - "collapsed" on mobile always means "fully hidden",
-     never a persistent icon rail, since that's a different interaction model. */
-  /* !important + the compound .wrapper .sidebar selector (specificity 0,0,2,0) is
-     required here - the <nav> in left-sidebar.component.html also carries Bootstrap's
-     own .position-relative utility class (position: relative !important, specificity
-     0,0,1,0). Among two !important declarations specificity is compared *before* source
-     order, so a plain "position: fixed" here (or one at equal 0,0,1,0 specificity) would
-     silently lose to Bootstrap's utility regardless of which stylesheet loads later. */
   .wrapper .sidebar,
   .wrapper.collapsed .sidebar {
     position: fixed !important;
-    /* top:0 (with the drawer's own z-index below the mobile header's) put the sidebar's
-       own top-20px-positioned children - the notification bell (left:15px) and the
-       mobile close button (right:15px) - directly underneath the opaque, higher-z-index
-       mobile header bar covering that same 0-56px strip. They were genuinely rendering,
-       just completely hidden behind it. Starting the drawer below the header instead
-       (and shrinking its height to match) fixes this without needing to change either
-       button's own top offset. */
     top: var(--mobile-header-height);
     left: 0;
     width: min(280px, 85vw);
@@ -396,32 +345,10 @@ body {
     transform: translateX(0);
   }
 
-  /* Belt-and-suspenders over the .toggle-btn's own d-none d-md-inline-flex utility
-     classes (left-sidebar.component.html) - explicitly forcing it here rather than
-     trusting Bootstrap's utilities alone, since this exact button already needed a
-     similar !important override earlier for position: fixed vs Bootstrap's
-     .position-relative. Without this, it can end up still rendered/clickable at mobile
-     width, sitting on top of (and blocking) .mobile-close-btn in the same top-right
-     corner, making the close (X) button look like it's "not there" even though it's
-     correctly in the DOM. */
   .toggle-btn {
     display: none !important;
   }
 
-  /* isCollapsed is a single boolean shared across desktop/tablet/mobile, but its *meaning*
-     is different per breakpoint (desktop: collapsed=narrow icon rail; tablet: collapsed=
-     temporarily expanded, see the tablet media query above) - it's easy to end up with a
-     leftover true value from testing/using the toggle at a wider breakpoint, then viewing
-     the site at mobile width in the very same session/tab (e.g. resizing down, or
-     resuming a session) without a full reload. Without this, the desktop-authored
-     .wrapper.collapsed rules earlier in this file (assuming collapsed always means
-     "hide text/shrink to icon rail") would silently apply to the mobile drawer too,
-     hiding all its labels/logo/profile name and shrinking its nav links to a narrow
-     icon column even though it's fully open. The off-canvas drawer has no "collapsed"
-     concept of its own at all - it's always either fully open (all text visible) or
-     fully closed (off-screen) - so this unconditionally restores the normal/expanded
-     appearance on mobile regardless of isCollapsed's leftover value from another
-     breakpoint. */
   .wrapper.collapsed .hide-on-collapse {
     opacity: 1;
     visibility: visible;

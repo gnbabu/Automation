@@ -22,54 +22,25 @@
   height: 3px;
   border-radius: 2px;
   background: linear-gradient(135deg, #1abc9c, #5c3c9e);
-  transition: opacity 0.3s ease, width 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    width 0.3s ease;
   box-shadow: 0 0 8px rgba(26, 188, 156, 0.6);
 }
 
-/* .sidebar itself is a fixed height: 100vh (see styles.css) with no scroll handling of
-   its own - adding the Flow & Section Management nav link (an 11th item) pushed the
-   total content past the viewport height on smaller screens, clipping/overlapping the
-   Logout link and environment badge at the bottom with no way to reach them. Scoping
-   the scroll to just the middle nav-links section (not the whole sidebar) keeps the
-   profile header and the Logout/badge footer always pinned in place, only the list of
-   links scrolls if there isn't room for all of them. min-height: 0 is required here -
-   without it a flex child ignores overflow and just keeps growing past its parent
-   instead of actually scrolling. */
 .nav.flex-column {
   overflow-y: auto;
   overflow-x: hidden;
   flex: 1 1 auto;
   min-height: 0;
-  /* THE actual root cause of nav items being unreachable, not just "hard to scroll to" -
-     Bootstrap's own .nav class (bootstrap.css) sets flex-wrap: wrap and nothing here ever
-     overrode it. Combined with flex-direction: column (from the sibling .flex-column
-     utility), any overflow was silently wrapping into a second, off-screen column
-     (clipped by overflow-x: hidden below) instead of ever producing the vertical
-     scrollbar this rule's overflow-y: auto was supposed to create - so no amount of
-     scrolling could ever have reached the wrapped-away items. */
   flex-wrap: nowrap;
-  /* Without this, the last link (Logout) sits flush against the scroll container's own
-     bottom edge once fully scrolled - easy to read as "still cut off" even though it's
-     technically fully in view. */
   padding-bottom: 12px;
   scrollbar-width: thin;
   scrollbar-color: rgba(26, 188, 156, 0.6) transparent;
-  /* Momentum/inertial scrolling on iOS Safari - without this, a nested overflow-y:auto
-     region can feel "stuck"/unresponsive to touch drags even though it's technically
-     scrollable, which is easy to mistake for "not scrollable at all". */
   -webkit-overflow-scrolling: touch;
-  /* Without this, a touch-drag that starts inside this small nested scroll region can
-     get handed off to scroll the page/drawer behind it instead once this region hits
-     its own scroll boundary (or in some browsers, immediately) - another common cause
-     of a technically-scrollable nested region feeling completely unresponsive. */
   overscroll-behavior: contain;
 }
 
-/* The profile photo/header was a fixed 90x90 (plus padding) regardless of viewport -
-   with 12 nav links, this reduces how much of the sidebar's fixed 100vh is actually
-   available for links before the internal scroll region (above) has to kick in at all,
-   making the "last few links need a scroll to reach" problem worse than necessary,
-   especially on shorter mobile/laptop viewports. Desktop keeps the original size. */
 @media (max-width: 991.98px) {
   .profile-img,
   .wrapper.collapsed .sidebar .profile-img {
@@ -95,10 +66,6 @@
   border-radius: 3px;
 }
 
-/* Mirrors .toggle-btn's own technique (styles.css) exactly - absolute positioning on
-   the opposite corner. Being taken out of normal flex flow means it's completely
-   unaffected by the header's collapsed/expanded content reflow, so it needs no
-   collapse-specific overrides and adds zero extra height to the header. */
 .notification-bell-btn {
   position: absolute;
   left: 15px;

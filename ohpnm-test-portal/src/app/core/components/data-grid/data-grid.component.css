@@ -118,13 +118,6 @@
   padding: 20px 24px;
 }
 
-/* Wraps *only* the <table> - deliberately not the pagination header above or footer
-   below, both of which must stay fully visible/readable without needing to scroll
-   sideways with the table. Closes the same overflow gap .table-card used to attempt at
-   the whole-card level (confirmed two real pages, Notifications and Release Details'
-   sign-off/notification grids, never wrapped their grid in Bootstrap's own
-   .table-responsive either) without dragging the "Showing page X of Y" text along with
-   a wide table's horizontal scroll. */
 .grid-table-scroll {
   overflow-x: auto;
 }
@@ -174,10 +167,6 @@ table td {
   width: auto !important;
 }
 
-/* Base flex row layout for the pagination header - previously supplied inline via
-   Bootstrap's d-flex justify-content-between align-items-center mb-2 utility classes on
-   the element itself; moved here so the mobile override below can restack it to a column
-   without needing !important to fight those utilities' own !important. */
 .pagination-header {
   display: flex;
   justify-content: space-between;
@@ -244,10 +233,6 @@ table td {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
-
-/* The first column is usually the row's primary identifier (an ID, name, etc.) - a
-   slightly bolder/larger treatment gives the card a visual "title" without hard-coding
-   which specific field that is for every different grid using this shared component. */
 .grid-card-value-primary {
   font-size: 1.05rem;
   font-weight: 700;

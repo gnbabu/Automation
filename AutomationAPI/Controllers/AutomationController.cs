@@ -147,7 +147,7 @@ namespace AutomationAPI.Controllers
 
                 _logger.LogInformation("Updating automation data for SectionID: {SectionID}", request.SectionId);
 
-                // request only ever carries Id + the new TestContent (see AGENTS.md) -
+                // request only ever carries Id + the new TestContent -
                 // fetches the pre-update row for both the section/environment context and
                 // the old field keys to diff against.
                 var existing = request.Id.HasValue ? await _automationRepository.GetAutomationDataByIdAsync(request.Id.Value) : null;
@@ -192,12 +192,6 @@ namespace AutomationAPI.Controllers
 
                 await _automationRepository.DeleteAutomationDataAsync(sectionId);
 
-                // Bulk "delete all saved test data for this section" (used by Delete
-                // Section's cascade path - see AutomationController.DeleteAutomationDataSectionAsync,
-                // logged separately as its own 'Section'/'Deleted' entry) as well as by a
-                // direct call, if one is ever added. Field keys/values aren't known here
-                // (they were already gone by the time this fires), so this just records
-                // that the section's data was wiped, not what it contained.
                 await _auditLog.LogAsync("TestData", null, sectionName ?? $"Section #{sectionId}", "Deleted",
                     this.GetAuditUserId(), this.GetAuditUserName(),
                     snapshot: new { sectionId });
@@ -213,13 +207,9 @@ namespace AutomationAPI.Controllers
 
 
 
-        // 7. Insert Automation Data Section
         [HttpPost("sections")]
         public async Task<IActionResult> InsertAutomationDataSectionAsync([FromBody] AutomationDataSectionRequest request)
         {
-            // Same IsViewer() enforcement already used for Insert/Update Automation
-            // Data - previously missing entirely on all 3 Section endpoints, even
-            // though no UI ever exposed them to begin with (see AGENTS.md).
             if (IsViewer())
                 return StatusCode(403, "Viewers have read-only access and cannot manage flows or sections.");
 

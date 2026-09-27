@@ -15,7 +15,7 @@ namespace AutomationAPI.Repositories.Interfaces
 
         // Unfiltered - every login user for the environment, any owner. Used only by
         // Run Now/Schedule's dropdown resolution before this self-service change; kept
-        // as-is/unused-but-available rather than removed (see AGENTS.md).
+        // as-is/unused-but-available rather than removed.
         Task<IEnumerable<LoginUserModel>> GetByEnvironmentAsync(int environmentId);
 
         // Ownership-filtered - used only by the self-service Credential Configuration

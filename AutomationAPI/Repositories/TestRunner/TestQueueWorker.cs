@@ -46,7 +46,7 @@ namespace AutomationAPI.Repositories.TestRunner
                     // Captured before QueueStatus gets overwritten to "InProgress" below -
                     // this is the only place the original Queued-vs-Scheduled distinction
                     // is still available in-memory. Used only to decide whether a failure
-                    // notification should fire (see AGENTS.md) - Run Now/Bulk Run Now
+                    // notification should fire - Run Now/Bulk Run Now
                     // failures are already visible immediately to whoever triggered them.
                     bool wasScheduled = queue.QueueStatus == "Scheduled";
 
@@ -92,7 +92,7 @@ namespace AutomationAPI.Repositories.TestRunner
 
                             if (!result.WasIsolated)
                             {
-                                Console.WriteLine($"Warning: queue item {queue.QueueId} ran in-process (not isolated) - the Release folder is likely missing a full publish output. See AGENTS.md.");
+                                Console.WriteLine($"Warning: queue item {queue.QueueId} ran in-process (not isolated) - the Release folder is likely missing a full publish output.");
                             }
 
                             var tesrResult = new AssignedTestCaseStatusUpdate

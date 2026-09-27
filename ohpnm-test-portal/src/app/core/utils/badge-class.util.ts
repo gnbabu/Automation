@@ -15,5 +15,7 @@ export function pairBadgeTextColor(bgClass: string): string {
     'bg-secondary',
     'bg-dark',
   ];
-  return darkBackgrounds.includes(bgClass) ? `${bgClass} text-white` : `${bgClass} text-dark`;
+  return darkBackgrounds.includes(bgClass)
+    ? `${bgClass} text-white`
+    : `${bgClass} text-dark`;
 }

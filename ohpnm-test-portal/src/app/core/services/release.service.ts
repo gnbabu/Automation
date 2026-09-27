@@ -37,16 +37,26 @@ export class ReleaseService {
     return this.httpService.post<any>(`Release/${id}/activate`, request);
   }
 
-  signOff(id: number, request: IReleaseSignOffRequest): Observable<IReleaseModel> {
-    return this.httpService.post<IReleaseModel>(`Release/${id}/signoff`, request);
+  signOff(
+    id: number,
+    request: IReleaseSignOffRequest,
+  ): Observable<IReleaseModel> {
+    return this.httpService.post<IReleaseModel>(
+      `Release/${id}/signoff`,
+      request,
+    );
   }
 
   getSignOffHistory(id: number): Observable<IReleaseSignOff[]> {
-    return this.httpService.get<IReleaseSignOff[]>(`Release/${id}/signoff-history`);
+    return this.httpService.get<IReleaseSignOff[]>(
+      `Release/${id}/signoff-history`,
+    );
   }
 
   getNotifications(id: number): Observable<IReleaseNotification[]> {
-    return this.httpService.get<IReleaseNotification[]>(`Release/${id}/notifications`);
+    return this.httpService.get<IReleaseNotification[]>(
+      `Release/${id}/notifications`,
+    );
   }
 
   // Read-only readiness check (DLLs are placed by the existing controlled

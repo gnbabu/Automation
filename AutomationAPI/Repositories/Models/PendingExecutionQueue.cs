@@ -13,14 +13,7 @@
         public string? MethodName { get; set; }
         public string? Environment { get; set; }
         public string? Browser { get; set; }
-
-        // Used only for a Scheduled run's failure notification (see AGENTS.md) - the
-        // person the test case is assigned to.
         public int? AssignedUser { get; set; }
-
-        // Set only when the environment required authentication and a specific login
-        // user was explicitly picked at Run Now/Schedule time (see AGENTS.md). Null
-        // otherwise - BaseFeatureFixture falls back to today's hard-coded credentials.
         public int? LoginUserId { get; set; }
         public string? QueueStatus { get; set; }
         public DateTime? ExecutionDateTime { get; set; }

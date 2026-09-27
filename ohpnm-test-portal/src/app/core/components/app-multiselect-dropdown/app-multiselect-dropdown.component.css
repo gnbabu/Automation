@@ -1,10 +1,6 @@
 .dropdown-container {
   position: relative;
   width: 100%;
-  /* max-width (not min-width) - not currently used anywhere in the app, but a hard
-     min-width: 300px would be wider than the smallest test viewports (320-360px) after
-     typical container padding. Fixed for future-proofing since a caller could add this
-     component at any time. */
   max-width: 300px;
 }
 
@@ -14,9 +10,7 @@
   border: 1px solid #ccc;
   border-radius: 6px;
   background-color: #fff;
-
-  /* Fix the width so it does not grow */
-  width: 100%;           /* or set a fixed px width */
+  width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -31,7 +25,7 @@
   position: absolute;
   top: 100%;
   left: 0;
-  width: 100%;         /* same width as toggle */
+  width: 100%;
   max-height: 220px;
   overflow-y: auto;
   background: white;
@@ -47,7 +41,7 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background-image: none; /* remove default arrow */
+  background-image: none;
   cursor: pointer;
   width: 100%;
   white-space: nowrap;
@@ -61,7 +55,7 @@
 
 .dropdown-actions {
   display: flex;
-  justify-content: space-between; /* Select All left, Clear right */
+  justify-content: space-between;
   padding: 6px 10px;
   border-bottom: 1px solid #eee;
   background: #fafafa;

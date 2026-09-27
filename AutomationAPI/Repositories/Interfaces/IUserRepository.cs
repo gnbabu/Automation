@@ -1,5 +1,4 @@
 ﻿using AutomationAPI.Repositories.Models;
-using Microsoft.AspNetCore.Mvc;
 
 namespace AutomationAPI.Repositories.Interfaces
 {

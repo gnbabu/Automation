@@ -1,4 +1,3 @@
-// unsaved-changes.guard.ts
 import { CanDeactivateFn } from '@angular/router';
 
 // Standard Angular CanDeactivate pattern - the guard receives the leaving component
@@ -10,9 +9,9 @@ export interface IConfirmsUnsavedChanges {
   confirmDiscardChanges(): Promise<boolean>;
 }
 
-export const unsavedChangesGuard: CanDeactivateFn<IConfirmsUnsavedChanges> = async (
-  component
-) => {
+export const unsavedChangesGuard: CanDeactivateFn<
+  IConfirmsUnsavedChanges
+> = async (component) => {
   if (!component.hasUnsavedChanges()) return true;
   return await component.confirmDiscardChanges();
 };
