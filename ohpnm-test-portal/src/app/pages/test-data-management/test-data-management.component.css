@@ -93,10 +93,6 @@
   padding: 4px 12px;
   border-radius: 50px;
   display: inline-block;
-  /* Without this, a narrow flex row (e.g. "Section Overview" title + this badge with
-     not enough room to fit both on one line) wraps the badge's own text onto two lines
-     ("10 / 10" then "configured" below it) instead of just moving the whole badge to a
-     new line - .tdm-table-header's own flex-wrap (above) handles that case correctly. */
   white-space: nowrap;
 }
 
@@ -247,7 +243,18 @@
   color: #6c3483;
   background: transparent;
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 0 16px;
+  /* Matches .copy-env-select select's own fixed height:40px !important - padding alone
+     (previously 8px top/bottom) made this button ~4px shorter than the dropdown sitting
+     right next to it, a visible height mismatch even though align-items:center kept
+     them centered on the same line. inline-flex/nowrap/center guarantee the icon+text
+     always render side by side on one line, never stacked - confirmed via screenshot
+     that the clipboard icon was rendering above the "Copy" text instead of beside it. */
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -261,7 +268,12 @@
   color: #6c3483;
   background: transparent;
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 0 16px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -275,11 +287,11 @@
   cursor: not-allowed;
 }
 
-/* .copy-env-select now lives on <app-dropdown> (see app-dropdown.component - Angular
-   components default to `display: inline`, so a caller's sizing class has to target
-   the host, not the internal <select> tag directly the way it could when this was a
-   plain native <select class="copy-env-select">) - targets the real <select> as a
-   descendant instead of requiring it to carry the class itself. */
+.copy-env-group {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
 :host ::ng-deep .copy-env-select select {
   width: auto;
   min-width: 180px;

@@ -143,6 +143,20 @@ namespace AutomationAPI.Repositories
 
 
 
+        public async Task<AutomationData?> GetAutomationDataByIdAsync(int id)
+        {
+            var parameters = new[] { new SqlParameter("@ID", id) };
+            var results = await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetAutomationDataById, parameters, reader => new AutomationData
+            {
+                Id = reader.GetNullableInt("ID") ?? 0,
+                SectionId = reader.GetNullableInt("SectionID") ?? 0,
+                TestContent = reader.GetNullableString("TestContent"),
+                UserId = reader.GetNullableInt("UserID"),
+                EnvironmentId = reader.GetNullableInt("EnvironmentId"),
+            });
+            return results.FirstOrDefault();
+        }
+
         public async Task DeleteAutomationDataAsync(int sectionId)
         {
             var parameters = new SqlParameter[]

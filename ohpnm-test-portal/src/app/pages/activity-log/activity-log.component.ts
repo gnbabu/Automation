@@ -15,6 +15,11 @@ const KNOWN_ACTIONS = [
   'Activated', 'SignedOff', 'Rejected', 'Reset',
 ];
 
+// TestData entries deliberately never include field values (see AutomationController's
+// own instrumentation comments) - only which field keys were added/removed, since this
+// data can include credential-like fields and the Activity Log's audience is broader
+// than the Test Data Management screen's own per-user scoping.
+
 @Component({
   standalone: true,
   selector: 'app-activity-log',

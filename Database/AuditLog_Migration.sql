@@ -161,3 +161,30 @@ BEGIN
     WHERE lu.LoginUserId = @LoginUserId;
 END
 GO
+
+-- Same rationale as usp_LoginUserGetById above: AutomationController's UpdateAutomationData
+-- endpoint (Test Data Management's field editor "Save"/"Update") only ever receives the
+-- row's own @ID + new @TestContent - never SectionID/UserID/EnvironmentId - so there was
+-- no way for the audit-log instrumentation to know which section/user/environment a given
+-- update belongs to, or to diff the old TestContent against the new one, without this.
+IF OBJECT_ID('aut.usp_GetAutomationDataById', 'P') IS NOT NULL
+    DROP PROCEDURE aut.usp_GetAutomationDataById;
+GO
+CREATE PROCEDURE aut.usp_GetAutomationDataById
+(
+    @ID INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        [ID],
+        [SectionID],
+        [TestContent],
+        [UserID],
+        [EnvironmentId]
+    FROM [aut].[AutomationData]
+    WHERE [ID] = @ID;
+END
+GO

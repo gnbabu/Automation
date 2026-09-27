@@ -115,6 +115,18 @@ namespace AutomationAPI.Controllers
 
                 _logger.LogInformation("Inserting automation data for SectionID: {SectionID}", request.SectionId);
                 var newId = await _automationRepository.InsertAutomationDataAsync(request);
+
+                // Deliberately logs field *keys* only, never values - this data can
+                // include credential-like fields (see test-data-management.component.ts's
+                // own isSensitiveKey masking), and the Activity Log's audience (any Admin)
+                // is broader than this screen's own per-user scoping.
+                var sectionName = (await _automationRepository.GetAutomationDataSectionsAsync(null))
+                    .FirstOrDefault(s => s.SectionId == request.SectionId)?.SectionName;
+                var fieldKeys = AutomationDataHelper.ParseAutomationContents(request.TestContent).Select(f => f.FieldName).ToList();
+                await _auditLog.LogAsync("TestData", newId, sectionName ?? $"Section #{request.SectionId}", "Created",
+                    this.GetAuditUserId(), this.GetAuditUserName(),
+                    snapshot: new { sectionId = request.SectionId, environmentId = request.EnvironmentId, fieldKeys });
+
                 return Ok(newId);
             }
             catch (Exception ex)
@@ -134,7 +146,30 @@ namespace AutomationAPI.Controllers
                     return StatusCode(403, "Viewers have read-only access and cannot save test content.");
 
                 _logger.LogInformation("Updating automation data for SectionID: {SectionID}", request.SectionId);
+
+                // request only ever carries Id + the new TestContent (see AGENTS.md) -
+                // fetches the pre-update row for both the section/environment context and
+                // the old field keys to diff against.
+                var existing = request.Id.HasValue ? await _automationRepository.GetAutomationDataByIdAsync(request.Id.Value) : null;
+
                 await _automationRepository.UpdateAutomationDataAsync(request);
+
+                if (existing != null)
+                {
+                    var oldKeys = AutomationDataHelper.ParseAutomationContents(existing.TestContent).Select(f => f.FieldName).ToHashSet();
+                    var newKeys = AutomationDataHelper.ParseAutomationContents(request.TestContent).Select(f => f.FieldName).ToHashSet();
+                    var addedKeys = newKeys.Except(oldKeys).ToList();
+                    var removedKeys = oldKeys.Except(newKeys).ToList();
+
+                    var sectionName = (await _automationRepository.GetAutomationDataSectionsAsync(null))
+                        .FirstOrDefault(s => s.SectionId == existing.SectionId)?.SectionName;
+
+                    // Field *keys* only, never values - see the same note on Create above.
+                    await _auditLog.LogAsync("TestData", existing.Id, sectionName ?? $"Section #{existing.SectionId}", "Updated",
+                        this.GetAuditUserId(), this.GetAuditUserName(),
+                        snapshot: new { sectionId = existing.SectionId, environmentId = existing.EnvironmentId, fieldCount = newKeys.Count, addedKeys, removedKeys });
+                }
+
                 return NoContent(); // Successfully updated
             }
             catch (Exception ex)
@@ -151,7 +186,22 @@ namespace AutomationAPI.Controllers
             try
             {
                 _logger.LogInformation("Deleting automation data for SectionID: {SectionID}", sectionId);
+
+                var sectionName = (await _automationRepository.GetAutomationDataSectionsAsync(null))
+                    .FirstOrDefault(s => s.SectionId == sectionId)?.SectionName;
+
                 await _automationRepository.DeleteAutomationDataAsync(sectionId);
+
+                // Bulk "delete all saved test data for this section" (used by Delete
+                // Section's cascade path - see AutomationController.DeleteAutomationDataSectionAsync,
+                // logged separately as its own 'Section'/'Deleted' entry) as well as by a
+                // direct call, if one is ever added. Field keys/values aren't known here
+                // (they were already gone by the time this fires), so this just records
+                // that the section's data was wiped, not what it contained.
+                await _auditLog.LogAsync("TestData", null, sectionName ?? $"Section #{sectionId}", "Deleted",
+                    this.GetAuditUserId(), this.GetAuditUserName(),
+                    snapshot: new { sectionId });
+
                 return NoContent(); // Successfully deleted
             }
             catch (Exception ex)

@@ -4080,4 +4080,55 @@ fix still have the old PascalCase JSON in the database and will keep displaying
 incorrectly (not retroactively migrated) - only new writes are affected by the fix.
 Verified via direct SQL that a fresh entry after the fix landed with correct casing.
 
-Deferred to a later phase: Test Data Management field-level changes.
+### Phase C - Test Data Management (field-level changes)
+`AutomationController`'s `data` endpoints (`InsertAutomationDataAsync`/
+`UpdateAutomationDataAsync`/`DeleteAutomationDataAsync`) - the actual key/value field rows
+within a section (`aut.AutomationData.TestContent`, a JSON array), not the Section itself
+(already covered in Phase A).
+
+**Deliberately logs field *keys* only, never values.** This data can include credential-
+like fields (see `test-data-management.component.ts`'s own `isSensitiveKey` masking in
+the UI), and the Activity Log's audience (any Admin) is broader than this screen's own
+per-user/per-environment scoping - so `Details` only ever shows things like `fieldKeys:
+["username","email"]` or `addedKeys`/`removedKeys`, never the actual saved values.
+
+- Create: snapshot of `sectionId`/`environmentId`/`fieldKeys` (parsed from the new
+  `TestContent` via the existing `AutomationDataHelper.ParseAutomationContents`).
+- Update: **`UpdateAutomationDataAsync`'s own request only ever carries `Id` + the new
+  `TestContent`** - never `SectionId`/`UserId`/`EnvironmentId` - so there was no way to
+  know which section/user/environment a given update belongs to, or to diff old vs new
+  field keys, without an extra lookup. Added `usp_GetAutomationDataById`/
+  `IAutomationRepository.GetAutomationDataByIdAsync` (small, additive - same rationale as
+  Phase A's `usp_LoginUserGetById`) to fetch the pre-update row for both purposes.
+  `Details` shows `addedKeys`/`removedKeys` (a set diff on parsed field names), not a
+  full value-level diff.
+- Delete (bulk "delete all data for this section" - fires as part of Delete Section's own
+  cascade path, already logged separately as its own `'Section'`/`'Deleted'` entry) - just
+  records that the section's data was wiped, since the field keys/values are already gone
+  by the time this fires.
+
+Verified end-to-end: added a field to a real section and edited an existing section's
+data, confirmed via direct SQL that both `Created`/`Updated` entries show only field
+*keys* (`fieldKeys`/`addedKeys`/`removedKeys`), never any value.
+
+### CSS bugs found on Test Data Management while verifying Phase C live
+- The "+ Add Row" button was rendering vertically misaligned with the "Copy from
+  environment..." dropdown whenever the dropdown+Copy button wrapped onto their own line
+  (a real, working `flex-wrap` behavior from earlier session work, not a bug itself) -
+  the outer row's `align-items: center` was centering "Add Row" against that now-taller
+  wrapped sibling. Root-caused further: the dropdown and Copy button were also wrapping
+  *independently of each other* (Copy landing on its own line, visually orphaned under
+  the wrong sibling) because the "copy from environment" group had its own `flex-wrap`.
+  Fixed by removing that inner `flex-wrap` (`flex-wrap: nowrap` + `flex-shrink: 0` on the
+  group) so the dropdown+button are one inseparable unit that either fits on the same
+  line as "Add Row" or wraps *together* to a new line - never splitting apart - plus
+  switching the outer row to `align-items: flex-start`.
+- `.add-row-btn`/`.copy-env-btn` relied on padding alone for height (`padding: 8px 16px`,
+  no explicit `height`), while `.copy-env-select select` next to them has a hard
+  `height: 40px !important` - a real, visible ~4px height mismatch. Fixed by giving both
+  buttons an explicit `height: 40px` to match.
+- The Copy button's clipboard icon was rendering *above* the "Copy" text (stacked
+  vertically) instead of beside it on one line - fixed with the same `display: inline-
+  flex; align-items: center; justify-content: center; white-space: nowrap;` pattern used
+  successfully for identical icon/text stacking issues elsewhere this session, applied to
+  both `.add-row-btn` and `.copy-env-btn` for consistency.
