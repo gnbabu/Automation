@@ -4132,3 +4132,35 @@ data, confirmed via direct SQL that both `Created`/`Updated` entries show only f
   flex; align-items: center; justify-content: center; white-space: nowrap;` pattern used
   successfully for identical icon/text stacking issues elsewhere this session, applied to
   both `.add-row-btn` and `.copy-env-btn` for consistency.
+
+## Recurring Schedule test-case failures that "worked fine" via Run Now
+
+Root cause: `SmartElement.RefreshElement()` in `AutomationTests/Selenium.BaseComponents/
+Utilities/WebElementWrapper.cs` called `IWebDriver.FindElement()` exactly once, with no
+retry - unlike the older `WebElementWrapper.FindElement()`/`getElement()` methods in the
+same file, which already poll for up to 20-80 seconds. `LoginService.Login()` (used by
+every test's `OneTimeSetUp`) locates the login form's fields via `CreateSmartElement`, so
+it inherited this single-attempt fragility: if the login page's DOM wasn't fully rendered
+the instant it looked for the username field - a real race condition, more likely under
+slower/off-peak server response than under interactive daytime use - it failed immediately
+with `NoSuchElementException`, no second chance. This explains why a Recurring Schedule
+firing at a fixed overnight time intermittently failed at the login step
+(`net::ERR_CONNECTION_CLOSED` one night, `no such element` for the username field the
+next) while the identical test succeeded when run manually via Run Now minutes later -
+both go through the exact same `TestQueueWorker` execution pipeline; the only real
+difference was timing/server-response variance colliding with a zero-retry element lookup.
+
+Fixed by giving `SmartElement.RefreshElement()` the same bounded retry (15s, polling every
+500ms) its sibling class already uses - a genuine reliability fix that benefits every page
+object built on `CreateSmartElement`, not just this one login flow.
+
+**Verified for real** (not just rebuilt): rebuilt `TC.PriorAuthSearch` (which references
+`Selenium.BaseComponents`), redeployed both DLLs into the live
+`D:\Releases\E2EP3\REL-52_Release-Schedule_v1.0.0` folder (the API process holds an
+in-process `Explore()` lock on deployed DLLs while running - see "Discovery caching +
+Windows file-locking caveat" above - so it had to be stopped first), then nudged
+`aut.RecurringSchedule.NextRunDate` into the past so the worker's next 60s poll picked it
+up immediately rather than waiting for its normal fixed time. Watched it fire for real:
+login succeeded, the full test flow completed, and the run history recorded
+`PassedCount=1, FailedCount=0` - confirmed via direct SQL, and confirmed `NextRunDate`/
+`RunCount` advanced normally afterward back to its regular daily cadence.

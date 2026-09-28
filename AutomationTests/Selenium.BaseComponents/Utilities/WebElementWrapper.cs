@@ -210,13 +210,34 @@ namespace Selenium.BaseComponents.Utilities
         }
 
         /// <summary>
-        /// Forces a refresh of the element
+        /// Forces a refresh of the element. Polls for up to 15 seconds (matching the
+        /// retry style already used by WebElementWrapper.FindElement in this same file)
+        /// instead of a single immediate FindElement call - a bare single attempt was
+        /// intermittently racing ahead of slower page renders (e.g. login forms that
+        /// finish loading shortly after document.readyState reports "complete"),
+        /// throwing NoSuchElementException with no chance to recover.
         /// </summary>
         public IWebElement RefreshElement()
         {
             var locator = _locatorFunc != null ? _locatorFunc() : _locator;
-            _cachedElement = _driver.FindElement(locator);
-            return _cachedElement;
+            var deadline = DateTime.UtcNow.AddSeconds(15);
+            Exception lastException = null;
+
+            while (DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    _cachedElement = _driver.FindElement(locator);
+                    return _cachedElement;
+                }
+                catch (NoSuchElementException ex)
+                {
+                    lastException = ex;
+                    Thread.Sleep(500);
+                }
+            }
+
+            throw lastException ?? new NoSuchElementException($"Element not found for locator: {locator}");
         }
 
         // Note: Implicit conversion to IWebElement is not allowed in C# for interfaces
