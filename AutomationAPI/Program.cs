@@ -100,6 +100,7 @@ builder.Services.AddScoped<ServiceTokenGenerator>();
 builder.Services.AddHostedService<TestQueueWorker>();
 builder.Services.AddHostedService<ReleaseDllsReadyNotificationWorker>();
 builder.Services.AddHostedService<RecurringScheduleWorker>();
+builder.Services.AddHostedService<ExploreCacheWarmupWorker>();
 
 
 // Authentication (JWT)

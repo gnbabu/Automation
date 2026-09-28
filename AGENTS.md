@@ -4164,3 +4164,38 @@ up immediately rather than waiting for its normal fixed time. Watched it fire fo
 login succeeded, the full test flow completed, and the run history recorded
 `PassedCount=1, FailedCount=0` - confirmed via direct SQL, and confirmed `NextRunDate`/
 `RunCount` advanced normally afterward back to its regular daily cadence.
+
+## Environment Management / Dashboard / Release Management slow on first load after login
+
+Reported as "slow the first time, fast after that" - narrowed down to two distinct causes
+rather than one:
+
+- **Release Management and Dashboard (real, fixable):** both call `GET /api/Release`,
+  whose `PopulateFolderInfoAsync` runs `GetTotalTestCaseCountAsync` -> NUnit's `Explore()`
+  (reflection-based test discovery) against every DLL of every Release to compute
+  `TotalDiscoveredTests`. `NUnitEngineHelper`'s `_exploreCache` is a process-lifetime,
+  in-memory `ConcurrentDictionary` - empty on every API restart - so the very first
+  request after a restart pays the full discovery cost across every Release's DLLs, while
+  every load after that hits the warm cache and is fast. Confirmed via code (not just
+  guessed) by tracing both `ReleaseController.GetAll()` and `dashboard.component.ts`'s
+  `loadReleases()` to the same endpoint.
+- **Environment Management (not actually slow on its own):** `EnvironmentController.
+  GetAllAsync()` is a single plain SQL query with no per-item work - confirmed by reading
+  `EnvironmentRepository.GetAllAsync()`. Its perceived slowness was general ASP.NET Core
+  JIT/cold-start overhead (affects whichever page happens to be hit first after a restart,
+  not specific to this screen's own logic), not a real, separate issue.
+
+**Fix:** added `ExploreCacheWarmupWorker` (`AutomationAPI/Repositories/TestRunner/`), a
+one-shot `BackgroundService` (registered alongside `TestQueueWorker`/
+`RecurringScheduleWorker`/`ReleaseDllsReadyNotificationWorker` in `Program.cs`) that runs
+once at startup and calls `GetTotalTestCaseCountAsync` for every existing Release's folder
+- paying the discovery cost in the background, concurrently with the app starting to
+accept requests, instead of a real user's first click paying it. One Release's folder
+being unreachable/missing is caught and logged per-release, not fatal to warming up the
+rest.
+
+Verified for real: restarted the API with this change, then confirmed with the user that
+both Dashboard and Release Management's first load after the restart felt noticeably
+faster than before (previously slow-then-fast; now fast from the start), and that
+Environment Management felt fast too (consistent with it never having had its own
+distinct problem).
