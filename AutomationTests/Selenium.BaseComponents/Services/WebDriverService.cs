@@ -17,7 +17,7 @@ namespace Selenium.BaseComponents.Services
         // item (unlike Browser/LoginUserId, which are threaded through TestContext.
         // Parameters instead). Read once and cached - matches the file's own
         // per-process lifetime (a fresh isolated process is started for every run
-        // anyway, see AGENTS.md's ProcessModel=Separate notes, so there's no
+        // anyway, ProcessModel=Separate notes, so there's no
         // "picked up a stale value mid-run" concern).
         private readonly bool _headlessFromSettings;
 

@@ -23,7 +23,7 @@ namespace Selenium.BaseComponents.Data
 
         }
         // TestURL(string) - a hard-coded per-environment URL switch, deleted per
-        // "getting rid of hardcoded test project values" (see AGENTS.md). Confirmed
+        // "getting rid of hardcoded test project values". Confirmed
         // via a full-solution grep it had zero call sites anywhere - dead code even
         // before this change. The real, live equivalent is
         // aut.Environment.EnvironmentUrl, configured via Environment Management and

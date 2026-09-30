@@ -22,7 +22,7 @@ namespace TC.E2EP3Demo.DentalPA
     // DentalServiceProviderInformation, DentalOrderingProviderInformation,
     // DentalDiagnosisInformation, DentalServiceDetails, DentalProviderNotes,
     // DentalAttachments) had no configured Test Data Management data before this
-    // session's Flow & Section Management work - see AGENTS.md.
+    // session's Flow & Section Management work.
     [TestFixture("TechAdmin")]
     public class DentalPATests : BaseFeatureFixture
     {

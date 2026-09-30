@@ -8,7 +8,7 @@ namespace Selenium.BaseComponents.Utilities
     // Consolidated from the near-identical per-project TC.*/Utilities/Mapper.cs copies
     // (confirmed byte-for-byte identical except namespace, e.g. TC.PriorAuthSearch vs
     // TC.SearchRA) - Phase 1 of the "consolidate duplicated boilerplate" rollout. See
-    // AGENTS.md. Each project's own DataRepository now calls into
+    // Each project's own DataRepository now calls into
     // Selenium.BaseComponents.Utilities.DataRepository.GetAutomationData<T>, which uses
     // this Mapper directly - individual projects no longer need their own copy.
     public static class Mapper

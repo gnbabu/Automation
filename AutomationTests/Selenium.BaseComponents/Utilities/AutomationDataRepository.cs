@@ -7,7 +7,7 @@ namespace Selenium.BaseComponents.Utilities
     // copies (confirmed identical in structure - only the Model type and section-name
     // string differed, e.g. TC.PriorAuthSearch's "SearchPA" vs TC.SearchRA's
     // "SearchRAParams") - Phase 1 of the "consolidate duplicated boilerplate" rollout.
-    // See AGENTS.md. Each project's own DataRepository.GetAutomationData(string) keeps
+    // Each project's own DataRepository.GetAutomationData(string) keeps
     // its existing public signature (callers already cast the returned object to their
     // own Model type, confirmed across TC.SearchRA/TC.SearchEligibility/TC.Registration/
     // TC.PriorAuthoriztion) and just delegates here with its specific Model type +

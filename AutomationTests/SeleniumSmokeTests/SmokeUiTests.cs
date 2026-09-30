@@ -32,7 +32,7 @@ namespace SeleniumSmokeTests
             // Reads the Browser choice via NUnit's real TestContext.Parameters - populated
             // by NUnitEngineTestRunner from the Run Now/Schedule dialog's Browser selection,
             // via the engine's TestParametersDictionary/TestParameters package settings
-            // (see AGENTS.md). Defaults to Chrome if not supplied (e.g. when Explore()-only,
+            // Defaults to Chrome if not supplied (e.g. when Explore()-only,
             // no actual run, or an older caller that doesn't set it).
             var browser = TestContext.Parameters.Exists("Browser")
                 ? TestContext.Parameters["Browser"]

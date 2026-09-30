@@ -25,7 +25,7 @@ namespace TC.E2EP3Demo.SearchEligibility
         // create-then-verify flow across two independently-assignable test cases in
         // two different flows.
         //
-        // Real constraint (see AGENTS.md "ProcessModel=Separate"): NUnitEngineTestRunner
+        // Real constraint ("ProcessModel=Separate"): NUnitEngineTestRunner
         // runs each queued test case in its own isolated child process, so this static
         // field only actually survives between the two tests when both run within the
         // SAME process - e.g. a local `dotnet test`/Test Explorer run of the whole
