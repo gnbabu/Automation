@@ -62,7 +62,7 @@ namespace AutomationAPI.Controllers
 
             await _auditLog.LogAsync("Environment", id, request.EnvironmentName, "Created",
                 this.GetAuditUserId(), this.GetAuditUserName(),
-                snapshot: new { environmentName = request.EnvironmentName, environmentUrl = request.EnvironmentUrl, requiresAuthentication = request.RequiresAuthentication });
+                snapshot: new { environmentName = request.EnvironmentName, environmentUrl = request.EnvironmentUrl, requiresAuthentication = request.RequiresAuthentication, enableSso = request.EnableSso });
 
             return Ok(new { EnvironmentId = id });
         }
@@ -100,6 +100,8 @@ namespace AutomationAPI.Controllers
                 changes.Add(new AuditFieldChange { Field = "EnvironmentUrl", Old = existing.EnvironmentUrl, New = request.EnvironmentUrl });
             if (existing.RequiresAuthentication != (request.RequiresAuthentication ?? existing.RequiresAuthentication))
                 changes.Add(new AuditFieldChange { Field = "RequiresAuthentication", Old = existing.RequiresAuthentication, New = request.RequiresAuthentication });
+            if (existing.EnableSso != (request.EnableSso ?? existing.EnableSso))
+                changes.Add(new AuditFieldChange { Field = "EnableSso", Old = existing.EnableSso, New = request.EnableSso });
             if (!string.Equals(existing.Description, request.Description, StringComparison.Ordinal))
                 changes.Add(new AuditFieldChange { Field = "Description", Old = existing.Description, New = request.Description });
 

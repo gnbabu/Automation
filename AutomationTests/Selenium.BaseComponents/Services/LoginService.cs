@@ -28,7 +28,7 @@ namespace Selenium.BaseComponents.Services
         /// <summary>
         /// Was a hard-coded per-environment URL switch (confirmed at least one entry -
         /// E2EP3 - was outright wrong, pointing at the E2E domain instead). Removed per
-        /// "getting rid of hardcoded test project values" - see AGENTS.md.
+        /// "getting rid of hardcoded test project values"
         /// BaseFeatureFixture.Url always prefers its own API-resolved EnvironmentUrl
         /// (aut.Environment.EnvironmentUrl, configured via Environment Management) and
         /// only falls back to calling this when that's unavailable - so reaching this
@@ -94,6 +94,27 @@ namespace Selenium.BaseComponents.Services
         public void Login(string userName, string password)
         {
             Login(GetLoginUrl(), userName, password);
+        }
+
+        /// <summary>
+        /// Navigates to the environment's URL without attempting any login form
+        /// interaction - used for environments that don't need a manual login step (no
+        /// authentication at all, or SSO - a real user still browses to the app's URL in
+        /// both cases, they just never see/fill in this app's own login form). Unlike
+        /// Login(...), this has no app-specific assumptions (no OHPNM login field IDs),
+        /// so it's safe to call against any URL.
+        /// </summary>
+        public void NavigateOnly(string url)
+        {
+            try
+            {
+                _webDriver.Navigate().GoToUrl(url);
+                _webDriver.WaitUntilDocumentIsReady(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Navigation failed: {ex.Message}", ex);
+            }
         }
 
         /// <summary>

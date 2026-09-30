@@ -25,6 +25,7 @@ export class EnvironmentFormComponent implements OnInit {
     createdBy: 0,
     environmentUrl: '',
     requiresAuthentication: true,
+    enableSso: false,
   };
 
   // Options are plain booleans, not objects - textAccessor here just labels each one.
@@ -64,6 +65,7 @@ export class EnvironmentFormComponent implements OnInit {
           createdBy: env.createdBy,
           environmentUrl: env.environmentUrl ?? '',
           requiresAuthentication: env.requiresAuthentication,
+          enableSso: env.enableSso,
         };
       },
       error: (err) => {
@@ -107,6 +109,21 @@ export class EnvironmentFormComponent implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/environment-management']);
+  }
+
+  // Authentication Required and Enable SSO are mutually exclusive - checking one
+  // unchecks the other, since a manual username/password login and "no login screen at
+  // all" can't both be true for the same environment.
+  onRequiresAuthenticationChange(requiresAuthentication: boolean): void {
+    if (requiresAuthentication) {
+      this.model.enableSso = false;
+    }
+  }
+
+  onEnableSsoChange(enableSso: boolean): void {
+    if (enableSso) {
+      this.model.requiresAuthentication = false;
+    }
   }
 
   get isInvalid(): boolean {

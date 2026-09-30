@@ -8,6 +8,11 @@ namespace Selenium.BaseComponents.Utilities
         public string? EnvironmentName { get; set; }
         public string? EnvironmentUrl { get; set; }
         public bool RequiresAuthentication { get; set; } = true;
+
+        // Third-party/SSO authentication in production - no login screen to automate
+        // against. Treated the same as RequiresAuthentication = false by
+        // BaseFeatureFixture's login step.
+        public bool EnableSso { get; set; }
     }
 
     // Mirrors AutomationAPI.Repositories.Models.LoginUserCredentials - returned only by

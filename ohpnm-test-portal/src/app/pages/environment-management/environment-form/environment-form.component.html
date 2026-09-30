@@ -73,7 +73,9 @@
           </div>
         </div>
 
-        <!-- Authentication Required -->
+        <!-- Authentication Required - mutually exclusive with Enable SSO (below):
+             checking this unchecks SSO, since a manual username/password login and "no
+             login screen at all" can't both be true for the same environment. -->
         <div class="mb-3 form-check">
           <input
             type="checkbox"
@@ -81,6 +83,7 @@
             id="requiresAuthentication"
             name="requiresAuthentication"
             [(ngModel)]="model.requiresAuthentication"
+            (ngModelChange)="onRequiresAuthenticationChange($event)"
           />
           <label class="form-check-label" for="requiresAuthentication">
             Authentication Required
@@ -88,6 +91,30 @@
           <div class="form-text">
             When unchecked, Run Now/Schedule won't ask for a login user and Selenium
             tests will skip the login step entirely for this environment.
+          </div>
+        </div>
+
+        <!-- Enable SSO - mutually exclusive with Authentication Required (above):
+             checking this unchecks it, since there's no login screen for Selenium to log
+             into either way. -->
+        <div class="mb-3 form-check">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            id="enableSso"
+            name="enableSso"
+            [(ngModel)]="model.enableSso"
+            (ngModelChange)="onEnableSsoChange($event)"
+          />
+          <label class="form-check-label" for="enableSso">
+            Enable SSO
+          </label>
+          <div class="form-text">
+            Check this if the real application uses SSO/third-party authentication in
+            production and has no login screen of its own for this environment. Run
+            Now/Schedule won't ask for a login user, and Selenium tests will skip the
+            login step entirely. Automatically unchecks Authentication Required, since
+            there's no login screen for it to apply to.
           </div>
         </div>
       </div>

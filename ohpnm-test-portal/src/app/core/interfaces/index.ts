@@ -316,6 +316,7 @@ export interface IEnvironmentModel {
   releaseCount: number;
   environmentUrl?: string | null;
   requiresAuthentication: boolean;
+  enableSso: boolean;
 }
 
 export interface IEnvironmentRequestDto {
@@ -326,6 +327,7 @@ export interface IEnvironmentRequestDto {
   isActive?: boolean;
   environmentUrl?: string | null;
   requiresAuthentication?: boolean;
+  enableSso?: boolean;
 }
 
 export interface ILoginUserModel {

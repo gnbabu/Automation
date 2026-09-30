@@ -4199,3 +4199,108 @@ both Dashboard and Release Management's first load after the restart felt notice
 faster than before (previously slow-then-fast; now fast from the start), and that
 Environment Management felt fast too (consistent with it never having had its own
 distinct problem).
+
+## Environment "Enable SSO" - third-party auth in production, no login screen to automate
+
+`aut.Environment.RequiresAuthentication` already existed (see "per-environment login
+users" elsewhere in this file) and, when `false`, already skips the Login User
+selection/Selenium login step entirely for that environment. This new `EnableSso` column
+(BIT, default 0) covers a genuinely different real-world case: an environment where the
+real application *does* require authentication in production, but via a third-party/SSO
+mechanism - there is no login screen of the app's own for a Selenium test to interact with
+at all.
+
+**Relationship to `RequiresAuthentication`: mutually exclusive checkboxes, not a
+dependency.** A manual username/password login and "no login screen at all" can't both be
+true for the same environment, so checking one in the Portal UI automatically unchecks the
+other:
+- Checking "Authentication Required" unchecks "Enable SSO"
+  (`onRequiresAuthenticationChange` in `environment-form.component.ts`).
+- Checking "Enable SSO" unchecks "Authentication Required" (`onEnableSsoChange`).
+- Both can be unchecked together (the pre-existing "No Authentication" case).
+- The backend normalizes the same way as defense in depth, in case a caller bypasses the
+  Portal UI entirely: `EnvironmentRepository.CreateAsync`/`UpdateAsync` and the
+  `usp_EnvironmentCreate`/`usp_EnvironmentUpdate` stored procedures both force
+  `RequiresAuthentication = false` whenever `EnableSso = true` (SSO wins if somehow both
+  were sent true).
+
+Note this means an SSO environment and a true "no authentication at all" environment both
+end up with `RequiresAuthentication = false` - they're only told apart by `EnableSso`
+itself (`true` for SSO, `false` for genuinely no auth), not by `RequiresAuthentication`.
+This was a deliberate trade-off (discussed directly with the user) in exchange for a
+simpler two-checkbox UI where the user never has to reason about one checkbox being
+"disabled" by the other's state - they just toggle whichever one applies.
+
+**Practical effect when `EnableSso = true`:** identical to `RequiresAuthentication = false`
+everywhere a Login User is normally required - no Login User needs to be selected, and
+Selenium never attempts a login step. Every place that previously checked only
+`!requiresAuthentication` was changed to `!requiresAuthentication || enableSso` (the `||
+enableSso` is redundant given the mutual-exclusion normalization above always makes
+`requiresAuthentication` false when `enableSso` is true, but kept as defense in depth in
+case older rows predate this migration or a normalization path is ever bypassed):
+- `AutomationTests/Selenium.BaseComponents/Base/BaseFeatureFixture.cs` -
+  `ResolveCredentialsAndUrlAsync()`'s skip-login guard (the actual test-execution effect).
+- `ohpnm-test-portal/.../test-case-execution-panel.component.ts` - both the Run Now/Bulk
+  Run Now dialog gate and the Schedule/Bulk Schedule dialog gate.
+- `ohpnm-test-portal/.../recurring-schedule-form.component.ts` -
+  `loadLoginUsersForEnvironment`.
+
+No changes were needed to `aut.LoginUser` or `TestCaseExecutionQueue.LoginUserId` (stays
+nullable, simply never populated for SSO environments, same as No-Auth environments today),
+or to any Selenium page object/login flow - this is purely an extension of the existing
+"skip login" gate, not a new SSO-redirect-handling flow, since in production there's no
+login screen at all for the test to interact with.
+
+Migration: `Database/Environment_SSO_Migration.sql` (idempotent - adds the column, recreates
+`usp_EnvironmentCreate/Update/GetAll/GetById` with the new parameter/column).
+
+### Fixed (found via real end-to-end SSO verification): skipping login also skipped navigation
+Verified the fix for real: flagged the real `E2E` environment as SSO, rebuilt/redeployed
+`Selenium.BaseComponents.dll` to `D:\Releases\E2E\REL-51...` and a new
+`REL-53_TestAuthRequired_v1.0.0` release, and queued a real `TC.PriorAuthSearch` test case
+against it. Login was correctly skipped (confirmed via `TestQueueWorker`'s fix below
+finally surfacing a real error instead of a silent stuck "Queued" status) - but the test
+still failed, at `SidebarMenu.Click()` with `NoSuchElementException` and
+`URL at failure: data:,` (a blank page).
+
+Root cause: `InitializeChromeAndLogin()`/`InitializeEdgeAndLogin()` only ever called
+`LoginService.Login(Url, Username, pswd)` when `Username != null` - and `Login(...)` is the
+**only** place that navigates the browser (`_webDriver.Navigate().GoToUrl(...)`) at all.
+So both "No Authentication" and "SSO" (both set `Username = null`) left the browser on a
+blank page with **no navigation whatsoever** - not just "no login form filled in". This was
+already true for "No Authentication" before this SSO work even started, it just never
+surfaced before (nothing had exercised a real `RequiresAuthentication = false` run with an
+`EnvironmentUrl` configured and a test that immediately tries to interact with the page).
+
+This matters because a real user in either case (no-auth tool, or an SSO-protected app)
+still *browses to the app's URL* - "no login form" isn't the same as "no navigation".
+Confirmed with a concrete example (a `RequiresAuthentication = false` environment pointed
+at `https://google.com` should still navigate the browser there, even though there's no
+login form to fill in).
+
+Fix: added `LoginService.NavigateOnly(url)` - just navigation + a document-ready wait, with
+none of `Login(...)`'s OHPNM-specific login-form assumptions (field IDs like
+`ctl00_MainContent_Login1_UserName`), so it's safe to call against any URL.
+`BaseFeatureFixture`'s `InitializeChromeAndLogin`/`InitializeEdgeAndLogin` now share a
+`NavigateAndLoginIfNeeded()` helper: `Username != null` -> `Login(...)` (navigates and fills
+the form); `Username == null` but a `_resolvedLoginUrl` was resolved -> `NavigateOnly(...)`
+(browses there, no form); no URL resolved at all -> no navigation (matches today's behavior
+for an environment with no `EnvironmentUrl` configured, same as before).
+
+### Fixed (found via the same real SSO verification): TestQueueWorker swallowed launch-level failures
+`TestQueueWorker`'s `catch (Exception ex)` around `runner.RunAsync(...)` only ever set the
+**queue item's** `QueueStatus = "Failed"` - it never updated the **test case's own**
+`TestCaseStatus` (what the Portal's grid actually shows), and never logged the exception
+anywhere (`// Optionally log exception` was exactly that - never done). So any failure that
+threw before `RunAsync` returned a normal result list (as opposed to a normal
+`TestExecutionResult` with `Outcome = Failed`) left the test case stuck showing "Queued"
+forever, with zero record of what happened - confirmed by direct testing: this is exactly
+what the user hit while verifying SSO (re-queued the same test case; the *first* run threw
+before producing a result and got stuck on "Queued"; after this fix, the *second* run
+against the same fixed release folder produced a normal `Failed` result with a real error
+message, proving both this fix and the SSO fix above work correctly).
+
+Fixed: the catch block now logs via `ILogger<TestQueueWorker>` and calls
+`resultsRepo.UpdateAssignedTestCaseStatusAsync(...)` to mark the test case `Failed` (with
+`ex.Message`), wrapped in its own try/catch so a failure updating status still can't take
+the worker down.

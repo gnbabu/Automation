@@ -10,6 +10,14 @@ namespace AutomationAPI.Repositories.Models
         public bool IsActive { get; set; }
         public string? EnvironmentUrl { get; set; }
         public bool RequiresAuthentication { get; set; } = true;
+
+        // Third-party/SSO authentication in production - no login screen for this
+        // environment at all. Only meaningful when RequiresAuthentication is true; treated
+        // the same as RequiresAuthentication = false everywhere a Login User is normally
+        // needed (Run Now/Schedule dialogs, Recurring Schedule form, and Selenium's own
+        // login step).
+        public bool EnableSso { get; set; }
+
         public int CreatedBy { get; set; }
         public DateTime CreatedOn { get; set; }
         public string UserName { get; set; }
@@ -35,6 +43,8 @@ namespace AutomationAPI.Repositories.Models
         public string? EnvironmentUrl { get; set; }
 
         public bool? RequiresAuthentication { get; set; }
+
+        public bool? EnableSso { get; set; }
 
         [Required]
         public int CreatedBy { get; set; }   // FK → aut.User(UserID)

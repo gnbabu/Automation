@@ -8,10 +8,12 @@ namespace AutomationAPI.Repositories.TestRunner
     public class TestQueueWorker : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<TestQueueWorker> _logger;
 
-        public TestQueueWorker(IServiceProvider serviceProvider)
+        public TestQueueWorker(IServiceProvider serviceProvider, ILogger<TestQueueWorker> logger)
         {
             _serviceProvider = serviceProvider;
+            _logger = logger;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -131,7 +133,34 @@ namespace AutomationAPI.Repositories.TestRunner
                     {
                         queue.QueueStatus = "Failed";
                         //queue.CompletedAt = DateTime.UtcNow;
-                        // Optionally log exception
+
+                        _logger.LogError(ex,
+                            "Queue item {QueueId} (AssignmentTestCaseId {AssignmentTestCaseId}) failed before " +
+                            "producing a test result - the test case's own status would previously have been " +
+                            "left stuck on 'Queued' forever with no record of what happened.",
+                            queue.QueueId, queue.AssignmentTestCaseId);
+
+                        // Previously only the queue item itself was marked Failed here - the
+                        // test case's own status (what the Portal grid actually shows) was
+                        // never touched, so a launch-level failure (bad DLL, missing
+                        // dependency the fallback couldn't resolve, etc. - anything that
+                        // throws before RunAsync returns a normal result list) left it stuck
+                        // showing "Queued" indefinitely instead of "Failed".
+                        try
+                        {
+                            await resultsRepo.UpdateAssignedTestCaseStatusAsync(new AssignedTestCaseStatusUpdate
+                            {
+                                AssignmentTestCaseId = queue.AssignmentTestCaseId,
+                                TestCaseStatus = "Failed",
+                                ErrorMessage = ex.Message
+                            });
+                        }
+                        catch (Exception statusEx)
+                        {
+                            _logger.LogError(statusEx,
+                                "Failed to update AssignmentTestCaseId {AssignmentTestCaseId} to Failed after queue item {QueueId} itself failed.",
+                                queue.AssignmentTestCaseId, queue.QueueId);
+                        }
                     }
 
                     await queueRepo.UpdateQueueStatusAsync(queue.QueueId, queue.QueueStatus);

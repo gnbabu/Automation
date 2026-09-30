@@ -155,12 +155,13 @@ namespace Selenium.BaseComponents.Pages
         // Resolution order (see AGENTS.md - "per-environment login users, selected
         // explicitly at Run Now/Schedule time"):
         //   1. Environment + LoginUserId available (queue-driven run): call the API.
-        //      - RequiresAuthentication == false: skip login entirely (Username stays
-        //        null, matching InitializeChromeAndLogin's existing guard) - no behavior
-        //        change from today for any environment that doesn't need auth.
-        //      - RequiresAuthentication == true and a LoginUserId was supplied (the
-        //        person running/scheduling it explicitly picked one): use its
-        //        username/password + the resolved EnvironmentUrl.
+        //      - RequiresAuthentication == false, or EnableSso == true (third-party/SSO
+        //        auth in production - no login screen to automate against): skip login
+        //        entirely (Username stays null, matching InitializeChromeAndLogin's
+        //        existing guard).
+        //      - RequiresAuthentication == true, EnableSso == false, and a LoginUserId was
+        //        supplied (the person running/scheduling it explicitly picked one): use
+        //        its username/password + the resolved EnvironmentUrl.
         //   2. If a profile was declared (e.g. [TestFixture("TechAdmin")]) but nothing
         //      above resolved (no EnvironmentId/LoginUserId supplied, a local Test
         //      Explorer run outside the queue pipeline, an environment with no
@@ -178,9 +179,11 @@ namespace Selenium.BaseComponents.Pages
                 if (!string.IsNullOrWhiteSpace(environmentDetails.EnvironmentUrl))
                     _resolvedLoginUrl = environmentDetails.EnvironmentUrl;
 
-                if (!environmentDetails.RequiresAuthentication)
+                if (!environmentDetails.RequiresAuthentication || environmentDetails.EnableSso)
                 {
-                    // Environment explicitly doesn't need a login step - leave
+                    // Environment explicitly doesn't need a login step - either it needs
+                    // no authentication at all, or it uses SSO in production and has no
+                    // login screen for this app to present. Either way, leave
                     // Username/pswd null so InitializeChromeAndLogin's existing
                     // `if (Username != null)` guard skips login entirely.
                     Username = null;
@@ -218,10 +221,7 @@ namespace Selenium.BaseComponents.Pages
             // Create LoginPage for element access
             LoginPage = new LoginPage(TestWebDriver);
 
-            if (Username != null)
-            {
-                LoginService.Login(Url, Username, pswd);
-            }
+            NavigateAndLoginIfNeeded();
         }
 
         private void InitializeEdgeAndLogin()
@@ -235,9 +235,24 @@ namespace Selenium.BaseComponents.Pages
             // Create LoginPage for element access
             LoginPage = new LoginPage(TestWebDriver);
 
+            NavigateAndLoginIfNeeded();
+        }
+
+        // Username != null: a real login form fill is needed (Login(...) navigates and
+        // fills the form in one call). Username == null (RequiresAuthentication == false,
+        // or EnableSso == true): no login form to fill, but a real user still browses to
+        // the app's URL either way - only skip navigation entirely when no URL was even
+        // resolved (an environment with no EnvironmentUrl configured at all, so there's
+        // nowhere known to navigate to).
+        private void NavigateAndLoginIfNeeded()
+        {
             if (Username != null)
             {
                 LoginService.Login(Url, Username, pswd);
+            }
+            else if (!string.IsNullOrWhiteSpace(_resolvedLoginUrl))
+            {
+                LoginService.NavigateOnly(_resolvedLoginUrl);
             }
         }
 

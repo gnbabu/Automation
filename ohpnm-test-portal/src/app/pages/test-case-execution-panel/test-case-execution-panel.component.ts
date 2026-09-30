@@ -470,7 +470,7 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
     this.environmentService.getById(environmentId).subscribe({
       next: (env) => {
-        if (!env.requiresAuthentication) {
+        if (!env.requiresAuthentication || env.enableSso) {
           openDialog([]);
           return;
         }
@@ -684,7 +684,7 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
     this.environmentService.getById(environmentId).subscribe({
       next: (env) => {
-        if (!env.requiresAuthentication) {
+        if (!env.requiresAuthentication || env.enableSso) {
           onReady([]);
           return;
         }

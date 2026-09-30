@@ -227,7 +227,7 @@ export class RecurringScheduleFormComponent implements OnInit {
   private loadLoginUsersForEnvironment(environmentId: number): void {
     this.environmentService.getById(environmentId).subscribe({
       next: (env) => {
-        if (!env.requiresAuthentication) return;
+        if (!env.requiresAuthentication || env.enableSso) return;
         this.loginUserService.getMineForEnvironment(environmentId).subscribe({
           next: (loginUsers) => (this.loginUsers = loginUsers.filter((lu) => lu.isActive)),
           error: () => (this.loginUsers = []),

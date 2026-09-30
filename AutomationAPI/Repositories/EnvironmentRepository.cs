@@ -17,13 +17,22 @@ namespace AutomationAPI.Repositories
 
         public async Task<int> CreateAsync(EnvironmentRequestDto request)
         {
+            // Authentication Required and Enable SSO are mutually exclusive - a manual
+            // username/password login and "no login screen at all" can't both be true for
+            // the same environment. Normalized here too as defense in depth (the Portal's
+            // own UI + the stored procedure already enforce this), in case a caller
+            // bypasses both. SSO wins if somehow both were sent true.
+            var enableSso = request.EnableSso ?? false;
+            var requiresAuthentication = !enableSso && (request.RequiresAuthentication ?? true);
+
             var parameters = new[]
             {
                 new SqlParameter("@EnvironmentName", request.EnvironmentName),
                 new SqlParameter("@Description", request.Description ?? (object)DBNull.Value),
                 new SqlParameter("@CreatedBy", request.CreatedBy),
                 new SqlParameter("@EnvironmentUrl", (object?)request.EnvironmentUrl ?? DBNull.Value),
-                new SqlParameter("@RequiresAuthentication", request.RequiresAuthentication ?? true)
+                new SqlParameter("@RequiresAuthentication", requiresAuthentication),
+                new SqlParameter("@EnableSso", enableSso)
             };
 
             return await _db.ExecuteScalarAsync<int>(SqlDbConstants.EnvironmentCreate, parameters);
@@ -31,6 +40,9 @@ namespace AutomationAPI.Repositories
 
         public async Task UpdateAsync(EnvironmentRequestDto request)
         {
+            var enableSso = request.EnableSso ?? false;
+            var requiresAuthentication = !enableSso && (request.RequiresAuthentication ?? true);
+
             var parameters = new[]
             {
                 new SqlParameter("@EnvironmentId", request.EnvironmentId!.Value),
@@ -39,7 +51,8 @@ namespace AutomationAPI.Repositories
                 new SqlParameter("@IsActive", request.IsActive ?? true),
                 new SqlParameter("@ModifiedBy", (object?)request.ModifiedBy ?? DBNull.Value),
                 new SqlParameter("@EnvironmentUrl", (object?)request.EnvironmentUrl ?? DBNull.Value),
-                new SqlParameter("@RequiresAuthentication", request.RequiresAuthentication ?? true)
+                new SqlParameter("@RequiresAuthentication", requiresAuthentication),
+                new SqlParameter("@EnableSso", enableSso)
             };
 
             await _db.ExecuteNonQueryAsync(SqlDbConstants.EnvironmentUpdate, parameters);
@@ -85,6 +98,7 @@ namespace AutomationAPI.Repositories
                 IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
                 EnvironmentUrl = reader.GetNullableString("EnvironmentUrl"),
                 RequiresAuthentication = reader.GetBoolean(reader.GetOrdinal("RequiresAuthentication")),
+                EnableSso = reader.GetBoolean(reader.GetOrdinal("EnableSso")),
                 CreatedOn = reader.GetDateTime(reader.GetOrdinal("CreatedOn")),
                 UserName = reader.GetString(reader.GetOrdinal("UserName")),
                 Email = reader.GetString(reader.GetOrdinal("Email")),
