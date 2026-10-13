@@ -3,4 +3,5 @@ export const environment = {
   environmentName: 'QA',
   apiUrl: 'http://localhost:9908/api',
   displayName: 'QA Environment',
+  appTitle: 'QA - MES Automation',
 };
