@@ -14,7 +14,7 @@ namespace TC.E2EP3Demo.SearchRA
     // the same Page Objects already proven in TC.SearchRA/Tests/SearchRATest.cs
     // (physically copied into this project). Flow "SearchRA" / Section "SearchRA" had
     // no configured Test Data Management data before this session's Flow & Section
-    // Management work - see AGENTS.md.
+    // Management work -  
     [TestFixture("TechAdmin")]
     public class SearchRATests : BaseFeatureFixture
     {
