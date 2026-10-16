@@ -52,10 +52,6 @@ export class TestDataManagementComponent
   selectedEnvironment?: IEnvironmentModel;
   existingSectionData?: IAutomationData;
 
-  // Test cases assigned to the user (in the selected environment) whose data model is
-  // defined in code ([TestDataFlow]). Picking one replaces the manual Flow/Section
-  // editor with ModelTestDataComponent: sections and fields come from the model and
-  // data is saved per test case. Leaving it empty keeps the manual editor, unchanged.
   modelTestCases: ITestDataTestCase[] = [];
   selectedModelTestCase?: ITestDataTestCase;
   private lastConfirmedModelTestCase?: ITestDataTestCase;

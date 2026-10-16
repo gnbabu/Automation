@@ -1,44 +1,8 @@
-/*============================================================================
-  Test case data as ONE JSON document per test case x user x environment
-  Target database: MES_AUT_AI   Schema: aut
-  Run after: TestDataModel_Migration.sql
-
-  Purpose:
-    TestDataModel_Migration.sql stored model-based test data as one row per
-    section (test case x section x user x environment). This stores the whole
-    test case's data as a single JSON document shaped exactly like the C# model,
-    so a test run deserializes it straight onto the model:
-
-      { "ProviderHeaderInfomration": { "ProviderMedicaidId": "00059871", ... },
-        "Diagnoses": [ { "Sequence": 1, "DiagnosisCode": "Z00.00" }, ... ],
-        "ProviderNotes": "..." }
-
-    - class-typed properties  -> JSON objects
-    - List<T> properties      -> JSON arrays
-    - the model's own scalars -> top-level values
-    A section that isn't in the document hasn't been saved for the test case;
-    test runs keep the model's default (property-initializer) values for it.
-
-    Version (rowversion) gives optimistic concurrency: a save carries the version
-    it was based on and is rejected if the document changed in between.
-
-    aut.TestCaseKey gives each test case (LibraryName + ClassName + MethodName) a
-    narrow integer id, so the document table's unique key is three ints.
-
-  Existing per-section rows are converted, and the old table is kept as
-  aut.TestCaseData_SectionRows_Backup (safe to drop once verified).
-
-  Principles: IDEMPOTENT - guarded DDL + CREATE OR ALTER procedures.
-============================================================================*/
-
 SET NOCOUNT ON;
 SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
 GO
 
-/*----------------------------------------------------------------------------
-  1. aut.TestCaseKey
-----------------------------------------------------------------------------*/
 IF OBJECT_ID('aut.TestCaseKey', 'U') IS NULL
 BEGIN
     CREATE TABLE aut.TestCaseKey
@@ -54,9 +18,6 @@ BEGIN
 END
 GO
 
-/*----------------------------------------------------------------------------
-  2. Move the per-section table aside (first run only)
-----------------------------------------------------------------------------*/
 IF COL_LENGTH('aut.TestCaseData', 'SectionID') IS NOT NULL
    AND OBJECT_ID('aut.TestCaseData_SectionRows_Backup', 'U') IS NULL
 BEGIN
@@ -69,9 +30,6 @@ BEGIN
 END
 GO
 
-/*----------------------------------------------------------------------------
-  3. aut.TestCaseData (one JSON document per test case x user x environment)
-----------------------------------------------------------------------------*/
 IF OBJECT_ID('aut.TestCaseData', 'U') IS NULL
 BEGIN
     CREATE TABLE aut.TestCaseData
@@ -80,8 +38,6 @@ BEGIN
         TestCaseKeyId  INT NOT NULL CONSTRAINT FK_TestCaseData_TestCaseKey REFERENCES aut.TestCaseKey(TestCaseKeyId),
         UserID         INT NOT NULL CONSTRAINT FK_TestCaseData_User REFERENCES aut.[User](UserID),
         EnvironmentId  INT NOT NULL CONSTRAINT FK_TestCaseData_Environment REFERENCES aut.[Environment](EnvironmentId),
-        -- Model class name (the flow) the document was saved for - used to offer
-        -- "copy from another test case" only between test cases of the same model.
         FlowName       NVARCHAR(250) NOT NULL,
         DataJson       NVARCHAR(MAX) NOT NULL CONSTRAINT CK_TestCaseData_DataJson CHECK (ISJSON(DataJson) = 1),
         [Version]      ROWVERSION NOT NULL,
@@ -93,13 +49,6 @@ BEGIN
 END
 GO
 
-/*----------------------------------------------------------------------------
-  4. Convert the old per-section rows (only when the new table is still empty)
-     Values come across as JSON strings - exactly what the Portal saved; empty
-     values are left out. Multi-row sections (items carrying RowIndex) become
-     arrays; a section named after the flow holds the model's own scalars and is
-     flattened to the top level.
-----------------------------------------------------------------------------*/
 IF OBJECT_ID('aut.TestCaseData_SectionRows_Backup', 'U') IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM aut.TestCaseData)
 BEGIN
@@ -124,14 +73,14 @@ BEGIN
         SELECT *, '"' + STRING_ESCAPE(FieldName, 'json') + '":"' + STRING_ESCAPE(FieldValue, 'json') + '"' AS Pair
         FROM Items
     ),
-    RowObjects AS (       -- one JSON object per section row
+    RowObjects AS (
         SELECT LibraryName, ClassName, MethodName, UserID, EnvironmentId, FlowName, SectionName, RowIndex,
                '{' + STRING_AGG(Pair, ',') + '}' AS RowJson
         FROM Pairs
         WHERE SectionName <> FlowName
         GROUP BY LibraryName, ClassName, MethodName, UserID, EnvironmentId, FlowName, SectionName, RowIndex
     ),
-    SectionJson AS (      -- object for single-row sections, array for multi-row
+    SectionJson AS (
         SELECT LibraryName, ClassName, MethodName, UserID, EnvironmentId, FlowName,
                '"' + STRING_ESCAPE(SectionName, 'json') + '":' +
                CASE WHEN MAX(RowIndex) IS NULL THEN MAX(RowJson)
@@ -154,9 +103,6 @@ BEGIN
 END
 GO
 
-/*----------------------------------------------------------------------------
-  5. Procedures
-----------------------------------------------------------------------------*/
 DROP PROCEDURE IF EXISTS aut.usp_TestCaseDataGetForFlow;
 GO
 
@@ -180,9 +126,6 @@ BEGIN
 END
 GO
 
--- Writes the whole document. @ExpectedVersion is the version the caller read
--- (NULL = the caller saw no document yet). Returns IsConflict = 1 without writing
--- when the stored document is not the one the caller based its change on.
 CREATE OR ALTER PROCEDURE aut.usp_TestCaseDataSave
     @LibraryName NVARCHAR(255),
     @ClassName NVARCHAR(255),
@@ -250,8 +193,6 @@ BEGIN
 END
 GO
 
--- Other test cases of the same model (same user + environment) that have data -
--- the "Copy from another test case" list.
 CREATE OR ALTER PROCEDURE aut.usp_TestCaseDataGetCopySources
     @LibraryName NVARCHAR(255),
     @ClassName NVARCHAR(255),

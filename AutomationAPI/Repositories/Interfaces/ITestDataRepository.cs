@@ -2,8 +2,6 @@ using AutomationAPI.Repositories.Models;
 
 namespace AutomationAPI.Repositories.Interfaces
 {
-    // Test data for test cases whose data model is defined in code ([TestDataFlow]),
-    // saved as one JSON document per test case x user x environment in aut.TestCaseData.
     public interface ITestDataRepository
     {
         Task<IEnumerable<TestDataTestCase>> GetMyTestCasesAsync(int userId, int environmentId);

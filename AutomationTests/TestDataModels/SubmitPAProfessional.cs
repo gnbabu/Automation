@@ -4,9 +4,6 @@ using System.Collections.Generic;
 namespace TestDataModels
 {
    
-    // Property initializers below are the flow's default values: the Portal shows them
-    // for any section a test case hasn't saved yet, and test runs use them for those
-    // sections. Values match the working Dental PA data in E2EP3 where they apply.
     public class SubmitPAProfessional    // FlowName
     {
         public ProviderHeaderInfomration ProviderHeaderInfomration { get; set; } = new()   // section

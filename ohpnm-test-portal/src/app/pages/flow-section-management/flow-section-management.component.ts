@@ -269,8 +269,6 @@ export class FlowSectionManagementComponent implements OnInit {
     return [...this.sectionDataCounts.values()].reduce((sum, c) => sum + c, 0);
   }
 
-  // Sections created from a test-data model in code can't be renamed or deleted here
-  // (the API rejects it too) - only by changing the model class.
   get selectedFlowHasModelSections(): boolean {
     return this.sections.some((s) => s.isFromModel);
   }

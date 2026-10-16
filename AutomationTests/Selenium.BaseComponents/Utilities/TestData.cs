@@ -5,24 +5,10 @@ using Newtonsoft.Json.Linq;
 
 namespace Selenium.BaseComponents.Utilities
 {
-    // Loads the running test case's own test data into a TestDataModels model (e.g.
-    // TestData.Load<SubmitPAProfessional>()). The data is stored as one JSON document
-    // per test case, shaped exactly like the model:
-    //   - class-typed property -> JSON object
-    //   - List<class> property -> JSON array (one item per row)
-    //   - the model's own scalars -> top-level values
-    // The document is applied onto `new T()`, so any section that isn't saved for the
-    // test case keeps the model's own property-initializer values (its defaults in
-    // code) - the same defaults the Portal shows. A saved section replaces the default
-    // section as a whole.
-    // Data is the assigned tester's, for the assignment's environment, resolved by the
-    // API from the AssignmentTestCaseId every queued run receives.
     public static class TestData
     {
         private static readonly JsonSerializerSettings Settings = new()
         {
-            // Replace (not merge into) default objects/lists - otherwise a saved
-            // Diagnoses list would be appended to the model's default rows.
             ObjectCreationHandling = ObjectCreationHandling.Replace,
             Culture = CultureInfo.InvariantCulture,
             MissingMemberHandling = MissingMemberHandling.Ignore,

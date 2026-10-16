@@ -15,13 +15,8 @@ import {
 import { CommonToasterService, ConfirmService, TestDataService } from '@services';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
-// Same heuristic as the manual editor - decides whether a value defaults to masked.
 const SENSITIVE_KEY_PATTERN = /password|pwd|secret/i;
 
-// Editor for a test case whose data model is defined in code ([TestDataFlow]). The
-// sections and fields come from the model, so there are no keys to type: single-row
-// sections are a form, List<T> sections a grid with one row per item. Data is saved
-// per test case, for the logged-in user and the selected environment.
 @Component({
   selector: 'app-model-test-data',
   standalone: true,
@@ -40,9 +35,6 @@ export class ModelTestDataComponent implements OnChanges {
   loading = false;
   isSaving = false;
 
-  // Saved rows per section (server state) and the section being edited. The whole
-  // test case is one document on the server; `version` is sent back on save so a save
-  // based on a stale copy is rejected instead of overwriting a newer change.
   private saved = new Map<number, TestDataRow[]>();
   private version: number | null = null;
   selectedSection?: ITestDataSectionSchema;
@@ -50,8 +42,6 @@ export class ModelTestDataComponent implements OnChanges {
   private snapshot = '';
   revealed = new Set<string>();
 
-  // "Copy from environment" (section + all) is hidden for now; the code paths and the
-  // API's copy-all FromEnvironmentId support stay in place - set to true to bring it back.
   readonly showCopyFromEnvironment = false;
 
   copySources: ITestDataCopySource[] = [];
@@ -131,14 +121,10 @@ export class ModelTestDataComponent implements OnChanges {
     return this.environments.filter((e) => e.environmentId !== this.environment?.environmentId);
   }
 
-  // --- Sections ---
-
   isConfigured(section: ITestDataSectionSchema): boolean {
     return (this.saved.get(section.sectionId)?.length ?? 0) > 0;
   }
 
-  // Nothing saved for this test case, but the model has default values in code -
-  // those are what a test run would use.
   usesDefaults(section: ITestDataSectionSchema): boolean {
     return !this.isConfigured(section) && (section.defaultRows?.length ?? 0) > 0;
   }
@@ -165,8 +151,6 @@ export class ModelTestDataComponent implements OnChanges {
     this.snapshot = this.serialize(this.rows);
   }
 
-  // Builds editable rows containing exactly the model's fields (values from `source`
-  // where present); a single-row section always shows its one row.
   private setRows(section: ITestDataSectionSchema, source: TestDataRow[]): void {
     const toRow = (r: TestDataRow | undefined): TestDataRow => {
       const row: TestDataRow = {};
@@ -176,15 +160,12 @@ export class ModelTestDataComponent implements OnChanges {
     this.rows = section.isList ? source.map(toRow) : [toRow(source[0])];
   }
 
-  // Fields saved earlier that the model no longer has - dropped on next save.
   get unusedFields(): string[] {
     if (!this.selectedSection) return [];
     const known = new Set(this.selectedSection.fields.map((f) => f.name));
     const savedRows = this.saved.get(this.selectedSection.sectionId) ?? [];
     return [...new Set(savedRows.flatMap((r) => Object.keys(r)).filter((k) => !known.has(k)))];
   }
-
-  // --- Rows ---
 
   addRow(): void {
     if (!this.selectedSection?.isList) return;
@@ -196,8 +177,6 @@ export class ModelTestDataComponent implements OnChanges {
   removeRow(index: number): void {
     this.rows.splice(index, 1);
   }
-
-  // --- Fields ---
 
   inputType(field: ITestDataFieldSchema): string {
     if (this.isSensitive(field) && !this.revealed.has(field.name)) return 'password';
@@ -222,11 +201,8 @@ export class ModelTestDataComponent implements OnChanges {
 
   private toInputValue(field: ITestDataFieldSchema, value: string | null): string {
     const v = value ?? '';
-    // <input type="date"> only accepts yyyy-MM-dd.
     return field.type === 'date' && v.length > 10 ? v.substring(0, 10) : v;
   }
-
-  // --- Copy ---
 
   copyRowsFromEnvironment(): void {
     if (!this.copyFromEnvironment) return;
@@ -252,9 +228,6 @@ export class ModelTestDataComponent implements OnChanges {
       });
   }
 
-  // "Copy all": replaces this test case's whole saved data (this environment) with the
-  // source's in one step, server-side. Sections the source hasn't saved go back to
-  // the model's defaults.
   async copyAllFromTestCase(): Promise<void> {
     if (!this.copyFromTestCase) return;
     const source = this.copyFromTestCase;
@@ -313,7 +286,6 @@ export class ModelTestDataComponent implements OnChanges {
       });
   }
 
-  // A preview: replaces the current section's rows; nothing is stored until Save.
   private applyCopy(doc: ITestDataDocument, sourceLabel: string): void {
     if (!this.selectedSection) return;
     const section = this.selectedSection;
@@ -327,8 +299,6 @@ export class ModelTestDataComponent implements OnChanges {
       `Copied ${rows.length} row${rows.length === 1 ? '' : 's'} of ${section.sectionName} from ${sourceLabel}. Review and Save to keep them.`,
     );
   }
-
-  // --- Save ---
 
   async save(): Promise<void> {
     if (this.readOnly || this.isSaving || !this.selectedSection) return;
@@ -361,17 +331,12 @@ export class ModelTestDataComponent implements OnChanges {
         error: (err) => {
           this.isSaving = false;
           console.error('Error saving test data:', err);
-          // 409 = the test case's data changed elsewhere since it was loaded. Nothing
-          // was written; the user's edits stay on screen so they can re-apply them
-          // after reloading.
           const message = typeof err?.error === 'string' ? err.error : 'Failed to save test data.';
           if (err?.status === 409) this.toaster.warning(message);
           else this.toaster.error(message);
         },
       });
   }
-
-  // --- Unsaved changes ---
 
   hasUnsavedChanges(): boolean {
     return !!this.selectedSection && this.serialize(this.rows) !== this.snapshot;

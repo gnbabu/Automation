@@ -1,34 +1,8 @@
-/*============================================================================
-  Test data from code models, saved per test case
-  Target database: MES_AUT_AI   Schema: aut
-
-  Purpose:
-    A test declares its test-data model with [TestDataFlow(typeof(Model))]. The
-    Automation API reads that model from the Release folder by reflection: the
-    class is the Flow, its properties are the Sections (List<T> = multi-row), and
-    the section classes' properties are the Fields. Sections created this way are
-    stored in aut.AutomationDataSections with IsFromModel = 1 (read-only in Flow &
-    Section Management).
-
-    Values are saved per test case (LibraryName + ClassName + MethodName - the
-    same identity execution filters by, stable across releases) x User x
-    Environment as one JSON document - see TestDataJson_Migration.sql, which must
-    be run after this script.
-
-    aut.AutomationData (manual, per-flow data for test cases without a model) is
-    not touched.
-
-  Principles: IDEMPOTENT - guarded DDL + CREATE OR ALTER procedures.
-============================================================================*/
-
 SET NOCOUNT ON;
 SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
 GO
 
-/*----------------------------------------------------------------------------
-  1. Schema
-----------------------------------------------------------------------------*/
 IF COL_LENGTH('aut.AutomationDataSections', 'IsFromModel') IS NULL
 BEGIN
     ALTER TABLE aut.AutomationDataSections
@@ -37,22 +11,6 @@ BEGIN
 END
 GO
 
-/*----------------------------------------------------------------------------
-  2. Model section sync
-----------------------------------------------------------------------------*/
-
--- Inserts any section of the model that doesn't exist yet for the flow (flagged
--- IsFromModel = 1) and flags existing same-named ones. Returns every section of
--- the flow so the caller can map names to SectionIDs.
--- @SectionNames: JSON array of strings, e.g. ["Recipient","Diagnoses"].
---
--- Called on every Test Data Management load, often several times in parallel (the
--- Portal loads data and copy sources at once). Fixed: it used UPDLOCK/HOLDLOCK on
--- aut.AutomationDataSections, which has no index, so concurrent calls took
--- table-wide range locks and deadlocked (error 1205 -> HTTP 500). Now:
---   - fast path: nothing missing/unflagged -> no transaction, no locks, just read;
---   - otherwise one caller per flow at a time via an application lock, re-checking
---     inside it, so parallel first loads can't deadlock or insert duplicates.
 CREATE OR ALTER PROCEDURE aut.usp_UpsertModelSections
     @FlowName NVARCHAR(250),
     @SectionNames NVARCHAR(MAX)
@@ -99,13 +57,6 @@ BEGIN
 END
 GO
 
-/*----------------------------------------------------------------------------
-  3. Assignment lookups
-----------------------------------------------------------------------------*/
-
--- Test cases assigned to a user in an environment (Test Data Management's Test
--- Case dropdown), one entry per LibraryName/ClassName/MethodName - the same test
--- case can be in several assignments; the most recent assignment wins.
 CREATE OR ALTER PROCEDURE aut.usp_TestDataGetMyTestCases
     @UserId INT,
     @EnvironmentId INT
@@ -132,8 +83,6 @@ BEGIN
 END
 GO
 
--- Everything the API needs to know about one assigned test case: its identity, who
--- it's assigned to, its environment and the Release folder holding its DLLs.
 CREATE OR ALTER PROCEDURE aut.usp_TestDataResolveAssignment
     @AssignmentTestCaseId INT
 AS

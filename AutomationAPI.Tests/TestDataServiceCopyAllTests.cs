@@ -7,8 +7,6 @@ using NUnit.Framework;
 
 namespace AutomationAPI.Tests
 {
-    // "Copy from test case" must only ever copy between test cases of the SAME test-data
-    // model, and only keys that exist in that model.
     [TestFixture]
     public class TestDataServiceCopyAllTests
     {
@@ -30,8 +28,6 @@ namespace AutomationAPI.Tests
             EnvironmentId = EnvironmentId
         };
 
-        // Mirrors what TestDataSchemaReader builds for SubmitPAProfessional (trimmed):
-        // a class section, a List<T> section, and the model's own scalar fields.
         private static readonly TestDataFlowSchema Schema = new()
         {
             FlowName = Flow,
@@ -128,7 +124,6 @@ namespace AutomationAPI.Tests
 
             await CopyFromProf01(expectedVersion: 5);
 
-            // Target's own Diagnoses is gone - it goes back to the model's defaults.
             var saved = JsonNode.Parse(_savedJson!)!.AsObject();
             Assert.That(saved.Select(kv => kv.Key), Is.EquivalentTo(new[] { "Recipient" }));
             Assert.That(saved["Recipient"]!["MedicaidBillingNumber"]!.GetValue<string>(), Is.EqualTo("111"));

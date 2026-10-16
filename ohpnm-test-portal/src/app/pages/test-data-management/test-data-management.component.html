@@ -26,9 +26,6 @@
             <div class="invalid-feedback">Environment is required.</div>
           </div>
 
-          <!-- Optional: a test case whose data model is defined in code. Selecting one
-               switches to the model editor below (flow/sections from code, data per
-               test case); leaving it empty keeps the manual Flow/Section editor. -->
           <div class="col-md-6 col-xl-3">
             <label for="modelTestCase" class="form-label fw-bold">
               Test Case <span class="fw-normal text-muted small">(data from code)</span>
@@ -289,8 +286,6 @@
       </div>
     </form>
 
-    <!-- Outside the form above so its inputs aren't registered with the manual
-         editor's NgForm. -->
     <app-model-test-data
       *ngIf="selectedModelTestCase && selectedEnvironment"
       [testCase]="selectedModelTestCase"

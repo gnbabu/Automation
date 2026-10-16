@@ -6,8 +6,6 @@
         public string Description { get; set; }
         public string Priority { get; set; }
         public string TestCaseId { get; set; }
-        // From [TestDataFlow(typeof(Model))] on the test fixture or method:
-        // "Namespace.ModelType, AssemblyName". Empty when the test has no data model.
         public string TestDataFlow { get; set; }
     }
 }

@@ -10,8 +10,6 @@ import {
 import { HttpService } from './http.service';
 import { Observable } from 'rxjs';
 
-// Test data for test cases whose data model is defined in code. Always the logged-in
-// user's own data, for test cases assigned to them.
 @Injectable({
   providedIn: 'root',
 })
@@ -22,7 +20,6 @@ export class TestDataService {
     return this.httpService.get<ITestDataTestCase[]>(`TestData/my-testcases`, { environmentId });
   }
 
-  // null when the test case has no data model (API returns 204).
   getSchema(assignmentTestCaseId: number): Observable<ITestDataFlowSchema | null> {
     return this.httpService.get<ITestDataFlowSchema | null>(`TestData/schema`, { assignmentTestCaseId });
   }

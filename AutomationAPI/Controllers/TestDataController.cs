@@ -7,10 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AutomationAPI.Controllers
 {
-    // Test data for test cases whose data model is defined in code
-    // ([TestDataFlow(typeof(Model))]): the flow/sections/fields come from the model,
-    // values are saved per test case x section x user x environment. Portal endpoints
-    // always work on the logged-in user's own data, for test cases assigned to them.
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
@@ -31,8 +27,6 @@ namespace AutomationAPI.Controllers
 
         private bool IsViewer() => User.IsInRole("Viewer");
 
-        // The isolated test process authenticates with ServiceTokenGenerator's token
-        // (Name "TestRunner", user id 0 - so GetAuditUserId() is null).
         private bool IsTestRunner() => this.GetAuditUserId() == null && User.Identity?.Name == "TestRunner";
 
         [HttpGet("my-testcases")]
@@ -53,8 +47,6 @@ namespace AutomationAPI.Controllers
             }
         }
 
-        // Flow/sections/fields for the test case's model. 204 when it has no model (the
-        // Portal then falls back to the manual Flow/Section editor).
         [HttpGet("schema")]
         public async Task<IActionResult> GetSchema([FromQuery] int assignmentTestCaseId)
         {
@@ -77,10 +69,6 @@ namespace AutomationAPI.Controllers
             }
         }
 
-        // The test case's saved sections (current user) plus the document version to
-        // send back on save. The optional from* key reads another test case's data
-        // instead - used by "Copy from another test case" (still only the current
-        // user's own data).
         [HttpGet("data")]
         public async Task<IActionResult> GetData(
             [FromQuery] int assignmentTestCaseId, [FromQuery] int environmentId,
@@ -153,7 +141,6 @@ namespace AutomationAPI.Controllers
                 var (result, savedRows) = await _service.SaveSectionAsync(assignment!, schema!, section, request.Rows,
                     userId, request.EnvironmentId, request.ExpectedVersion);
 
-                // Field names only, never values - same convention as flow-level Test Data.
                 await _auditLog.LogAsync("TestCaseData", result.TestCaseDataId,
                     $"{assignment.TestCaseId ?? $"{assignment.ClassName}.{assignment.MethodName}"} / {section.SectionName}",
                     result.IsNew ? "Created" : "Updated",
@@ -187,8 +174,6 @@ namespace AutomationAPI.Controllers
             }
         }
 
-        // "Copy all": replaces the test case's whole document (current user, target
-        // environment) with another test case's (same model) or another environment's.
         [HttpPost("copy-all")]
         public async Task<IActionResult> CopyAll([FromBody] TestDataCopyAllRequest request)
         {
@@ -253,9 +238,6 @@ namespace AutomationAPI.Controllers
             }
         }
 
-        // Called by test runs (Selenium.BaseComponents' TestData.Load<T>()): the test
-        // case's own JSON document for its assigned tester and the assignment's
-        // environment, shaped like the model ("{}" when nothing is saved).
         [HttpGet("runtime")]
         public async Task<IActionResult> GetRuntimeData([FromQuery] string flowName, [FromQuery] int assignmentTestCaseId)
         {

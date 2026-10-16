@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Plain POCO test-data models - the single source of truth for a flow's
-       sections and fields. Deliberately has no package references: the Automation
-       API reads these types from the deployed Release folder via reflection to build
-       the Test Data Management screen, so this assembly must load on its own. -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>

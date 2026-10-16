@@ -45,9 +45,6 @@ namespace AutomationAPI.Repositories
 
         }
 
-        // usp_get_AutomationDataSection is SELECT *, so the column is present once
-        // TestDataModel_Migration.sql has run - tolerate its absence on a database that
-        // hasn't been migrated yet rather than failing every section lookup.
         private static bool ReadIsFromModel(SqlDataReader reader)
         {
             for (var i = 0; i < reader.FieldCount; i++)

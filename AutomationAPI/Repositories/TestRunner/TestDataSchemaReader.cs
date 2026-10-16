@@ -5,23 +5,10 @@ using AutomationAPI.Repositories.Models;
 
 namespace AutomationAPI.Repositories.TestRunner
 {
-    // Reads a test-data model's structure (flow -> sections -> fields) from the model
-    // assembly deployed in a Release folder. Rules - kept in sync with
-    // Selenium.BaseComponents.Utilities.TestData, which binds data back onto the model:
-    //   - class-typed property      -> single-row section named after the property
-    //   - List<class> property      -> multi-row section named after the property
-    //   - scalar property on model  -> field of a section named after the model class
-    //   - scalar property on a section class -> field of that section
-    //
-    // The assembly is read from bytes into a collectible AssemblyLoadContext and unloaded
-    // straight away, so (unlike NUnit's Explore) it never locks the DLL file - a release
-    // can be redeployed while the API is running. Only type metadata is read; no model
-    // code is executed. Results are cached per (file, last-write time, type).
     public static class TestDataSchemaReader
     {
         private static readonly ConcurrentDictionary<(string Path, DateTime LastWrite, string Type), TestDataFlowSchema> _cache = new();
 
-        // testDataFlow is the [TestDataFlow] property value: "Namespace.Type, Assembly".
         public static TestDataFlowSchema Read(string releaseFolderPath, string testDataFlow)
         {
             var (typeName, assemblyName) = ParseTestDataFlow(testDataFlow);
@@ -72,9 +59,6 @@ namespace AutomationAPI.Repositories.TestRunner
             var schema = new TestDataFlowSchema { FlowName = modelType.Name, ModelType = modelType.FullName ?? modelType.Name };
             var rootFields = new List<TestDataFieldSchema>();
 
-            // Default values = whatever a freshly constructed model holds (property
-            // initializers). This is the one place model code runs - plain POCO
-            // construction; if it fails, the schema is still returned without defaults.
             object? defaults = null;
             try
             {
@@ -166,9 +150,6 @@ namespace AutomationAPI.Repositories.TestRunner
             catch { return null; }
         }
 
-        // Same text format the Portal saves (dates yyyy-MM-dd, invariant numbers).
-        // A value type's own default (0, false, DateTime.MinValue) means "not set", not a
-        // real default - otherwise every int field would show 0.
         private static string? FormatDefault(object? value)
         {
             switch (value)
@@ -194,7 +175,6 @@ namespace AutomationAPI.Repositories.TestRunner
             }
         }
 
-        // Declaration order (MetadataToken), so the screen matches the class as written.
         private static IEnumerable<PropertyInfo> OrderedProperties(Type type) =>
             type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(p => p.CanWrite && p.GetIndexParameters().Length == 0)
@@ -239,8 +219,6 @@ namespace AutomationAPI.Repositories.TestRunner
             return type.GetGenericArguments()[0];
         }
 
-        // Resolves the model assembly's own dependencies from the same Release folder
-        // (also from bytes); framework assemblies fall through to the default context.
         private sealed class FolderLoadContext : AssemblyLoadContext
         {
             private readonly string _folder;
@@ -255,9 +233,6 @@ namespace AutomationAPI.Repositories.TestRunner
 
             protected override Assembly? Load(AssemblyName assemblyName)
             {
-                // Framework assemblies always come from the default context, even when a
-                // full publish output in the folder has its own copies - otherwise
-                // typeof(string)/List<> from the model wouldn't match the API's own.
                 var name = assemblyName.Name ?? "";
                 if (name.StartsWith("System", StringComparison.OrdinalIgnoreCase)
                     || name.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase)

@@ -14,7 +14,6 @@
     </ul>
   </div>
 
-  <!-- Section overview -->
   <div class="border p-3 rounded mb-3">
     <div class="tdm-table-header">
       <h6 class="mb-0 fw-bold">Sections <span class="text-muted fw-normal small">(from {{ schema.flowName }} in code)</span></h6>
@@ -45,7 +44,6 @@
     </div>
   </div>
 
-  <!-- Section editor -->
   <div class="border p-3 rounded mb-3" *ngIf="selectedSection as section">
     <div class="tdm-banner" [ngClass]="{ editing: isConfigured(section), defaults: usesDefaults(section) }">
       <ng-container *ngIf="isConfigured(section)">Editing saved test data for this section.</ng-container>
@@ -72,7 +70,6 @@
       No longer in code: <strong>{{ unusedFields.join(', ') }}</strong> &mdash; removed when you save this section.
     </div>
 
-    <!-- Single-row section: a form, labels come from the model -->
     <div class="model-form" *ngIf="!section.isList">
       <div class="model-field" *ngFor="let field of section.fields">
         <label class="form-label fw-semibold mb-1" [for]="'f-' + field.name">{{ field.name }}</label>
@@ -80,7 +77,6 @@
       </div>
     </div>
 
-    <!-- Multi-row section: a grid, one row per item -->
     <ng-container *ngIf="section.isList">
       <div class="empty-state" *ngIf="rows.length === 0">
         <i class="bi bi-inbox"></i>
@@ -185,7 +181,6 @@
   </div>
 </ng-container>
 
-<!-- One input, typed by the model property -->
 <ng-template #input let-row="row" let-field="field" let-id="id">
   <ng-container [ngSwitch]="field.type">
     <select *ngSwitchCase="'boolean'" class="form-select" [id]="id" [(ngModel)]="row[field.name]" [disabled]="readOnly">

@@ -279,10 +279,6 @@ namespace Selenium.BaseComponents.Utilities
             }
         }
 
-        // Test data for a model-based test case (see TestData.Load<T>): the running test
-        // case's JSON document for the assigned tester and the assignment's environment,
-        // both resolved server-side from AssignmentTestCaseId. Returns null on failure
-        // so the caller can report a clear error.
         public async Task<string> GetTestCaseData(string flowName, int assignmentTestCaseId)
         {
             try

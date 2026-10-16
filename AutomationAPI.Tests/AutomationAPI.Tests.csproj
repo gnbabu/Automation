@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Unit tests for AutomationAPI's own logic (no database, no web host) - repositories
-       are mocked with Moq. Package versions match the ones AutomationAPI already uses. -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

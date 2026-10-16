@@ -17,17 +17,6 @@ namespace AutomationAPI.Repositories
         public TestDataConflictException(string message) : base(message) { }
     }
 
-    // Test data for test cases whose data model is defined in code: works out which
-    // model a test case uses (its [TestDataFlow] property from discovery), reads the
-    // model's structure, keeps aut.AutomationDataSections in sync with it, and reads/
-    // writes sections within the test case's single JSON document.
-    //
-    // The document is shaped exactly like the model, so a test run deserializes it
-    // straight onto it:
-    //   { "Recipient": { "MedicaidBillingNumber": "0005987", ... },     <- class section
-    //     "Diagnoses": [ { "Sequence": 1, "DiagnosisCode": "Z00.00" } ], <- List<T> section
-    //     "ProviderNotes": "..." }                                        <- model's own fields
-    // A section that isn't in the document isn't saved; the model's defaults apply.
     public class TestDataService
     {
         private readonly ITestDataRepository _repository;
@@ -61,8 +50,6 @@ namespace AutomationAPI.Repositories
             return testCases;
         }
 
-        // Schema for the test case's model, with every section's SectionId (missing
-        // sections are created as IsFromModel). Null when the test has no data model.
         public async Task<TestDataFlowSchema?> GetSchemaAsync(TestDataAssignment assignment)
         {
             if (string.IsNullOrWhiteSpace(assignment.ReleaseFolderPath))
@@ -79,7 +66,6 @@ namespace AutomationAPI.Repositories
                 .Where(s => s.SectionId.HasValue && s.SectionName != null)
                 .ToDictionary(s => s.SectionName!, s => s.SectionId!.Value, StringComparer.Ordinal);
 
-            // A copy, since the cached schema is shared across requests.
             return new TestDataFlowSchema
             {
                 FlowName = schema.FlowName,
@@ -96,7 +82,6 @@ namespace AutomationAPI.Repositories
             };
         }
 
-        // The saved sections of one test case's document, as rows for the Portal editor.
         public async Task<TestDataDocumentView> GetDataAsync(string libraryName, string className, string methodName,
             TestDataFlowSchema schema, int userId, int environmentId)
         {
@@ -115,8 +100,6 @@ namespace AutomationAPI.Repositories
             return view;
         }
 
-        // The raw document a test run deserializes onto the model ("{}" = nothing saved,
-        // so every section keeps the model's defaults).
         public async Task<string> GetRuntimeDocumentAsync(TestDataAssignment assignment, string flowName)
         {
             var record = await _repository.GetDocumentAsync(assignment.LibraryName, assignment.ClassName, assignment.MethodName,
@@ -124,9 +107,6 @@ namespace AutomationAPI.Repositories
             return record != null && record.FlowName == flowName ? record.DataJson : "{}";
         }
 
-        // Validates one section's rows against the model and writes them into the test
-        // case's document. expectedVersion is the version the Portal loaded; if the
-        // document changed since, nothing is written (TestDataConflictException).
         public async Task<(TestDataSaveResult Result, List<Dictionary<string, string?>> SavedRows)> SaveSectionAsync(
             TestDataAssignment assignment, TestDataFlowSchema schema, TestDataSectionSchema section,
             List<Dictionary<string, string?>> rows, int userId, int environmentId, long? expectedVersion)
@@ -140,7 +120,6 @@ namespace AutomationAPI.Repositories
 
             if (IsRootSection(schema, section))
             {
-                // The model's own scalar fields live at the top level of the document.
                 var values = cleanRows.FirstOrDefault() ?? new Dictionary<string, JsonNode?>();
                 foreach (var field in section.Fields)
                     document[field.Name] = values.TryGetValue(field.Name, out var v) ? v : null;
@@ -168,9 +147,6 @@ namespace AutomationAPI.Repositories
             return (result, savedRows);
         }
 
-        // Replaces the target test case's whole document with the source document
-        // (same user). Only keys that exist in the current model are copied; sections
-        // the source hasn't saved become "not saved" on the target (model defaults).
         public async Task<(TestDataSaveResult Result, List<string> CopiedSections)> CopyAllAsync(
             TestDataAssignment target, TestDataFlowSchema schema,
             string sourceLibrary, string sourceClass, string sourceMethod, int sourceEnvironmentId,
@@ -269,9 +245,6 @@ namespace AutomationAPI.Repositories
             }
         }
 
-        // Rejects unknown fields and values that don't fit the field's type - this is
-        // what keeps saved data in step with the model. Values become typed JSON
-        // (numbers, booleans, dates as yyyy-MM-dd strings); empty values are dropped.
         private static List<Dictionary<string, JsonNode?>> ValidateRows(TestDataSectionSchema section, List<Dictionary<string, string?>> rows)
         {
             var fields = section.Fields.ToDictionary(f => f.Name, StringComparer.Ordinal);

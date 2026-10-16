@@ -110,7 +110,6 @@ export interface IAutomationDataSection {
   sectionId: number;
   flowName: string;
   sectionName: string;
-  // Created from a test-data model in code - read-only in Flow & Section Management.
   isFromModel?: boolean;
 }
 
@@ -137,8 +136,6 @@ export interface IAutomationData {
   environmentId?: number;
 }
 
-// --- Test data defined by a code model ([TestDataFlow(typeof(Model))]) ---
-
 export interface ITestDataTestCase {
   assignmentTestCaseId: number;
   libraryName: string;
@@ -147,7 +144,6 @@ export interface ITestDataTestCase {
   testCaseId?: string | null;
   testCaseDescription?: string | null;
   releaseId?: number | null;
-  // Model class name (the flow); null when the test case has no data model.
   flowName?: string | null;
 }
 
@@ -165,8 +161,6 @@ export interface ITestDataSectionSchema {
   sectionName: string;
   isList: boolean;
   fields: ITestDataFieldSchema[];
-  // Values the model class initializes in code - shown (and used by test runs) while
-  // nothing is saved for the test case.
   defaultRows: TestDataRow[];
 }
 
@@ -185,8 +179,6 @@ export interface ITestDataSectionRows {
   rows: TestDataRow[];
 }
 
-// A test case's data (one JSON document on the server): the saved sections, plus the
-// document version to send back on save (null = nothing saved yet).
 export interface ITestDataDocument {
   version?: number | null;
   modifiedOn?: string | null;
@@ -200,7 +192,6 @@ export interface ITestDataCopySource {
   testCaseId?: string | null;
 }
 
-// "Copy all": exactly one source - another test case (from*) or another environment.
 export interface ITestDataCopyAllRequest {
   assignmentTestCaseId: number;
   environmentId: number;

@@ -13,10 +13,6 @@ using BasePageHelper = SdetToolbox.Pages.PageHelper;
 
 namespace TC.PriorAuthoriztion.Tests
 {
-    // Professional Prior Authorization, driven by the TestDataModels.SubmitPAProfessional
-    // model: [TestDataFlow] tells the Portal which model's sections/fields to show for
-    // this test case, and TestData.Load<T>() loads this test case's own data (multi-row
-    // sections such as Diagnoses become lists).
     [TestFixture("TechAdmin")]
     [TestDataFlow(typeof(SubmitPAProfessional))]
     public class SubmitPAProfessionalTest : BaseFeatureFixture
@@ -51,11 +47,6 @@ namespace TC.PriorAuthoriztion.Tests
             SaveAndVerify(page, data);
         }
 
-        // Same form and model as TC_PA_PROF_01, different scenario: no ordering provider,
-        // and several diagnosis lines - every line must show up on the form before it's
-        // saved. Its data is saved per test case in the Portal, so it can hold its own
-        // diagnosis rows independently of TC_PA_PROF_01 (until saved, both start from the
-        // model's defaults).
         [Test]
         [Category("IntegrationTests")]
         [Property("Description", "Save a Professional Prior Authorization with multiple diagnoses and no ordering provider")]
@@ -161,8 +152,6 @@ namespace TC.PriorAuthoriztion.Tests
         {
             page.WaitUntilElementIsVisible();
 
-            // Claim type radio buttons are keyed by lower-case value (e.g. "dental",
-            // "professional").
             var claimType = string.IsNullOrWhiteSpace(header.PriorAuthorizationType) ? "professional" : header.PriorAuthorizationType.Trim().ToLowerInvariant();
             TestWebDriver.CreateSmartElement(By.XPath($"//input[@value='{claimType}']")).Element.Click();
 
@@ -181,7 +170,6 @@ namespace TC.PriorAuthoriztion.Tests
             page.txtBirthDate.Set(FormatDate(recipient.DateOfBirth));
             page.txtPatientTrckNum.Click();
 
-            // Recipient details are looked up by the app once Medicaid ID + DOB are in.
             var firstName = By.Id("ctl00_MainContent_uc1SubmitPriorAuthorization_txtfrstmi2");
             while (string.IsNullOrEmpty(TestWebDriver.CreateSmartElement(firstName).Element.GetAttribute("value")))
                 Thread.Sleep(2000);
@@ -237,7 +225,6 @@ namespace TC.PriorAuthoriztion.Tests
             LogStep("Ordering Provider Information", "Ordering Provider Information filled");
         }
 
-        // One diagnosis line per row of the Diagnoses section, in Sequence order.
         private void FillDiagnoses(SubmitPriorAuthorizationPage page, List<DiagnosisInfo> diagnoses)
         {
             if (diagnoses == null || diagnoses.Count == 0)
@@ -292,7 +279,6 @@ namespace TC.PriorAuthoriztion.Tests
                 element.Set(value);
         }
 
-        // The app's date boxes take M/d/yyyy (matches existing Prior Authorization data).
         private static string FormatDate(DateTime? value) =>
             value?.ToString("M/d/yyyy", CultureInfo.InvariantCulture) ?? "";
 
