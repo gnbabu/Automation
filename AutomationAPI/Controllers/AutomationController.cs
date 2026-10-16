@@ -288,6 +288,10 @@ namespace AutomationAPI.Controllers
             {
                 return Conflict(ex.Message);
             }
+            catch (ModelSectionLockedException ex)
+            {
+                return Conflict(ex.Message);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while updating automation data section for SectionID: {SectionID}", request.SectionId);
@@ -326,6 +330,10 @@ namespace AutomationAPI.Controllers
                 return NoContent(); // Successfully deleted
             }
             catch (SectionHasDataException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (ModelSectionLockedException ex)
             {
                 return Conflict(ex.Message);
             }

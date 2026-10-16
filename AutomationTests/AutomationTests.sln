@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.PriorAuthoriztion", "TC.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.E2EP3Demo", "TC.E2EP3Demo\TC.E2EP3Demo.csproj", "{820C2396-4DD6-4177-9B36-0E87A9B2D6AD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestDataModels", "TestDataModels\TestDataModels.csproj", "{0294BEED-57E3-4ABC-8DC7-0522DB921811}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -223,6 +225,18 @@ Global
 		{820C2396-4DD6-4177-9B36-0E87A9B2D6AD}.Release|x64.Build.0 = Release|Any CPU
 		{820C2396-4DD6-4177-9B36-0E87A9B2D6AD}.Release|x86.ActiveCfg = Release|Any CPU
 		{820C2396-4DD6-4177-9B36-0E87A9B2D6AD}.Release|x86.Build.0 = Release|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Debug|x64.Build.0 = Debug|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Debug|x86.Build.0 = Debug|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Release|x64.ActiveCfg = Release|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Release|x64.Build.0 = Release|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Release|x86.ActiveCfg = Release|Any CPU
+		{0294BEED-57E3-4ABC-8DC7-0522DB921811}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

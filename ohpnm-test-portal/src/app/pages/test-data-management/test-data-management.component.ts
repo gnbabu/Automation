@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { catchError, forkJoin, map, of } from 'rxjs';
 
@@ -9,6 +9,7 @@ import {
   IAutomationDataSection,
   IAutomationFlow,
   IEnvironmentModel,
+  ITestDataTestCase,
 } from '@interfaces';
 import {
   AuthService,
@@ -16,9 +17,11 @@ import {
   CommonToasterService,
   ConfirmService,
   EnvironmentService,
+  TestDataService,
 } from '@services';
 import { IConfirmsUnsavedChanges } from '../../core/guards/unsaved-changes.guard';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
+import { ModelTestDataComponent } from './model-test-data/model-test-data.component';
 
 interface ITestDataRow {
   key: string;
@@ -33,7 +36,7 @@ const SENSITIVE_KEY_PATTERN = /password|pwd|secret/i;
 
 @Component({
   selector: 'app-test-data-management',
-  imports: [CommonModule, FormsModule, AppDropdownComponent],
+  imports: [CommonModule, FormsModule, AppDropdownComponent, ModelTestDataComponent],
   templateUrl: './test-data-management.component.html',
   styleUrl: './test-data-management.component.css',
 })
@@ -48,6 +51,18 @@ export class TestDataManagementComponent
   selectedSection?: IAutomationDataSection;
   selectedEnvironment?: IEnvironmentModel;
   existingSectionData?: IAutomationData;
+
+  // Test cases assigned to the user (in the selected environment) whose data model is
+  // defined in code ([TestDataFlow]). Picking one replaces the manual Flow/Section
+  // editor with ModelTestDataComponent: sections and fields come from the model and
+  // data is saved per test case. Leaving it empty keeps the manual editor, unchanged.
+  modelTestCases: ITestDataTestCase[] = [];
+  selectedModelTestCase?: ITestDataTestCase;
+  private lastConfirmedModelTestCase?: ITestDataTestCase;
+  @ViewChild(ModelTestDataComponent) modelEditor?: ModelTestDataComponent;
+
+  modelTestCaseLabel = (tc: ITestDataTestCase) =>
+    [tc.testCaseId || `${tc.className}.${tc.methodName}`, tc.testCaseDescription].filter(Boolean).join(' – ');
 
   rows: ITestDataRow[] = [];
   isSubmitting = false;
@@ -94,7 +109,8 @@ export class TestDataManagementComponent
     private toaster: CommonToasterService,
     private authService: AuthService,
     private environmentService: EnvironmentService,
-    private confirmService: ConfirmService
+    private confirmService: ConfirmService,
+    private testDataService: TestDataService
   ) {}
 
   ngOnInit(): void {
@@ -173,9 +189,36 @@ export class TestDataManagementComponent
         this.sections = [];
         this.sectionStatus.clear();
         this.resetRows();
+        this.selectedModelTestCase = undefined;
+        this.lastConfirmedModelTestCase = undefined;
+        this.loadModelTestCases();
       },
       () => (this.selectedEnvironment = previousEnvironment)
     );
+  }
+
+  async onModelTestCaseChange() {
+    const previous = this.lastConfirmedModelTestCase;
+    await this.guardedDropdownChange(
+      () => {
+        this.lastConfirmedModelTestCase = this.selectedModelTestCase;
+        this.selectedFlow = undefined;
+        this.selectedSection = undefined;
+        this.sections = [];
+        this.sectionStatus.clear();
+        this.resetRows();
+      },
+      () => (this.selectedModelTestCase = previous)
+    );
+  }
+
+  private loadModelTestCases() {
+    this.modelTestCases = [];
+    if (!this.selectedEnvironment) return;
+    this.testDataService.getMyTestCases(this.selectedEnvironment.environmentId).subscribe({
+      next: (res) => (this.modelTestCases = (res || []).filter((tc) => !!tc.flowName)),
+      error: (err) => console.error('Error loading test cases:', err),
+    });
   }
 
   async onSectionChange() {
@@ -495,6 +538,7 @@ export class TestDataManagementComponent
   // (unsavedChangesGuard, registered as this route's canDeactivate in app.routes.ts).
 
   hasUnsavedChanges(): boolean {
+    if (this.selectedModelTestCase) return this.modelEditor?.hasUnsavedChanges() ?? false;
     if (!this.selectedSection || !this.selectedEnvironment) return false;
     return this.serializeRows(this.rows) !== this.savedSnapshot;
   }

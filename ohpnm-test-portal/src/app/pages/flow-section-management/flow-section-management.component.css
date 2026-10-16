@@ -112,6 +112,18 @@
   font-weight: 600;
 }
 
+/* Section created from a test-data model in code (read-only here). */
+.fsm-code-badge {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 50px;
+  white-space: nowrap;
+  font-weight: 600;
+  background: #eef4ff;
+  color: #1d3f8f;
+  border: 1px solid #c7d7fb;
+}
+
 .fsm-data-badge i {
   margin-right: 4px;
 }

@@ -279,6 +279,43 @@ namespace Selenium.BaseComponents.Utilities
             }
         }
 
+        // Test data for a model-based test case (see TestData.Load<T>): the running test
+        // case's JSON document for the assigned tester and the assignment's environment,
+        // both resolved server-side from AssignmentTestCaseId. Returns null on failure
+        // so the caller can report a clear error.
+        public async Task<string> GetTestCaseData(string flowName, int assignmentTestCaseId)
+        {
+            try
+            {
+                string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
+
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.BaseAddress = new Uri(apiUrl);
+                    httpClient.DefaultRequestHeaders.Accept.Clear();
+                    httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    AttachAuthIfAvailable(httpClient);
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        $"api/TestData/runtime?flowName={Uri.EscapeDataString(flowName)}&assignmentTestCaseId={assignmentTestCaseId}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        NUnit.Framework.TestContext.WriteLine(
+                            $"GetTestCaseData failed: {(int)response.StatusCode} {response.ReasonPhrase}");
+                        return null;
+                    }
+
+                    return await response.Content.ReadAsStringAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                NUnit.Framework.TestContext.WriteLine($"GetTestCaseData failed: {ex.Message}");
+                return null;
+            }
+        }
+
         public async Task<List<AutomationData>> GetAutomationData(string flowName)
         {
             List<AutomationData> AutomationData = new List<AutomationData>();

@@ -110,6 +110,8 @@ export interface IAutomationDataSection {
   sectionId: number;
   flowName: string;
   sectionName: string;
+  // Created from a test-data model in code - read-only in Flow & Section Management.
+  isFromModel?: boolean;
 }
 
 export interface IAutomationDataSectionRequest {
@@ -133,6 +135,88 @@ export interface IAutomationData {
   sectionName?: string;
   userId?: number;
   environmentId?: number;
+}
+
+// --- Test data defined by a code model ([TestDataFlow(typeof(Model))]) ---
+
+export interface ITestDataTestCase {
+  assignmentTestCaseId: number;
+  libraryName: string;
+  className: string;
+  methodName: string;
+  testCaseId?: string | null;
+  testCaseDescription?: string | null;
+  releaseId?: number | null;
+  // Model class name (the flow); null when the test case has no data model.
+  flowName?: string | null;
+}
+
+export type TestDataFieldType = 'text' | 'integer' | 'decimal' | 'date' | 'boolean' | 'enum';
+
+export interface ITestDataFieldSchema {
+  name: string;
+  type: TestDataFieldType;
+  nullable: boolean;
+  options?: string[] | null;
+}
+
+export interface ITestDataSectionSchema {
+  sectionId: number;
+  sectionName: string;
+  isList: boolean;
+  fields: ITestDataFieldSchema[];
+  // Values the model class initializes in code - shown (and used by test runs) while
+  // nothing is saved for the test case.
+  defaultRows: TestDataRow[];
+}
+
+export interface ITestDataFlowSchema {
+  flowName: string;
+  modelType: string;
+  sections: ITestDataSectionSchema[];
+  warnings: string[];
+}
+
+export type TestDataRow = Record<string, string | null>;
+
+export interface ITestDataSectionRows {
+  sectionId: number;
+  sectionName: string;
+  rows: TestDataRow[];
+}
+
+// A test case's data (one JSON document on the server): the saved sections, plus the
+// document version to send back on save (null = nothing saved yet).
+export interface ITestDataDocument {
+  version?: number | null;
+  modifiedOn?: string | null;
+  sections: ITestDataSectionRows[];
+}
+
+export interface ITestDataCopySource {
+  libraryName: string;
+  className: string;
+  methodName: string;
+  testCaseId?: string | null;
+}
+
+// "Copy all": exactly one source - another test case (from*) or another environment.
+export interface ITestDataCopyAllRequest {
+  assignmentTestCaseId: number;
+  environmentId: number;
+  fromLibrary?: string;
+  fromClass?: string;
+  fromMethod?: string;
+  fromEnvironmentId?: number;
+  expectedVersion?: number | null;
+}
+
+export interface ITestDataSectionSaveRequest {
+  assignmentTestCaseId: number;
+  environmentId: number;
+  sectionId: number;
+  rows: TestDataRow[];
+  expectedVersion?: number | null;
 }
 
 export interface TestResultPayload {

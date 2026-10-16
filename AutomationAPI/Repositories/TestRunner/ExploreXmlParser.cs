@@ -57,7 +57,8 @@ namespace AutomationAPI.Repositories.TestRunner
                             MethodName = testCaseNode.Attributes?["methodname"]?.Value ?? testCaseNode.Attributes?["name"]?.Value ?? "",
                             Description = GetProperty(testCaseNode, "Description"),
                             Priority = GetProperty(testCaseNode, "Priority"),
-                            TestCaseId = GetProperty(testCaseNode, "TestCaseId")
+                            TestCaseId = GetProperty(testCaseNode, "TestCaseId"),
+                            TestDataFlow = GetProperty(testCaseNode, "TestDataFlow")
                         });
                     }
                 }

@@ -10,7 +10,7 @@
       <!-- Dropdown Section -->
       <div class="border p-3 rounded mb-3">
         <div class="row g-3">
-          <div class="col-md-4">
+          <div class="col-md-6 col-xl-3">
             <label for="environment" class="form-label fw-bold">Environment</label>
             <app-dropdown
               id="environment"
@@ -26,7 +26,38 @@
             <div class="invalid-feedback">Environment is required.</div>
           </div>
 
-          <div class="col-md-4">
+          <!-- Optional: a test case whose data model is defined in code. Selecting one
+               switches to the model editor below (flow/sections from code, data per
+               test case); leaving it empty keeps the manual Flow/Section editor. -->
+          <div class="col-md-6 col-xl-3">
+            <label for="modelTestCase" class="form-label fw-bold">
+              Test Case <span class="fw-normal text-muted small">(data from code)</span>
+            </label>
+            <app-dropdown
+              id="modelTestCase"
+              name="modelTestCase"
+              [options]="modelTestCases"
+              [textAccessor]="modelTestCaseLabel"
+              placeholder="None – use Flow below"
+              [(selected)]="selectedModelTestCase"
+              (selectionChange)="onModelTestCaseChange()"
+              [disabled]="!selectedEnvironment || !modelTestCases.length"
+            ></app-dropdown>
+            <div class="text-muted small mt-1 text-break" *ngIf="selectedModelTestCase">
+              {{ selectedModelTestCase.className }}.{{ selectedModelTestCase.methodName }}
+            </div>
+            <div class="text-muted small mt-1" *ngIf="selectedEnvironment && !modelTestCases.length">
+              None of your assigned test cases here use a code data model.
+            </div>
+          </div>
+
+          <div class="col-md-6 col-xl-3" *ngIf="selectedModelTestCase">
+            <label for="modelFlow" class="form-label fw-bold">Flow Name</label>
+            <input id="modelFlow" class="form-control" [value]="selectedModelTestCase.flowName" readonly />
+            <div class="text-muted small mt-1">From the test case's data model in code.</div>
+          </div>
+
+          <div class="col-md-6 col-xl-3" *ngIf="!selectedModelTestCase">
             <label for="flowName" class="form-label fw-bold">Flow Name</label>
             <app-dropdown
               id="flowName"
@@ -46,7 +77,7 @@
             </div>
           </div>
 
-          <div class="col-md-4">
+          <div class="col-md-6 col-xl-3" *ngIf="!selectedModelTestCase">
             <label for="section" class="form-label fw-bold">Section</label>
             <app-dropdown
               id="section"
@@ -69,7 +100,7 @@
            having to click into each one to find out. Only meaningful once both Flow and
            Environment are picked (data is scoped per user+environment). Clicking a chip
            is a shortcut for picking that section from the dropdown above. -->
-      <div class="border p-3 rounded mb-3" *ngIf="selectedFlow && selectedEnvironment && sections.length">
+      <div class="border p-3 rounded mb-3" *ngIf="!selectedModelTestCase && selectedFlow && selectedEnvironment && sections.length">
         <div class="tdm-table-header">
           <h6 class="mb-0 fw-bold">Section Overview</h6>
           <span class="field-count-badge" *ngIf="!sectionStatusLoading">
@@ -257,5 +288,15 @@
         </button>
       </div>
     </form>
+
+    <!-- Outside the form above so its inputs aren't registered with the manual
+         editor's NgForm. -->
+    <app-model-test-data
+      *ngIf="selectedModelTestCase && selectedEnvironment"
+      [testCase]="selectedModelTestCase"
+      [environment]="selectedEnvironment"
+      [environments]="environments"
+      [readOnly]="isViewer()"
+    ></app-model-test-data>
   </div>
 </div>

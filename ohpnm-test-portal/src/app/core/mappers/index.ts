@@ -173,6 +173,7 @@ export const AutomationDataSectionMapper = {
       sectionId: data.sectionId,
       sectionName: data.sectionName,
       flowName: data.flowName,
+      isFromModel: !!data.isFromModel,
     };
   },
 };

@@ -5,6 +5,11 @@ namespace AutomationAPI.Repositories.Models
         public DuplicateSectionException(string message) : base(message) { }
     }
 
+    public class ModelSectionLockedException : Exception
+    {
+        public ModelSectionLockedException(string message) : base(message) { }
+    }
+
     public class SectionHasDataException : Exception
     {
         public int DataCount { get; }

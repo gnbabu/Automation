@@ -39,9 +39,33 @@ namespace AutomationAPI.Repositories
             {
                 SectionId = reader.GetNullableInt("SectionID") ?? 0,
                 SectionName = reader.GetNullableString("SectionName"),
-                FlowName = reader.GetNullableString("FlowName")
+                FlowName = reader.GetNullableString("FlowName"),
+                IsFromModel = ReadIsFromModel(reader)
             });
 
+        }
+
+        // usp_get_AutomationDataSection is SELECT *, so the column is present once
+        // TestDataModel_Migration.sql has run - tolerate its absence on a database that
+        // hasn't been migrated yet rather than failing every section lookup.
+        private static bool ReadIsFromModel(SqlDataReader reader)
+        {
+            for (var i = 0; i < reader.FieldCount; i++)
+            {
+                if (string.Equals(reader.GetName(i), "IsFromModel", StringComparison.OrdinalIgnoreCase))
+                    return !reader.IsDBNull(i) && reader.GetBoolean(i);
+            }
+            return false;
+        }
+
+        private async Task EnsureSectionIsNotFromModelAsync(int sectionId)
+        {
+            var section = (await GetAutomationDataSectionsAsync(null)).FirstOrDefault(s => s.SectionId == sectionId);
+            if (section?.IsFromModel == true)
+            {
+                throw new ModelSectionLockedException(
+                    $"Section \"{section.SectionName}\" comes from the {section.FlowName} test data model in code and can't be renamed or deleted here. Change the model class instead.");
+            }
         }
 
         public async Task<AutomationData> GetAutomationDataAsync(int sectionId, int userId, int environmentId)
@@ -201,6 +225,7 @@ namespace AutomationAPI.Repositories
 
         public async Task UpdateAutomationDataSectionAsync(AutomationDataSectionRequest request)
         {
+            await EnsureSectionIsNotFromModelAsync(request.SectionId);
             await EnsureSectionNameIsUniqueAsync(request.FlowName, request.SectionName, request.SectionId);
 
             var parameters = new[]
@@ -215,6 +240,8 @@ namespace AutomationAPI.Repositories
 
         public async Task DeleteAutomationDataSectionAsync(int sectionId, bool cascade = false)
         {
+            await EnsureSectionIsNotFromModelAsync(sectionId);
+
             // Default path blocks deletion if the section already has saved test data
             // - there is no FK constraint protecting this relationship at all, so an
             // unguarded delete would silently orphan that data forever. cascade=true

@@ -1,0 +1,222 @@
+<div class="text-muted small mb-3" *ngIf="loading">
+  <i class="bi bi-hourglass-split me-1"></i>Loading test data model...
+</div>
+
+<div class="alert alert-warning py-2" *ngIf="schemaError">
+  <i class="bi bi-exclamation-triangle me-1"></i>{{ schemaError }}
+</div>
+
+<ng-container *ngIf="schema && !loading">
+  <div class="alert alert-warning py-2 small" *ngIf="schema.warnings.length">
+    <strong>Some model properties can't be edited here:</strong>
+    <ul class="mb-0">
+      <li *ngFor="let w of schema.warnings">{{ w }}</li>
+    </ul>
+  </div>
+
+  <!-- Section overview -->
+  <div class="border p-3 rounded mb-3">
+    <div class="tdm-table-header">
+      <h6 class="mb-0 fw-bold">Sections <span class="text-muted fw-normal small">(from {{ schema.flowName }} in code)</span></h6>
+      <span class="field-count-badge">{{ configuredCount }} / {{ schema.sections.length }} saved</span>
+    </div>
+    <div class="chip-legend small text-muted mb-2">
+      <span><i class="bi bi-check-circle-fill text-success"></i> Saved for this test case</span>
+      <span><i class="bi bi-circle-half text-primary"></i> Default values from code</span>
+      <span><i class="bi bi-circle"></i> No data</span>
+    </div>
+    <div class="section-overview-grid">
+      <button
+        type="button"
+        class="section-chip"
+        *ngFor="let section of schema.sections"
+        [ngClass]="{
+          configured: isConfigured(section),
+          defaults: usesDefaults(section),
+          active: selectedSection?.sectionId === section.sectionId
+        }"
+        [title]="isConfigured(section) ? 'Saved for this test case' : usesDefaults(section) ? 'Using default values from the model in code' : 'No data'"
+        (click)="selectSection(section)"
+      >
+        <i class="bi" [ngClass]="isConfigured(section) ? 'bi-check-circle-fill' : usesDefaults(section) ? 'bi-circle-half' : 'bi-circle'"></i>
+        {{ section.sectionName }}
+        <span class="chip-count" *ngIf="section.isList && savedRowCount(section) > 0">({{ savedRowCount(section) }})</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Section editor -->
+  <div class="border p-3 rounded mb-3" *ngIf="selectedSection as section">
+    <div class="tdm-banner" [ngClass]="{ editing: isConfigured(section), defaults: usesDefaults(section) }">
+      <ng-container *ngIf="isConfigured(section)">Editing saved test data for this section.</ng-container>
+      <ng-container *ngIf="usesDefaults(section)">
+        Showing the default values from the {{ schema.flowName }} model in code. Test runs use these until you Save
+        your own values for this section.
+      </ng-container>
+      <ng-container *ngIf="!isConfigured(section) && !usesDefaults(section)">No test data saved for this section yet.</ng-container>
+      <small>
+        Used only when {{ testCase.testCaseId || testCase.methodName }} runs in {{ environment.environmentName }}.
+        Specific to your account.
+      </small>
+    </div>
+
+    <div class="tdm-table-header">
+      <h6 class="mb-0 fw-bold">{{ section.sectionName }}</h6>
+      <span class="field-count-badge">
+        {{ section.isList ? rows.length + ' row' + (rows.length === 1 ? '' : 's') : section.fields.length + ' fields' }}
+      </span>
+    </div>
+
+    <div class="alert alert-warning py-2 small" *ngIf="unusedFields.length">
+      <i class="bi bi-info-circle me-1"></i>
+      No longer in code: <strong>{{ unusedFields.join(', ') }}</strong> &mdash; removed when you save this section.
+    </div>
+
+    <!-- Single-row section: a form, labels come from the model -->
+    <div class="model-form" *ngIf="!section.isList">
+      <div class="model-field" *ngFor="let field of section.fields">
+        <label class="form-label fw-semibold mb-1" [for]="'f-' + field.name">{{ field.name }}</label>
+        <ng-container *ngTemplateOutlet="input; context: { row: rows[0], field: field, id: 'f-' + field.name }"></ng-container>
+      </div>
+    </div>
+
+    <!-- Multi-row section: a grid, one row per item -->
+    <ng-container *ngIf="section.isList">
+      <div class="empty-state" *ngIf="rows.length === 0">
+        <i class="bi bi-inbox"></i>
+        No rows yet. Click <strong>+ Add Row</strong> to add one.
+      </div>
+      <div class="table-responsive model-grid" *ngIf="rows.length > 0">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th class="row-num">#</th>
+              <th *ngFor="let field of section.fields">{{ field.name }}</th>
+              <th class="row-actions" *ngIf="!readOnly"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of rows; let i = index; trackBy: trackByIndex">
+              <td class="row-num">{{ i + 1 }}</td>
+              <td *ngFor="let field of section.fields">
+                <ng-container *ngTemplateOutlet="input; context: { row: row, field: field, id: 'r' + i + '-' + field.name }"></ng-container>
+              </td>
+              <td class="row-actions" *ngIf="!readOnly">
+                <button type="button" title="Remove row" (click)="removeRow(i)"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+
+    <div class="d-flex gap-2 align-items-start flex-wrap mt-3" *ngIf="!readOnly">
+      <button type="button" class="add-row-btn" *ngIf="section.isList" (click)="addRow()">
+        <i class="bi bi-plus-lg me-1"></i> Add Row
+      </button>
+
+      <div class="d-flex gap-2 align-items-center copy-group" *ngIf="copySources.length">
+        <app-dropdown
+          class="copy-select"
+          name="copyFromTestCase"
+          [options]="copySources"
+          [textAccessor]="copySourceLabel"
+          placeholder="Copy from test case..."
+          [(selected)]="copyFromTestCase"
+        ></app-dropdown>
+        <button
+          type="button"
+          class="copy-btn"
+          [disabled]="!copyFromTestCase"
+          title="Copy this section into the editor (Save to keep it)"
+          (click)="copyRowsFromTestCase()"
+        >
+          <i class="bi bi-clipboard-plus me-1"></i> Copy section
+        </button>
+        <button
+          type="button"
+          class="copy-btn"
+          [disabled]="!copyFromTestCase"
+          title="Replace all of this test case's saved data with the selected test case's"
+          (click)="copyAllFromTestCase()"
+        >
+          <i class="bi bi-files me-1"></i> Copy all
+        </button>
+      </div>
+
+      <div class="d-flex gap-2 align-items-center copy-group" *ngIf="showCopyFromEnvironment && otherEnvironments.length">
+        <app-dropdown
+          class="copy-select"
+          name="copyFromEnvironment"
+          [options]="otherEnvironments"
+          textAccessor="environmentName"
+          placeholder="Copy from environment..."
+          [(selected)]="copyFromEnvironment"
+        ></app-dropdown>
+        <button
+          type="button"
+          class="copy-btn"
+          [disabled]="!copyFromEnvironment"
+          title="Copy this section into the editor (Save to keep it)"
+          (click)="copyRowsFromEnvironment()"
+        >
+          <i class="bi bi-clipboard-plus me-1"></i> Copy section
+        </button>
+        <button
+          type="button"
+          class="copy-btn"
+          [disabled]="!copyFromEnvironment"
+          title="Replace all of this test case's saved data with its data from the selected environment"
+          (click)="copyAllFromEnvironment()"
+        >
+          <i class="bi bi-files me-1"></i> Copy all
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-end" *ngIf="selectedSection">
+    <div class="alert alert-warning py-2 mb-2 text-start" *ngIf="readOnly">
+      You have Viewer (read-only) access. Saving test data is disabled.
+    </div>
+    <button class="btn-purple" type="button" [disabled]="readOnly || isSaving" (click)="save()">
+      <i class="bi bi-save me-1"></i> Save {{ selectedSection.sectionName }}
+    </button>
+  </div>
+</ng-container>
+
+<!-- One input, typed by the model property -->
+<ng-template #input let-row="row" let-field="field" let-id="id">
+  <ng-container [ngSwitch]="field.type">
+    <select *ngSwitchCase="'boolean'" class="form-select" [id]="id" [(ngModel)]="row[field.name]" [disabled]="readOnly">
+      <option value=""></option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+    <select *ngSwitchCase="'enum'" class="form-select" [id]="id" [(ngModel)]="row[field.name]" [disabled]="readOnly">
+      <option value=""></option>
+      <option *ngFor="let o of field.options" [value]="o">{{ o }}</option>
+    </select>
+    <div *ngSwitchDefault class="position-relative">
+      <input
+        class="form-control"
+        [id]="id"
+        [type]="inputType(field)"
+        [attr.step]="field.type === 'decimal' ? 'any' : field.type === 'integer' ? 1 : null"
+        [ngClass]="{ 'pe-5': isSensitive(field) }"
+        [(ngModel)]="row[field.name]"
+        [readonly]="readOnly"
+      />
+      <button
+        type="button"
+        class="toggle-eye"
+        *ngIf="isSensitive(field)"
+        (click)="toggleReveal(field)"
+        tabindex="-1"
+        aria-label="Toggle value visibility"
+      >
+        <i class="bi" [ngClass]="revealed.has(field.name) ? 'bi-eye-slash' : 'bi-eye'"></i>
+      </button>
+    </div>
+  </ng-container>
+</ng-template>

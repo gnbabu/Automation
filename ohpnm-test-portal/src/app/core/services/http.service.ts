@@ -35,7 +35,10 @@ export class HttpService {
       })
       .pipe(
         map((res) => (fromApi ? fromApi(res) : res)),
-        catchError(this.handleError)
+        // .bind(this) like post/put/delete - unbound, handleError's `this` was
+        // undefined, so every failed GET threw "Cannot read properties of undefined
+        // (reading 'toaster')" instead of showing its error toast.
+        catchError(this.handleError.bind(this))
       );
   }
 

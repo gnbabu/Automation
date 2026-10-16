@@ -40,6 +40,13 @@
         public const string DeleteAutomationDataSectionCascade = "[aut].[usp_DeleteAutomationDataSectionCascade]";
         public const string GetAutomationDataById = "[aut].[usp_GetAutomationDataById]";
 
+        public const string UpsertModelSections = "[aut].[usp_UpsertModelSections]";
+        public const string TestDataGetMyTestCases = "[aut].[usp_TestDataGetMyTestCases]";
+        public const string TestDataResolveAssignment = "[aut].[usp_TestDataResolveAssignment]";
+        public const string TestCaseDataGet = "[aut].[usp_TestCaseDataGet]";
+        public const string TestCaseDataSave = "[aut].[usp_TestCaseDataSave]";
+        public const string TestCaseDataGetCopySources = "[aut].[usp_TestCaseDataGetCopySources]";
+
 
         // Test Sceenshots
         public const string InsertTestScreenshot = "[aut].[usp_InsertTestScreenshot]";

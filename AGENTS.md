@@ -4304,3 +4304,94 @@ Fixed: the catch block now logs via `ILogger<TestQueueWorker>` and calls
 `resultsRepo.UpdateAssignedTestCaseStatusAsync(...)` to mark the test case `Failed` (with
 `ex.Message`), wrapped in its own try/catch so a failure updating status still can't take
 the worker down.
+
+## Test data defined by code models (per test case, one JSON document)
+Test cases whose fixture/method carries `[TestDataFlow(typeof(Model))]`
+(`Selenium.BaseComponents/Attributes/TestDataFlowAttribute.cs`, an NUnit
+`PropertyAttribute`, so discovery's Explore XML exposes it as property `TestDataFlow` =
+`"Namespace.Type, Assembly"` - read by `ExploreXmlParser` into `LibraryMethodInfo.TestDataFlow`)
+get their flow/sections/fields **from the model class**, not from manual Flow & Section setup.
+Test cases without the attribute keep the original manual Flow/Section key-value editor and
+per-flow `aut.AutomationData`, completely unchanged.
+
+- **Models** live in plain POCO class libraries such as `AutomationTests/TestDataModels`
+  (`SubmitPAProfessional.cs`). The model DLL **must be copied into the Release folder** with
+  the test DLLs, or the Portal shows "TestDataModels.dll was not found in the release folder".
+- **Model rules** (`AutomationAPI/Repositories/TestRunner/TestDataSchemaReader.cs`, mirrored
+  by `Selenium.BaseComponents/Utilities/TestData.cs`): class property = single-row section;
+  `List<class>` property = multi-row section; the model's own scalar properties = one section
+  named after the model class; scalar properties of a section class = fields (text / integer /
+  decimal / date / boolean / enum). Nested objects deeper than one level and `List<string>`
+  are skipped with a warning.
+- **Reading the model**: the model assembly is loaded **from bytes into a collectible
+  `AssemblyLoadContext`** and unloaded straight away, so the DLL is never locked (unlike
+  `Explore()`); cached per (file, last-write time, type). The model is instantiated once to
+  read **default values** (property initializers, including lists initialized with sample
+  rows) - shown in the Portal for unsaved sections and used by test runs for them.
+- **Sections** are synced into `aut.AutomationDataSections` with `IsFromModel = 1`
+  (`usp_UpsertModelSections`); those are read-only in Flow & Section Management (badge
+  "From code"; rename/delete rejected by the API with 409, `ModelSectionLockedException`).
+- **Storage**: one JSON document per test case x user x environment in `aut.TestCaseData`
+  (`TestCaseKeyId` -> `aut.TestCaseKey` (Library/Class/Method), `UserID`, `EnvironmentId`,
+  `FlowName`, `DataJson`, `Version` rowversion). The document is shaped exactly like the
+  model (`{"Recipient":{...},"Diagnoses":[{...},{...}],"ProviderNotes":"..."}`); a section
+  absent from it isn't saved. Release isn't part of the key, so data carries across releases.
+  The Portal saves one section at a time: `TestDataService.SaveSectionAsync` validates field
+  names/types against the model, merges the section into the document and writes it with
+  **optimistic concurrency** (`usp_TestCaseDataSave @ExpectedVersion`; a stale version returns
+  `IsConflict` and the API answers 409 without writing).
+- **Runtime**: `TestData.Load<T>()` calls `GET api/TestData/runtime?flowName=&assignmentTestCaseId=`
+  (assigned tester + assignment environment resolved server-side; Portal users may only read
+  their own assignments, the test runner's service token may read any) and applies the
+  document onto `new T()` with Newtonsoft `PopulateObject` +
+  `ObjectCreationHandling.Replace` - saved sections replace the default section/list as a
+  whole, unsaved ones keep the model's defaults. Logs a "Test Data" step listing saved vs
+  default sections. Requires a Portal run (needs `AssignmentTestCaseId`).
+- **Portal**: Test Data Management -> Environment -> optional "Test Case (data from code)"
+  (the user's assigned test cases with a model, `GET api/TestData/my-testcases`) -> sections
+  from code (`ModelTestDataComponent`): single-row form / multi-row grid, copy from another
+  test case of the same model or another environment, unsaved-changes guard, Viewer read-only.
+- **Migrations** (run in order, both idempotent): `Database/TestDataModel_Migration.sql`
+  (IsFromModel flag, section sync, assignment lookups) then
+  `Database/TestDataJson_Migration.sql` (TestCaseKey + document table + procs; converts any
+  rows from the earlier per-section shape and keeps them as
+  `aut.TestCaseData_SectionRows_Backup`, safe to drop once verified).
+- **Sample**: `TC.PriorAuthoriztion/Tests/SubmitPAProfessionalTest.cs` - `TC_PA_PROF_01`
+  (full professional PA, save) and `TC_PA_PROF_02` (no ordering provider, multiple diagnoses,
+  verifies every line is on the form). Both **save** rather than submit: the Professional
+  form's service-detail/attachment locators aren't in `SubmitPriorAuthorizationPage` yet.
+  Deployed in Release `REL-54_SubmitPAProfessional_v1.0.0` (E2EP3).
+
+- **Copy all** (`POST api/TestData/copy-all`, `TestDataService.CopyAllAsync`): replaces the
+  target test case's whole document (current user, selected environment) with the source
+  document in one save - source is either another test case of the same model (same user +
+  environment) or the same test case in another environment. Replace semantics: sections the
+  source hasn't saved become "not saved" on the target (model defaults). Only keys in the
+  current model are copied; version-checked (409 on conflict); Viewer 403; audited as
+  "Copied" with source + section names (no values). Per-section "Copy section" (editor
+  preview, then Save) is unchanged.
+
+## AutomationAPI.Tests (unit tests for the API's own logic)
+`AutomationAPI.Tests/` - NUnit + Moq project referencing `AutomationAPI` (no database, no web
+host; repositories are mocked). Run: `dotnet test AutomationAPI.Tests` (builds AutomationAPI,
+so stop a running API first if the build hits a file lock).
+- `TestDataServiceCopyAllTests` - "Copy from test case" only copies between test cases of the
+  same model: same-model copy succeeds; different-model source is rejected with nothing
+  written; keys not in the model are dropped; the target document is replaced as a whole;
+  a source with no saved data is rejected; a stale target version is a conflict with nothing
+  written. (The Portal's list of copy sources is filtered by FlowName in
+  `usp_TestCaseDataGetCopySources` - SQL, not covered by these unit tests.)
+
+### Fixed: intermittent 500 on Test Data Management (deadlock in usp_UpsertModelSections)
+Selecting a model-based test case loads `api/TestData/data` and `copy-sources` in parallel,
+and both run the section sync. The proc used `UPDLOCK, HOLDLOCK` on
+`aut.AutomationDataSections` (no index -> table-wide range locks), so concurrent calls
+deadlocked (SQL 1205 -> HTTP 500). Now: lock-free fast path when every model section already
+exists and is flagged (the normal case after the first load), otherwise a per-flow
+`sp_getapplock` with a re-check inside it. Verified with 20 parallel calls for both paths
+(no failures, no duplicate sections).
+
+### Fixed: `HttpService.get()` error handler lost `this`
+`catchError(this.handleError)` wasn't bound (post/put/delete were), so any failed GET
+anywhere in the Portal threw "Cannot read properties of undefined (reading 'toaster')"
+instead of showing its error toast. Now `.bind(this)`.

@@ -1,0 +1,238 @@
+/* Shares the look of the manual editor (test-data-management.component.css). */
+.tdm-banner {
+  border-left: 4px solid #2f6fed;
+  background: #eef4ff;
+  color: #1d3f8f;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.tdm-banner.editing {
+  border-left-color: #6c3483;
+  background: #f6f0fa;
+  color: #4a2762;
+}
+
+.tdm-banner.defaults {
+  border-left-color: #0d6efd;
+  background: #f0f6ff;
+}
+
+.section-chip.defaults {
+  border-color: #c7d7fb;
+  background: #f5f8ff;
+  color: #1d3f8f;
+}
+
+.section-chip.defaults i {
+  color: #0d6efd;
+}
+
+.chip-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.chip-legend i {
+  margin-right: 4px;
+}
+
+.tdm-banner small {
+  display: block;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.tdm-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.field-count-badge {
+  background: #f3e9fa;
+  color: #6c3483;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 4px 12px;
+  border-radius: 50px;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.section-overview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.section-chip {
+  border: 1.5px solid #d8d8e0;
+  background: #ffffff;
+  color: #4b5563;
+  border-radius: 50px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.section-chip i {
+  margin-right: 5px;
+  color: #9ca3af;
+}
+
+.section-chip.configured {
+  border-color: #bfe3cc;
+  background: #f0faf4;
+  color: #166534;
+}
+
+.section-chip.configured i {
+  color: #22a35c;
+}
+
+.section-chip.active {
+  border-color: #6c3483;
+  background: #f3e9fa;
+  color: #4a2762;
+  font-weight: 600;
+}
+
+.section-chip:hover {
+  border-color: #6c3483;
+}
+
+.chip-count {
+  margin-left: 2px;
+  font-weight: 600;
+}
+
+/* Single-row form: two columns on wide screens, one on narrow. */
+.model-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px 20px;
+}
+
+.model-field {
+  min-width: 0;
+}
+
+/* Multi-row grid: scrolls sideways rather than squashing inputs. */
+.model-grid table {
+  min-width: max-content;
+}
+
+.model-grid th {
+  font-size: 0.8rem;
+  color: #4b5563;
+  white-space: nowrap;
+  background: #fafafb;
+}
+
+.model-grid td .form-control,
+.model-grid td .form-select {
+  min-width: 150px;
+}
+
+.model-grid .row-num {
+  width: 36px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.model-grid .row-actions {
+  width: 40px;
+}
+
+.model-grid .row-actions button {
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 1.1rem;
+}
+
+.toggle-eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.add-row-btn,
+.copy-btn {
+  border: 1.5px dashed #6c3483;
+  color: #6c3483;
+  background: transparent;
+  border-radius: 8px;
+  padding: 0 16px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.copy-btn {
+  border-style: solid;
+}
+
+.add-row-btn:hover,
+.copy-btn:hover {
+  background: #f7f0fb;
+}
+
+.copy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.copy-group {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+:host ::ng-deep .copy-select select {
+  width: auto;
+  min-width: 190px;
+  height: 40px !important;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px 20px;
+  color: #6b7280;
+  border: 1.5px dashed #d8d8e0;
+  border-radius: 10px;
+  background: #fafafb;
+}
+
+.empty-state i {
+  font-size: 1.8rem;
+  color: #a78bc0;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.btn-purple {
+  background-color: #6c3483;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+}

@@ -111,8 +111,15 @@
           name="section-{{ section.sectionId }}"
           [value]="editedSectionNames.get(section.sectionId)"
           (input)="editedSectionNames.set(section.sectionId, $any($event.target).value)"
-          [readonly]="isViewer()"
+          [readonly]="isViewer() || section.isFromModel"
         />
+        <span
+          class="fsm-code-badge"
+          *ngIf="section.isFromModel"
+          title="Created from the test data model in code. Change the model class to rename or remove it."
+        >
+          <i class="bi bi-code-slash"></i> From code
+        </span>
         <span
           class="fsm-data-badge"
           [ngClass]="hasData(section.sectionId) ? 'has-data' : 'no-data'"
@@ -120,7 +127,7 @@
           <i class="bi" [ngClass]="hasData(section.sectionId) ? 'bi-check-circle-fill' : 'bi-circle'"></i>
           {{ hasData(section.sectionId) ? 'Has data' : 'Empty' }}
         </span>
-        <div class="fsm-row-actions" *ngIf="!isViewer()">
+        <div class="fsm-row-actions" *ngIf="!isViewer() && !section.isFromModel">
           <button
             type="button"
             class="fsm-save-btn"
