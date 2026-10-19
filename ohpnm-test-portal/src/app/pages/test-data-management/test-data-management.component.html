@@ -35,15 +35,25 @@
               name="modelTestCase"
               [options]="modelTestCases"
               [textAccessor]="modelTestCaseLabel"
-              placeholder="None – use Flow below"
+              [placeholder]="modelTestCasesLoading ? 'Loading test cases...' : 'None – use Flow below'"
               [(selected)]="selectedModelTestCase"
               (selectionChange)="onModelTestCaseChange()"
-              [disabled]="!selectedEnvironment || !modelTestCases.length"
+              [disabled]="!selectedEnvironment || modelTestCasesLoading || !modelTestCases.length"
             ></app-dropdown>
             <div class="text-muted small mt-1 text-break" *ngIf="selectedModelTestCase">
               {{ selectedModelTestCase.className }}.{{ selectedModelTestCase.methodName }}
             </div>
-            <div class="text-muted small mt-1" *ngIf="selectedEnvironment && !modelTestCases.length">
+            <div class="text-muted small mt-1" *ngIf="modelTestCasesLoading">
+              <i class="bi bi-hourglass-split me-1"></i>Loading your test cases - the first load after a release change can take a little while.
+            </div>
+            <div class="small mt-1 text-danger" *ngIf="modelTestCasesError">
+              Couldn't load your test cases.
+              <a href="javascript:void(0)" (click)="loadModelTestCases()">Retry</a>
+            </div>
+            <div
+              class="text-muted small mt-1"
+              *ngIf="selectedEnvironment && !modelTestCasesLoading && !modelTestCasesError && !modelTestCases.length"
+            >
               None of your assigned test cases here use a code data model.
             </div>
           </div>

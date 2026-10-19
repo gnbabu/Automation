@@ -4422,3 +4422,17 @@ client-side in `model-test-data/json-validator.ts` for instant feedback, same ru
 - Errors are collected (max 50) with JSON paths, e.g. `Diagnoses[2].Sequence: "abc" is not a
   valid whole number`. Tests: `AutomationAPI.Tests/TestDataJsonValidatorTests.cs`,
   `TestDataServiceDocumentTests.cs`.
+
+### SubmitPAProfessionalTest - real Professional PA flow
+Rebuilt from a TestCase Studio recording of the live E2E Professional PA form
+(`TC.PriorAuthoriztion/Pages/ProfessionalPAPage.cs` holds the real element IDs; the shared Dental
+`SubmitPriorAuthorizationPage` is untouched). Steps: Professional radio (`rblClaimType_1`) ->
+payer/assignment/service type -> recipient (billing number + DOB, Enter, waits for recipient
+lookup) -> requester (masked contact number typed as digits) -> place of service via search
+popup -> service provider and ordering provider via NPI search popups (verifies Medicaid ID /
+name when given) -> diagnosis lines (search popup, date, code type, Add) -> professional
+service lines (procedure search popup, modifiers, units, dollars, FDOS/TDOS, Add) -> provider
+notes -> attachments (file must exist on the test machine) -> Save. Dates are typed
+`MM/dd/yyyy`. `SubmitPAProfessional` defaults hold the recorded values (provider 2422659,
+recipient 102420808299, 2 diagnoses, 2 service lines). Saved test-case data overrides the
+defaults - use "Reset all to defaults" to run with the recorded values.

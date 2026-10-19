@@ -8,45 +8,47 @@ namespace TestDataModels
     {
         public ProviderHeaderInfomration ProviderHeaderInfomration { get; set; } = new()   // section
         {
-            ProviderMedicaidId = "00059871",
-            ProviderNpi = "1932384654",
+            ProviderMedicaidId = "2422659",
+            ProviderNpi = "1285673111",
+            ProviderName = "CROSSROADS HOSPICE OF CINCINNATI, LLC",
             PriorAuthorizationType = "Professional",
             DestinationPayer = "Ohio Department of Medicaid",
-            Assignment = "Professional",
+            Assignment = "Enteral Nutrition and Supplies",
+            ServiceType = "Alcoholism",
         };
         // Recipient Information
         public RecipientInfo Recipient { get; set; } = new()
         {
-            MedicaidBillingNumber = "0005987",
-            DateOfBirth = new DateTime(1985, 6, 12),
-            PatientTrackingNumber = "PTN778899",
+            MedicaidBillingNumber = "102420808299",
+            DateOfBirth = new DateTime(1962, 7, 9),
         };
 
         // Requester Information
         public RequesterContactInfo Requester { get; set; } = new()
         {
-            FirstName = "Naresh",
-            LastName = "Gupta",
-            ContactNumber = "6145551234",
-            Extension = "101",
+            FirstName = "Danyele",
+            LastName = "Loughridge",
+            ContactNumber = "6145059595",
         };
 
         // Service Information
         public ServiceInformation ServiceInformation { get; set; } = new()
         {
-            PlaceOfService = "11",
+            PlaceOfService = "12",
             LevelOfService = "E - Elective",
         };
 
         // Provider Information
         public ServiceProviderInfo ServiceProvider { get; set; } = new()
         {
-            Npi = "1932384654",
+            Npi = "1114481405",
+            MedicaidId = "0405165",
+            OrganizationName = "HOPEHEALTH LTD.",
         };
 
         public OrderingProviderInfo OrderingProvider { get; set; } = new()
         {
-            Npi = "1932384654",
+            Npi = "1629272687",
         };
 
         // Diagnosis Information
@@ -55,18 +57,15 @@ namespace TestDataModels
             new DiagnosisInfo
             {
                 Sequence = 1,
-                DiagnosisCodeType = "ICD-10",
-                DiagnosisCode = "Z00.00",
-                DiagnosisDescription = "Encounter for general adult medical examination without abnormal findings",
-                DiagnosisDate = new DateTime(2026, 9, 1),
+                DiagnosisCode = "E1122",
+                DiagnosisDate = new DateTime(2026, 10, 1),
             },
             new DiagnosisInfo
             {
                 Sequence = 2,
-                DiagnosisCodeType = "ICD-10",
-                DiagnosisCode = "E11.9",
-                DiagnosisDescription = "Type 2 diabetes mellitus without complications",
-                DiagnosisDate = new DateTime(2026, 9, 1),
+                DiagnosisCodeType = "Admitting",
+                DiagnosisCode = "H15022",
+                DiagnosisDate = new DateTime(2026, 10, 1),
             },
         };
 
@@ -76,16 +75,33 @@ namespace TestDataModels
             new ServiceDetail
             {
                 LineNumber = 1,
-                ProcedureCode = "99213",
-                RequestedUnits = 1,
-                RequestedDollars = 150m,
-                RequestedFromDate = new DateTime(2026, 9, 1),
-                RequestedToDate = new DateTime(2026, 9, 1),
+                ProcedureCode = "G0299",
+                Modifier1 = "12",
+                Modifier2 = "12",
+                Modifier3 = "12",
+                Modifier4 = "12",
+                RequestedUnits = 40,
+                RequestedDollars = 370m,
+                RequestedFromDate = new DateTime(2026, 10, 1),
+                RequestedToDate = new DateTime(2026, 10, 20),
+            },
+            new ServiceDetail
+            {
+                LineNumber = 2,
+                ProcedureCode = "G0151",
+                Modifier1 = "13",
+                Modifier2 = "13",
+                Modifier3 = "13",
+                Modifier4 = "13",
+                RequestedUnits = 32,
+                RequestedDollars = 760m,
+                RequestedFromDate = new DateTime(2026, 10, 8),
+                RequestedToDate = new DateTime(2026, 10, 29),
             },
         };
 
         // Provider Notes
-        public string ProviderNotes { get; set; } = "Patient requires a follow-up evaluation.";
+        public string ProviderNotes { get; set; }
 
         // Reviewer Notes
         public List<ReviewerNote> ReviewerNotes { get; set; } = new();

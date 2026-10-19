@@ -53,6 +53,8 @@ export class TestDataManagementComponent
   existingSectionData?: IAutomationData;
 
   modelTestCases: ITestDataTestCase[] = [];
+  modelTestCasesLoading = false;
+  modelTestCasesError = false;
   selectedModelTestCase?: ITestDataTestCase;
   private lastConfirmedModelTestCase?: ITestDataTestCase;
   @ViewChild(ModelTestDataComponent) modelEditor?: ModelTestDataComponent;
@@ -208,12 +210,24 @@ export class TestDataManagementComponent
     );
   }
 
-  private loadModelTestCases() {
+  loadModelTestCases() {
     this.modelTestCases = [];
+    this.modelTestCasesError = false;
     if (!this.selectedEnvironment) return;
-    this.testDataService.getMyTestCases(this.selectedEnvironment.environmentId).subscribe({
-      next: (res) => (this.modelTestCases = (res || []).filter((tc) => !!tc.flowName)),
-      error: (err) => console.error('Error loading test cases:', err),
+    const environmentId = this.selectedEnvironment.environmentId;
+    this.modelTestCasesLoading = true;
+    this.testDataService.getMyTestCases(environmentId).subscribe({
+      next: (res) => {
+        if (this.selectedEnvironment?.environmentId !== environmentId) return;
+        this.modelTestCasesLoading = false;
+        this.modelTestCases = (res || []).filter((tc) => !!tc.flowName);
+      },
+      error: (err) => {
+        if (this.selectedEnvironment?.environmentId !== environmentId) return;
+        this.modelTestCasesLoading = false;
+        this.modelTestCasesError = true;
+        console.error('Error loading test cases:', err);
+      },
     });
   }
 

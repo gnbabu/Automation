@@ -85,10 +85,13 @@ namespace Selenium.BaseComponents.Utilities
                 message += $". Using the model's default values: {string.Join(", ", defaults)}";
 
             int.TryParse(NUnit.Framework.TestContext.Parameters["AssignmentId"], out var assignmentId);
+            var test = NUnit.Framework.TestContext.CurrentContext.Test;
             apiGateway.SaveTestCaseLog(new TestCaseExecutionLog
             {
                 AssignmentId = assignmentId,
                 AssignmentTestCaseId = assignmentTestCaseId,
+                TestCaseId = test.Properties.Get("TestCaseId") as string ?? test.MethodName ?? test.Name,
+                TestCaseDescription = test.Properties.Get("Description") as string ?? test.Name,
                 StepName = "Test Data",
                 LogMessage = message,
                 LogLevel = TestCaseLogLevel.Info,

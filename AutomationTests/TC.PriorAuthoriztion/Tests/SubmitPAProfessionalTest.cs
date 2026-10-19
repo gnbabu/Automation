@@ -7,7 +7,6 @@ using SeleniumExtensions.Configurations;
 using SeleniumExtensions.Extensions;
 using System.Globalization;
 using TC.PriorAuthoriztion.Pages;
-using TC.PriorAuthoriztion.Services;
 using TestDataModels;
 using BasePageHelper = SdetToolbox.Pages.PageHelper;
 
@@ -17,18 +16,11 @@ namespace TC.PriorAuthoriztion.Tests
     [TestDataFlow(typeof(SubmitPAProfessional))]
     public class SubmitPAProfessionalTest : BaseFeatureFixture
     {
-        private PriorAuthorizationService _priorAuthService;
-        private TestCaseExecutionLog _testCaseExecutionLog;
+        private TestCaseExecutionLog _testCaseExecutionLog = null!;
         private Screeshots? _screenshots;
 
         public SubmitPAProfessionalTest(string profile) : base(profile)
         {
-        }
-
-        [SetUp]
-        public new void BeforeEachTest()
-        {
-            _priorAuthService = new PriorAuthorizationService(TestWebDriver);
         }
 
         [Test]
@@ -88,10 +80,10 @@ namespace TC.PriorAuthoriztion.Tests
             LogStep("Login to PNM", "Login to PNM succesfully...!");
         }
 
-        private SubmitPriorAuthorizationPage FillProfessionalPA(SubmitPAProfessional data, bool includeOrderingProvider)
+        private ProfessionalPAPage FillProfessionalPA(SubmitPAProfessional data, bool includeOrderingProvider)
         {
             OpenSubmitPriorAuthorization(data.ProviderHeaderInfomration);
-            var page = new SubmitPriorAuthorizationPage(TestWebDriver);
+            var page = new ProfessionalPAPage(TestWebDriver);
 
             FillHeader(page, data.ProviderHeaderInfomration);
             FillRecipient(page, data.Recipient);
@@ -101,14 +93,17 @@ namespace TC.PriorAuthoriztion.Tests
             if (includeOrderingProvider)
                 FillOrderingProvider(page, data.OrderingProvider);
             FillDiagnoses(page, data.Diagnoses);
-            FillProviderNotes(page, data.ProviderNotes);
+            FillServiceDetails(page, data.ServiceDetails);
+            FillProviderNotes(data.ProviderNotes);
+            FillAttachments(page, data.Attachments);
             return page;
         }
 
-        private void SaveAndVerify(SubmitPriorAuthorizationPage page, SubmitPAProfessional data)
+        private void SaveAndVerify(ProfessionalPAPage page, SubmitPAProfessional data)
         {
-            ((IJavaScriptExecutor)TestWebDriver).ExecuteScript("arguments[0].click();", page.btnSave);
-            Thread.Sleep(3000);
+            ((IJavaScriptExecutor)TestWebDriver).ExecuteScript("arguments[0].click();", page.Visible(page.SaveButton));
+            new OpenQA.Selenium.Support.UI.WebDriverWait(TestWebDriver, TimeoutConfiguration.Element)
+                .Until(d => { try { d.SwitchTo().Alert(); return true; } catch (NoAlertPresentException) { return false; } });
 
             IAlert alert = TestWebDriver.SwitchTo().Alert();
             string alertText = alert.Text;
@@ -120,14 +115,11 @@ namespace TC.PriorAuthoriztion.Tests
             }
 
             BasePageHelper.WaitUntilDocumentIsReady(TestWebDriver, TimeoutConfiguration.Element);
-            BasePageHelper.WaitUntilElementIsVisible(TestWebDriver, By.Id("ctl00_MainContent_uc1SubmitPriorAuthorization_lblpriorautherror"), TimeoutConfiguration.Element);
-
-            IWebElement message = TestWebDriver.CreateSmartElement(By.Id("ctl00_MainContent_uc1SubmitPriorAuthorization_lblpriorautherror")).Element;
-            Assert.That(message.Displayed && message.Text.Equals("PA request has been saved."), Is.True,
-                $"Professional PA was not saved. Message: {message.Text}");
+            var message = page.Visible(page.SaveMessage);
+            Assert.That(message.Text.Trim(), Is.EqualTo("PA request has been saved."), "Professional PA was not saved.");
 
             LogStep("Test case executed successfully...!",
-                $"PA request has been saved with Patient Tracking Number::{data.Recipient.PatientTrackingNumber}");
+                $"PA request saved for recipient {data.Recipient.MedicaidBillingNumber} with {data.Diagnoses.Count} diagnosis line(s) and {data.ServiceDetails.Count} service line(s)");
         }
 
         private void OpenSubmitPriorAuthorization(ProviderHeaderInfomration header)
@@ -148,120 +140,198 @@ namespace TC.PriorAuthoriztion.Tests
             LogStep("Submit Prior Auth", "Navigated to Submit Prior Authorization page");
         }
 
-        private void FillHeader(SubmitPriorAuthorizationPage page, ProviderHeaderInfomration header)
+        private void FillHeader(ProfessionalPAPage page, ProviderHeaderInfomration header)
         {
-            page.WaitUntilElementIsVisible();
+            if (!string.IsNullOrWhiteSpace(header.PriorAuthorizationType) &&
+                !header.PriorAuthorizationType.Trim().Equals("Professional", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Fail($"This test submits Professional prior authorizations, but the test data's PriorAuthorizationType is \"{header.PriorAuthorizationType}\".");
+            }
 
-            var claimType = string.IsNullOrWhiteSpace(header.PriorAuthorizationType) ? "professional" : header.PriorAuthorizationType.Trim().ToLowerInvariant();
-            TestWebDriver.CreateSmartElement(By.XPath($"//input[@value='{claimType}']")).Element.Click();
+            page.Click(page.ProfessionalClaimType);
+            BasePageHelper.WaitUntilDocumentIsReady(TestWebDriver, TimeoutConfiguration.Element);
 
-            page.SetAuthorization(header.DestinationPayer);
-            while (!page.VerifyDropdownHasValues(page.ddlSubCapitaPayerID))
-                Thread.Sleep(2000);
+            VerifyLabel(By.Id("ctl00_MainContent_ucRegProgressBar_lblPRONPI2"), header.ProviderNpi, "Provider NPI");
+            VerifyLabel(By.Id("ctl00_MainContent_ucRegProgressBar_lblProviderName2"), header.ProviderName, "Provider name");
 
-            page.SetAssignment(header.Assignment);
-            page.SetServiceType(header.ServiceType);
-            LogStep("Header Information", "Header Information filled");
+            page.Select(page.DestinationPayer, header.DestinationPayer);
+            page.Select(page.Assignment, header.Assignment);
+            page.Select(page.ServiceType, header.ServiceType);
+            LogStep("Header Information", $"Professional PA: {header.DestinationPayer} / {header.Assignment} / {header.ServiceType}");
         }
 
-        private void FillRecipient(SubmitPriorAuthorizationPage page, RecipientInfo recipient)
+        private void FillRecipient(ProfessionalPAPage page, RecipientInfo recipient)
         {
-            page.txtMedicaidBillingNumber.Set(recipient.MedicaidBillingNumber);
-            page.txtBirthDate.Set(FormatDate(recipient.DateOfBirth));
-            page.txtPatientTrckNum.Click();
+            page.Type(page.MedicaidBillingNumber, recipient.MedicaidBillingNumber, pressEnter: true);
 
-            var firstName = By.Id("ctl00_MainContent_uc1SubmitPriorAuthorization_txtfrstmi2");
-            while (string.IsNullOrEmpty(TestWebDriver.CreateSmartElement(firstName).Element.GetAttribute("value")))
-                Thread.Sleep(2000);
+            var loaded = false;
+            for (var attempt = 1; attempt <= 2 && !loaded; attempt++)
+            {
+                page.Type(page.BirthDate, FormatDate(recipient.DateOfBirth));
+                page.Click(page.PatientTrackingNumber);
+                try
+                {
+                    page.WaitForValue(page.RecipientFirstName, TimeSpan.FromSeconds(30));
+                    loaded = true;
+                }
+                catch (WebDriverTimeoutException)
+                {
+                    BasePageHelper.WaitUntilDocumentIsReady(TestWebDriver, TimeoutConfiguration.Element);
+                }
+            }
 
-            page.txtPatientTrckNum.Set(recipient.PatientTrackingNumber);
-            LogStep("Recipient Information", "Recipient Information filled");
+            if (!loaded)
+                Assert.Fail($"Recipient details weren't loaded for Medicaid billing number {recipient.MedicaidBillingNumber} and date of birth {FormatDate(recipient.DateOfBirth)}.");
+
+            page.Type(page.PatientTrackingNumber, recipient.PatientTrackingNumber);
+            LogStep("Recipient Information", $"Recipient {recipient.MedicaidBillingNumber} loaded");
         }
 
-        private void FillRequester(SubmitPriorAuthorizationPage page, RequesterContactInfo requester)
+        private void FillRequester(ProfessionalPAPage page, RequesterContactInfo requester)
         {
-            page.txtContactName.Set(requester.FirstName);
-            page.txtContactLastName.Set(requester.LastName);
-            page.txtContactNumber.Click();
-            Thread.Sleep(2000);
-            ((IJavaScriptExecutor)TestWebDriver).ExecuteScript("arguments[0].value = arguments[1];", page.txtContactNumber, requester.ContactNumber ?? "");
-            page.txtContactExt.Set(requester.Extension);
-            LogStep("Requestor Contact Information", "Requestor Contact Information filled");
+            page.Type(page.ContactFirstName, requester.FirstName);
+            page.Type(page.ContactLastName, requester.LastName);
+
+            var digits = new string((requester.ContactNumber ?? "").Where(char.IsDigit).ToArray());
+            if (digits.Length > 0)
+            {
+                var number = page.Visible(page.ContactNumber);
+                number.Click();
+                number.SendKeys(Keys.Home);
+                number.SendKeys(digits);
+                var typed = new string((number.GetAttribute("value") ?? "").Where(char.IsDigit).ToArray());
+                if (typed != digits)
+                    ((IJavaScriptExecutor)TestWebDriver).ExecuteScript("arguments[0].value = arguments[1];", number, digits);
+            }
+
+            page.Type(page.ContactExtension, requester.Extension);
+            LogStep("Requestor Contact Information", $"Requester {requester.FirstName} {requester.LastName}");
         }
 
-        private void FillServiceInformation(SubmitPriorAuthorizationPage page, ServiceInformation service)
+        private void FillServiceInformation(ProfessionalPAPage page, ServiceInformation service)
         {
-            SetIfPresent(page.txtpalceofservice, service.PlaceOfService);
-            page.SetDelayReason(service.DelayReason);
-            page.SetListOfService(service.LevelOfService);
-            SetIfPresent(page.txtAccDtService, FormatDate(service.AccidentDate));
-            SetIfPresent(page.txtDateOfpatientEvent, FormatDate(service.DateOfPatientEvent));
-            SetIfPresent(page.txtProfOnsetIllness, FormatDate(service.DateOfOnsetOfIllness));
-            SetIfPresent(page.txtMenDtInst, FormatDate(service.LastMenstrualPeriodDate));
-            SetIfPresent(page.txtEstDOB, FormatDate(service.EstimatedBirthDate));
-            SetIfPresent(page.txtPANumInst, service.AssociatePaNumber);
-            LogStep("Service Information", "Service Information filled");
+            if (!string.IsNullOrWhiteSpace(service.PlaceOfService))
+            {
+                page.Click(page.PlaceOfServiceSearch);
+                page.Visible(page.PlaceOfServicePopup);
+                page.Type(page.PlaceOfServiceSearchCode, service.PlaceOfService);
+                page.Click(page.PlaceOfServiceSearchButton);
+                page.ClickLinkInPopup(page.PlaceOfServicePopup, service.PlaceOfService);
+                page.ClosePopup(page.PlaceOfServicePopup);
+
+                var code = service.PlaceOfService.Trim();
+                var selected = (TestWebDriver.FindElement(page.PlaceOfService).GetAttribute("value") ?? "").Trim();
+                Assert.That(selected == code || selected.StartsWith(code + "-", StringComparison.OrdinalIgnoreCase), Is.True,
+                    $"Place of service wasn't filled from the search popup. Expected \"{code}\" (optionally with its description), but the field shows \"{selected}\".");
+            }
+
+            page.Select(page.LevelOfService, service.LevelOfService);
+            page.Select(page.DelayReason, service.DelayReason);
+            TypeDate(page, page.AccidentDate, service.AccidentDate);
+            TypeDate(page, page.DateOfPatientEvent, service.DateOfPatientEvent);
+            TypeDate(page, page.DateOfOnsetOfIllness, service.DateOfOnsetOfIllness);
+            TypeDate(page, page.LastMenstrualPeriodDate, service.LastMenstrualPeriodDate);
+            TypeDate(page, page.EstimatedBirthDate, service.EstimatedBirthDate);
+            page.Type(page.AssociatePaNumber, service.AssociatePaNumber);
+            LogStep("Service Information", $"Place of service {service.PlaceOfService}, level {service.LevelOfService}");
         }
 
-        private void FillServiceProvider(SubmitPriorAuthorizationPage page, ServiceProviderInfo provider)
-        {
-            page.txtSPNPI.Set(provider.Npi);
-            page.pnlService.Click();
-            page.WaitUntilMedicaidIsFetched();
-            LogStep("Service Provider Information", "Service Provider Information filled");
-        }
-
-        private void FillOrderingProvider(SubmitPriorAuthorizationPage page, OrderingProviderInfo provider)
+        private void FillServiceProvider(ProfessionalPAPage page, ServiceProviderInfo provider)
         {
             if (string.IsNullOrWhiteSpace(provider.Npi))
                 return;
 
-            if (page.lblseporderproviderinfo.Text.Equals("+"))
-                TestWebDriver.CreateSmartElement(By.Id("ctl00_MainContent_uc1SubmitPriorAuthorization_pnlseporderproviderinfo")).Element.Click();
+            page.Type(page.ServiceProviderNpi, provider.Npi);
+            page.Click(page.ServiceProviderSearch);
+            page.Type(page.ServiceProviderSearchNpi, provider.Npi);
+            page.Click(page.ServiceProviderSearchButton);
+            page.ClickVisibleLink(provider.Npi);
+            page.WaitForText(page.ServiceProviderMedicaidId, TimeoutConfiguration.Element);
 
-            page.txtorderingprovidernpi.Set(provider.Npi);
-            TestWebDriver.FindElement(By.XPath("//div[@id='ctl00_MainContent_uc1SubmitPriorAuthorization_pnlorderproviderinfo']//td[text()='Medicaid ID']")).Click();
-            page.WaitUntilOrderingMedicaidIsFetched();
-            LogStep("Ordering Provider Information", "Ordering Provider Information filled");
+            VerifyLabel(page.ServiceProviderMedicaidId, provider.MedicaidId, "Service provider Medicaid ID");
+            VerifyLabel(page.ServiceProviderName, provider.OrganizationName, "Service provider name");
+            LogStep("Service Provider Information",
+                $"Service provider {provider.Npi}: {TestWebDriver.FindElement(page.ServiceProviderMedicaidId).Text} {TestWebDriver.FindElement(page.ServiceProviderName).Text}");
         }
 
-        private void FillDiagnoses(SubmitPriorAuthorizationPage page, List<DiagnosisInfo> diagnoses)
+        private void FillOrderingProvider(ProfessionalPAPage page, OrderingProviderInfo provider)
+        {
+            if (string.IsNullOrWhiteSpace(provider.Npi))
+                return;
+
+            page.ExpandSection(page.OrderingProviderHeader, page.OrderingProviderNpi);
+            page.Type(page.OrderingProviderNpi, provider.Npi);
+            page.Click(page.OrderingProviderSearch);
+            page.Type(page.OrderingProviderSearchNpi, provider.Npi);
+            page.Click(page.OrderingProviderSearchButton);
+            page.ClickVisibleLink(provider.Npi);
+            BasePageHelper.WaitUntilDocumentIsReady(TestWebDriver, TimeoutConfiguration.Element);
+            LogStep("Ordering Provider Information", $"Ordering provider {provider.Npi}");
+        }
+
+        private void FillDiagnoses(ProfessionalPAPage page, List<DiagnosisInfo> diagnoses)
         {
             if (diagnoses == null || diagnoses.Count == 0)
                 return;
 
-            if (page.DiagnosisExpanderSpan.Text.Equals("+"))
-                TestWebDriver.CreateSmartElement(By.Id("ctl00_MainContent_uc1SubmitPriorAuthorization_pnlsepDiagnosis")).Element.Click();
-            Thread.Sleep(2000);
+            page.ExpandSection(page.DiagnosisHeader, page.DiagnosisAdd);
 
             foreach (var diagnosis in diagnoses.OrderBy(d => d.Sequence))
             {
-                page.btnDiagnosisAdd.Click();
-                BasePageHelper.WaitUntilElementIsVisible(TestWebDriver, By.Id("ctl00_MainContent_uc1SubmitPriorAuthorization_txtLnDiagnosisCode"), TimeoutConfiguration.Element);
+                page.Click(page.DiagnosisAdd);
+                page.Type(page.DiagnosisCode, diagnosis.DiagnosisCode);
+                page.Click(page.DiagnosisSearch);
+                page.Type(page.DiagnosisSearchCode, diagnosis.DiagnosisCode);
+                page.Click(page.DiagnosisSearchButton);
+                page.ClickVisibleLink(diagnosis.DiagnosisCode);
 
-                if (!string.IsNullOrWhiteSpace(diagnosis.DiagnosisCodeType))
-                    new OpenQA.Selenium.Support.UI.SelectElement(page.ddlDiagnosisCodeType).SelectByText(diagnosis.DiagnosisCodeType);
-
-                page.txtLnDiagnosisCode.Set(diagnosis.DiagnosisCode);
-                page.txtDiagnosisCodeDescription.Click();
-                Thread.Sleep(3000);
-                _priorAuthService.DiagnosisPopupSearch(diagnosis.DiagnosisCode);
-
-                SetIfPresent(page.txtDiagnosisDate, FormatDate(diagnosis.DiagnosisDate));
-                page.txtDiagnosisCodeDescription.Click();
-                Thread.Sleep(2000);
-                page.btnDiagnosisAddLine.Click();
-                Thread.Sleep(5000);
+                TypeDate(page, page.DiagnosisDate, diagnosis.DiagnosisDate);
+                page.Select(page.DiagnosisCodeType, diagnosis.DiagnosisCodeType);
+                page.Click(page.DiagnosisAddLine);
+                WaitUntilHidden(page.DiagnosisCode);
             }
 
-            LogStep("Diagnosis Information", $"{diagnoses.Count} diagnosis line(s) filled");
+            LogStep("Diagnosis Information", $"{diagnoses.Count} diagnosis line(s): {string.Join(", ", diagnoses.Select(d => d.DiagnosisCode))}");
         }
 
-        private void FillProviderNotes(SubmitPriorAuthorizationPage page, string providerNotes)
+        private void FillServiceDetails(ProfessionalPAPage page, List<ServiceDetail> serviceDetails)
+        {
+            if (serviceDetails == null || serviceDetails.Count == 0)
+                return;
+
+            page.ExpandSection(page.ServiceDetailsHeader, page.ServiceDetailAdd);
+
+            foreach (var line in serviceDetails.OrderBy(s => s.LineNumber))
+            {
+                page.Click(page.ServiceDetailAdd);
+                page.Type(page.ProcedureCode, line.ProcedureCode);
+                page.Click(page.ProcedureCodeSearch);
+                page.Type(page.ProcedureSearchCode, line.ProcedureCode);
+                page.Click(page.ProcedureSearchButton);
+                page.ClickVisibleLink(line.ProcedureCode);
+
+                page.Type(page.Modifier(1), line.Modifier1);
+                page.Type(page.Modifier(2), line.Modifier2);
+                page.Type(page.Modifier(3), line.Modifier3);
+                page.Type(page.Modifier(4), line.Modifier4);
+                page.Type(page.RequestedUnits, line.RequestedUnits.ToString(CultureInfo.InvariantCulture));
+                page.Type(page.RequestedDollars, line.RequestedDollars.ToString(CultureInfo.InvariantCulture));
+                TypeDate(page, page.RequestedFromDate, line.RequestedFromDate);
+                TypeDate(page, page.RequestedToDate, line.RequestedToDate);
+
+                page.Click(page.ServiceDetailSave);
+                WaitUntilHidden(page.ProcedureCode);
+            }
+
+            LogStep("Service Details", $"{serviceDetails.Count} service line(s): {string.Join(", ", serviceDetails.Select(s => s.ProcedureCode))}");
+        }
+
+        private void FillProviderNotes(string providerNotes)
         {
             if (string.IsNullOrWhiteSpace(providerNotes))
                 return;
 
+            var page = new SubmitPriorAuthorizationPage(TestWebDriver);
             if (page.lblsepProvidersNotes.Text.Equals("+"))
                 page.lblsepProvidersNotes.Click();
 
@@ -273,14 +343,59 @@ namespace TC.PriorAuthoriztion.Tests
             LogStep("Provider Notes", "Provider Notes filled");
         }
 
-        private static void SetIfPresent(IWebElement element, string value)
+        private void FillAttachments(ProfessionalPAPage page, List<AttachmentInfo> attachments)
         {
-            if (!string.IsNullOrWhiteSpace(value))
-                element.Set(value);
+            if (attachments == null || attachments.Count == 0)
+                return;
+
+            page.ExpandSection(page.AttachmentHeader, page.AttachmentUpload);
+
+            foreach (var attachment in attachments.OrderBy(a => a.LineItem))
+            {
+                if (string.IsNullOrWhiteSpace(attachment.FilePath) || !File.Exists(attachment.FilePath))
+                    Assert.Fail($"Attachment file \"{attachment.FilePath}\" was not found on the machine running the test.");
+
+                TestWebDriver.FindElement(page.AttachmentUpload).SendKeys(attachment.FilePath);
+                page.Select(page.AttachmentDocumentType, attachment.DocumentType);
+                page.Type(page.AttachmentNote, attachment.Note);
+                page.Click(page.AttachmentAdd);
+                BasePageHelper.WaitUntilDocumentIsReady(TestWebDriver, TimeoutConfiguration.Element);
+            }
+
+            LogStep("Attachments", $"{attachments.Count} attachment(s) added");
+        }
+
+        private void TypeDate(ProfessionalPAPage page, By field, DateTime? value)
+        {
+            if (!value.HasValue) return;
+            var element = page.Visible(field);
+            element.Clear();
+            element.SendKeys(FormatDate(value));
+            element.SendKeys(Keys.Tab);
+        }
+
+        private void VerifyLabel(By label, string? expected, string what)
+        {
+            if (string.IsNullOrWhiteSpace(expected)) return;
+            var actual = TestWebDriver.FindElement(label).Text.Trim();
+            Assert.That(actual, Is.EqualTo(expected.Trim()).IgnoreCase, $"{what} on the form doesn't match the test data.");
+        }
+
+        private void WaitUntilHidden(By by)
+        {
+            try
+            {
+                new OpenQA.Selenium.Support.UI.WebDriverWait(TestWebDriver, TimeoutConfiguration.Element)
+                    .Until(d => d.FindElements(by).All(e => !e.Displayed));
+            }
+            catch (WebDriverTimeoutException)
+            {
+                Assert.Fail($"The line wasn't added - the edit row ({by}) is still open. Check the screenshot for a validation message.");
+            }
         }
 
         private static string FormatDate(DateTime? value) =>
-            value?.ToString("M/d/yyyy", CultureInfo.InvariantCulture) ?? "";
+            value?.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture) ?? "";
 
         private void LogStep(string stepName, string message)
         {
