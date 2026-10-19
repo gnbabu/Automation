@@ -180,6 +180,17 @@ namespace AutomationAPI.Repositories.TestRunner
                 .Where(p => p.CanWrite && p.GetIndexParameters().Length == 0)
                 .OrderBy(p => p.MetadataToken);
 
+        private static readonly Dictionary<Type, (long Min, long Max)> IntegerRanges = new()
+        {
+            [typeof(sbyte)] = (sbyte.MinValue, sbyte.MaxValue),
+            [typeof(byte)] = (byte.MinValue, byte.MaxValue),
+            [typeof(short)] = (short.MinValue, short.MaxValue),
+            [typeof(ushort)] = (ushort.MinValue, ushort.MaxValue),
+            [typeof(int)] = (int.MinValue, int.MaxValue),
+            [typeof(uint)] = (uint.MinValue, uint.MaxValue),
+            [typeof(long)] = (long.MinValue, long.MaxValue),
+        };
+
         private static TestDataFieldSchema ToField(PropertyInfo property)
         {
             var underlying = Nullable.GetUnderlyingType(property.PropertyType);
@@ -194,11 +205,16 @@ namespace AutomationAPI.Repositories.TestRunner
                     _ when t == typeof(bool) => "boolean",
                     _ when t == typeof(DateTime) || t == typeof(DateTimeOffset) => "date",
                     _ when t == typeof(decimal) || t == typeof(double) || t == typeof(float) => "decimal",
-                    _ when t == typeof(int) || t == typeof(long) || t == typeof(short) || t == typeof(byte) => "integer",
+                    _ when IntegerRanges.ContainsKey(t) => "integer",
                     _ => "text"
                 }
             };
             if (t.IsEnum) field.Options = Enum.GetNames(t).ToList();
+            if (IntegerRanges.TryGetValue(t, out var range))
+            {
+                field.Min = range.Min;
+                field.Max = range.Max;
+            }
             return field;
         }
 

@@ -4395,3 +4395,30 @@ exists and is flagged (the normal case after the first load), otherwise a per-fl
 `catchError(this.handleError)` wasn't bound (post/put/delete were), so any failed GET
 anywhere in the Portal threw "Cannot read properties of undefined (reading 'toaster')"
 instead of showing its error toast. Now `.bind(this)`.
+
+## Test data JSON editing (whole request / section) with strict model validation
+Code-model Test Data Management has a view switch: **Form | Section JSON | Whole request JSON**.
+JSON views open with the *effective* data (saved sections + model defaults, full model shape:
+`GET api/TestData/document`). Save: `PUT api/TestData/document` `{ assignmentTestCaseId,
+environmentId, sectionName?, json, expectedVersion }` - whole request (no `sectionName`): each
+section present replaces that section, sections left out are **unchanged** (a partial paste or
+upload can't wipe data); section save replaces only that section. Explicit
+`POST api/TestData/reset` (`sectionName?`) removes saved data so model defaults apply - "Reset
+section to default" / "Reset all to defaults" buttons, with confirmation. All version-checked
+(409), own assignment only, Viewer 403 (Viewer can view/download), audited with section names only.
+
+Validation (`AutomationAPI/Repositories/TestDataJsonValidator.cs`, authoritative; mirrored
+client-side in `model-test-data/json-validator.ts` for instant feedback, same rules/messages):
+- Errors (nothing saved): not an object; unknown section/field; case-only mismatch (exact
+  names, with a "did you mean" hint); class section not an object; List<T> section not an array
+  of objects (null/scalar rows rejected), > 500 rows; object/array as a field value; duplicate
+  keys; > 1 MB; null for a non-nullable field; value not convertible.
+- Value types: integer = JSON integer within the C# type's range (`TestDataFieldSchema.Min/Max`
+  from the model); decimal = JSON number; date = `yyyy-MM-dd` or `yyyy-MM-ddTHH:mm:ss`
+  (`"06/12/1985"` rejected - ambiguous); boolean = true/false; enum = exact name; text = string.
+- Converted only when unambiguous, and reported (pending before save, applied after save):
+  numeric string -> number (`"4"` -> 4, `"150.50"` -> 150.50), `"true"/"false"` -> boolean,
+  enum letter case, number/boolean -> text. Stored values are always typed/normalized.
+- Errors are collected (max 50) with JSON paths, e.g. `Diagnoses[2].Sequence: "abc" is not a
+  valid whole number`. Tests: `AutomationAPI.Tests/TestDataJsonValidatorTests.cs`,
+  `TestDataServiceDocumentTests.cs`.

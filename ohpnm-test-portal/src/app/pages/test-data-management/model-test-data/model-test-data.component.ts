@@ -6,6 +6,7 @@ import {
   IEnvironmentModel,
   ITestDataCopySource,
   ITestDataDocument,
+  ITestDataEffectiveDocument,
   ITestDataFieldSchema,
   ITestDataFlowSchema,
   ITestDataSectionSchema,
@@ -14,8 +15,11 @@ import {
 } from '@interfaces';
 import { CommonToasterService, ConfirmService, TestDataService } from '@services';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
+import { MAX_JSON_BYTES, rootSection, validateDocumentJson, validateSectionJson } from './json-validator';
 
 const SENSITIVE_KEY_PATTERN = /password|pwd|secret/i;
+
+export type TestDataView = 'form' | 'section' | 'whole';
 
 @Component({
   selector: 'app-model-test-data',
@@ -44,6 +48,17 @@ export class ModelTestDataComponent implements OnChanges {
 
   readonly showCopyFromEnvironment = false;
 
+  view: TestDataView = 'form';
+  jsonText = '';
+  private jsonSnapshot = '';
+  jsonErrors: string[] = [];
+  pendingConversions: string[] = [];
+  appliedConversions: string[] = [];
+  serverErrors: string[] = [];
+  jsonLoading = false;
+  private effective?: ITestDataEffectiveDocument;
+  private validateTimer?: ReturnType<typeof setTimeout>;
+
   copySources: ITestDataCopySource[] = [];
   copyFromTestCase?: ITestDataCopySource;
   copyFromEnvironment?: IEnvironmentModel;
@@ -69,6 +84,8 @@ export class ModelTestDataComponent implements OnChanges {
     this.rows = [];
     this.snapshot = '';
     this.copySources = [];
+    this.effective = undefined;
+    this.clearJson();
     if (!this.testCase || !this.environment) return;
 
     this.loading = true;
@@ -102,6 +119,7 @@ export class ModelTestDataComponent implements OnChanges {
           this.schema?.sections.find((s) => s.sectionId === (selectSectionId ?? this.selectedSection?.sectionId)) ??
           this.schema?.sections[0];
         if (target) this.openSection(target);
+        if (this.view !== 'form') this.loadJson();
       },
       error: (err) => {
         this.loading = false;
@@ -149,6 +167,202 @@ export class ModelTestDataComponent implements OnChanges {
     const saved = this.saved.get(section.sectionId) ?? [];
     this.setRows(section, saved.length > 0 ? saved : section.defaultRows ?? []);
     this.snapshot = this.serialize(this.rows);
+    if (this.view === 'section' && this.effective) this.fillJson();
+  }
+
+  async setView(view: TestDataView): Promise<void> {
+    if (view === this.view) return;
+    if (this.hasUnsavedChanges() && !(await this.confirmDiscardChanges())) return;
+    if (this.view === 'form' && this.selectedSection) this.openSection(this.selectedSection);
+    this.view = view;
+    this.clearJson();
+    if (view !== 'form') this.loadJson();
+  }
+
+  private loadJson(): void {
+    this.jsonLoading = true;
+    this.testDataService.getDocument(this.testCase.assignmentTestCaseId, this.environment.environmentId).subscribe({
+      next: (doc) => {
+        this.jsonLoading = false;
+        this.effective = doc;
+        this.version = doc?.version ?? null;
+        this.fillJson();
+      },
+      error: () => (this.jsonLoading = false),
+    });
+  }
+
+  private fillJson(): void {
+    if (!this.effective || !this.schema) return;
+    const document = this.effective.document ?? {};
+    let value: unknown = document;
+    if (this.view === 'section' && this.selectedSection) {
+      const section = this.selectedSection;
+      value =
+        section === rootSection(this.schema)
+          ? Object.fromEntries(section.fields.map((f) => [f.name, document[f.name] ?? null]))
+          : document[section.sectionName];
+    }
+    this.jsonText = JSON.stringify(value ?? null, null, 2);
+    this.jsonSnapshot = this.jsonText;
+    this.serverErrors = [];
+    this.validateJson();
+  }
+
+  private clearJson(): void {
+    this.jsonText = '';
+    this.jsonSnapshot = '';
+    this.jsonErrors = [];
+    this.pendingConversions = [];
+    this.appliedConversions = [];
+    this.serverErrors = [];
+  }
+
+  get jsonScopeLabel(): string {
+    return this.view === 'whole' ? 'Whole request' : (this.selectedSection?.sectionName ?? '');
+  }
+
+  get isJsonDirty(): boolean {
+    return this.view !== 'form' && this.jsonText !== this.jsonSnapshot;
+  }
+
+  onJsonChange(): void {
+    this.serverErrors = [];
+    this.appliedConversions = [];
+    clearTimeout(this.validateTimer);
+    this.validateTimer = setTimeout(() => this.validateJson(), 300);
+  }
+
+  private validateJson(): ReturnType<typeof validateDocumentJson> | undefined {
+    if (!this.schema || this.view === 'form') return undefined;
+    const result =
+      this.view === 'whole' || !this.selectedSection
+        ? validateDocumentJson(this.schema, this.jsonText)
+        : validateSectionJson(this.schema, this.selectedSection, this.jsonText);
+    this.jsonErrors = result.errors;
+    this.pendingConversions = result.conversions;
+    return result;
+  }
+
+  formatJson(): void {
+    const result = this.validateJson();
+    if (!result || result.errors.length) return;
+    const converted = result.conversions.length;
+    this.jsonText = JSON.stringify(result.value ?? null, null, 2);
+    this.validateJson();
+    if (converted) this.toaster.info(`Formatted. Converted ${converted} value${converted === 1 ? '' : 's'} to match the model.`);
+  }
+
+  resetEdits(): void {
+    this.jsonText = this.jsonSnapshot;
+    this.serverErrors = [];
+    this.appliedConversions = [];
+    this.validateJson();
+  }
+
+  downloadJson(): void {
+    const env = this.environment.environmentName.replace(/[^\w-]+/g, '_');
+    const scope = this.view === 'section' && this.selectedSection ? `_${this.selectedSection.sectionName}` : '';
+    const blob = new Blob([this.jsonText], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${this.testCaseLabel.replace(/[^\w-]+/g, '_')}_${env}${scope}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  onJsonFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.json')) {
+      this.toaster.warning('Choose a .json file.');
+      return;
+    }
+    if (file.size > MAX_JSON_BYTES) {
+      this.toaster.warning(`The file is too large (${Math.round(file.size / 1024)} KB). The limit is ${MAX_JSON_BYTES / 1024} KB.`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.jsonText = String(reader.result ?? '');
+      this.serverErrors = [];
+      this.appliedConversions = [];
+      this.validateJson();
+      this.toaster.info(`Loaded ${file.name}. Review it and click Save to keep it.`);
+    };
+    reader.readAsText(file);
+  }
+
+  saveJson(): void {
+    if (this.readOnly || this.isSaving || this.view === 'form') return;
+    const result = this.validateJson();
+    if (!result || result.errors.length) return;
+
+    const sectionName = this.view === 'section' ? (this.selectedSection?.sectionName ?? null) : null;
+    this.isSaving = true;
+    this.testDataService
+      .saveJson({
+        assignmentTestCaseId: this.testCase.assignmentTestCaseId,
+        environmentId: this.environment.environmentId,
+        sectionName,
+        json: this.jsonText,
+        expectedVersion: this.version,
+      })
+      .subscribe({
+        next: (res) => {
+          this.isSaving = false;
+          const sections = res?.sections ?? [];
+          this.toaster.success(
+            sectionName
+              ? `${sectionName} saved for this test case.`
+              : `Saved ${sections.length} section${sections.length === 1 ? '' : 's'} for this test case.`,
+          );
+          this.jsonSnapshot = this.jsonText;
+          this.loadData(this.selectedSection?.sectionId);
+          this.loadCopySources();
+          this.appliedConversions = res?.conversions ?? [];
+        },
+        error: (err) => {
+          this.isSaving = false;
+          if (err?.status === 400) {
+            const errors = err?.error?.errors;
+            this.serverErrors = Array.isArray(errors) && errors.length ? errors : [err?.error?.message ?? 'The JSON was rejected.'];
+          }
+        },
+      });
+  }
+
+  async resetToDefaults(section?: ITestDataSectionSchema): Promise<void> {
+    if (this.readOnly) return;
+    if (this.hasUnsavedChanges() && !(await this.confirmDiscardChanges())) return;
+    const scope = section ? `the ${section.sectionName} section` : 'all sections';
+    const ok = await this.confirmService.confirm(
+      'Reset to default values?',
+      `Remove the saved data for ${scope} of ${this.testCaseLabel} in ${this.environment.environmentName}? ` +
+        `Test runs will use the model's default values from code instead.`,
+    );
+    if (!ok) return;
+
+    this.testDataService
+      .reset({
+        assignmentTestCaseId: this.testCase.assignmentTestCaseId,
+        environmentId: this.environment.environmentId,
+        sectionName: section?.sectionName ?? null,
+        expectedVersion: this.version,
+      })
+      .subscribe({
+        next: (res) => {
+          const n = res?.sections?.length ?? 0;
+          this.toaster.success(n ? `Reset ${n} section${n === 1 ? '' : 's'} to the model's default values.` : 'Nothing was saved - already using defaults.');
+          this.jsonSnapshot = this.jsonText;
+          this.snapshot = this.serialize(this.rows);
+          this.loadData(this.selectedSection?.sectionId);
+          this.loadCopySources();
+        },
+      });
   }
 
   private setRows(section: ITestDataSectionSchema, source: TestDataRow[]): void {
@@ -339,7 +553,8 @@ export class ModelTestDataComponent implements OnChanges {
   }
 
   hasUnsavedChanges(): boolean {
-    return !!this.selectedSection && this.serialize(this.rows) !== this.snapshot;
+    if (this.isJsonDirty) return true;
+    return this.view === 'form' && !!this.selectedSection && this.serialize(this.rows) !== this.snapshot;
   }
 
   private confirmDiscardChanges(): Promise<boolean> {

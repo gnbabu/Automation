@@ -3,6 +3,10 @@ import {
   ITestDataCopyAllRequest,
   ITestDataCopySource,
   ITestDataDocument,
+  ITestDataEffectiveDocument,
+  ITestDataJsonSaveRequest,
+  ITestDataJsonSaveResult,
+  ITestDataResetRequest,
   ITestDataFlowSchema,
   ITestDataSectionSaveRequest,
   ITestDataTestCase,
@@ -43,6 +47,18 @@ export class TestDataService {
       assignmentTestCaseId,
       environmentId,
     });
+  }
+
+  getDocument(assignmentTestCaseId: number, environmentId: number): Observable<ITestDataEffectiveDocument> {
+    return this.httpService.get<ITestDataEffectiveDocument>(`TestData/document`, { assignmentTestCaseId, environmentId });
+  }
+
+  saveJson(request: ITestDataJsonSaveRequest): Observable<ITestDataJsonSaveResult> {
+    return this.httpService.put<ITestDataJsonSaveResult>(`TestData/document`, request, undefined);
+  }
+
+  reset(request: ITestDataResetRequest): Observable<{ version?: number | null; sections: string[] }> {
+    return this.httpService.post<{ version?: number | null; sections: string[] }>(`TestData/reset`, request);
   }
 
   copyAll(request: ITestDataCopyAllRequest): Observable<{ copiedSections: string[] }> {

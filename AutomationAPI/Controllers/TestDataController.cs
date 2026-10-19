@@ -29,6 +29,134 @@ namespace AutomationAPI.Controllers
 
         private bool IsTestRunner() => this.GetAuditUserId() == null && User.Identity?.Name == "TestRunner";
 
+        [HttpGet("document")]
+        public async Task<IActionResult> GetDocument([FromQuery] int assignmentTestCaseId, [FromQuery] int environmentId)
+        {
+            var (assignment, error) = await GetOwnAssignmentAsync(assignmentTestCaseId);
+            if (error != null) return error;
+            if (environmentId <= 0) return BadRequest("EnvironmentId is required.");
+
+            try
+            {
+                var schema = await _service.GetSchemaAsync(assignment!);
+                if (schema == null) return NoContent();
+                return Ok(await _service.GetEffectiveDocumentAsync(assignment!, schema, this.GetAuditUserId()!.Value, environmentId));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading test data document for AssignmentTestCaseId {AssignmentTestCaseId}", assignmentTestCaseId);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
+
+        [HttpPut("document")]
+        [RequestSizeLimit(TestDataJsonValidator.MaxBytes * 2)]
+        public async Task<IActionResult> SaveDocument([FromBody] TestDataJsonSaveRequest request)
+        {
+            if (IsViewer())
+                return StatusCode(403, "Viewers have read-only access and cannot save test data.");
+            if (request == null || request.EnvironmentId <= 0)
+                return BadRequest("Test case and environment are required.");
+
+            var (assignment, error) = await GetOwnAssignmentAsync(request.AssignmentTestCaseId);
+            if (error != null) return error;
+
+            try
+            {
+                var schema = await _service.GetSchemaAsync(assignment!);
+                if (schema == null) return BadRequest("This test case has no test data model.");
+
+                var userId = this.GetAuditUserId()!.Value;
+                var (result, conversions, sections) = await _service.SaveJsonAsync(assignment!, schema, request.Json, request.SectionName,
+                    userId, request.EnvironmentId, request.ExpectedVersion);
+
+                await _auditLog.LogAsync("TestCaseData", result.TestCaseDataId,
+                    $"{assignment!.TestCaseId ?? $"{assignment.ClassName}.{assignment.MethodName}"} / {(string.IsNullOrEmpty(request.SectionName) ? "whole request" : request.SectionName)}",
+                    "Updated (JSON)", userId, this.GetAuditUserName(),
+                    snapshot: new
+                    {
+                        libraryName = assignment.LibraryName,
+                        className = assignment.ClassName,
+                        methodName = assignment.MethodName,
+                        flowName = schema.FlowName,
+                        environmentId = request.EnvironmentId,
+                        sections
+                    });
+
+                return Ok(new { result.TestCaseDataId, result.Version, Conversions = conversions, Sections = sections });
+            }
+            catch (TestDataJsonValidationException ex)
+            {
+                return BadRequest(new { message = ex.Message, errors = ex.Errors });
+            }
+            catch (TestDataValidationException ex)
+            {
+                return BadRequest(new { message = ex.Message, errors = new[] { ex.Message } });
+            }
+            catch (TestDataConflictException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving test data JSON for AssignmentTestCaseId {AssignmentTestCaseId}", request.AssignmentTestCaseId);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
+
+        [HttpPost("reset")]
+        public async Task<IActionResult> Reset([FromBody] TestDataResetRequest request)
+        {
+            if (IsViewer())
+                return StatusCode(403, "Viewers have read-only access and cannot change test data.");
+            if (request == null || request.EnvironmentId <= 0)
+                return BadRequest("Test case and environment are required.");
+
+            var (assignment, error) = await GetOwnAssignmentAsync(request.AssignmentTestCaseId);
+            if (error != null) return error;
+
+            try
+            {
+                var schema = await _service.GetSchemaAsync(assignment!);
+                if (schema == null) return BadRequest("This test case has no test data model.");
+
+                var userId = this.GetAuditUserId()!.Value;
+                var (result, sections) = await _service.ResetAsync(assignment!, schema, request.SectionName,
+                    userId, request.EnvironmentId, request.ExpectedVersion);
+
+                if (result != null && sections.Count > 0)
+                {
+                    await _auditLog.LogAsync("TestCaseData", result.TestCaseDataId,
+                        $"{assignment!.TestCaseId ?? $"{assignment.ClassName}.{assignment.MethodName}"} / {(string.IsNullOrEmpty(request.SectionName) ? "all sections" : request.SectionName)}",
+                        "Reset to defaults", userId, this.GetAuditUserName(),
+                        snapshot: new
+                        {
+                            libraryName = assignment.LibraryName,
+                            className = assignment.ClassName,
+                            methodName = assignment.MethodName,
+                            flowName = schema.FlowName,
+                            environmentId = request.EnvironmentId,
+                            sections
+                        });
+                }
+
+                return Ok(new { Version = result?.Version, Sections = sections });
+            }
+            catch (TestDataValidationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (TestDataConflictException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resetting test data for AssignmentTestCaseId {AssignmentTestCaseId}", request.AssignmentTestCaseId);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
+
         [HttpGet("my-testcases")]
         public async Task<IActionResult> GetMyTestCases([FromQuery] int environmentId)
         {

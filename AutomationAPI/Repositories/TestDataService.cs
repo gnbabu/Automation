@@ -17,6 +17,17 @@ namespace AutomationAPI.Repositories
         public TestDataConflictException(string message) : base(message) { }
     }
 
+    public class TestDataJsonValidationException : Exception
+    {
+        public List<string> Errors { get; }
+
+        public TestDataJsonValidationException(List<string> errors)
+            : base($"The JSON doesn't match the test data model ({errors.Count} problem{(errors.Count == 1 ? "" : "s")}).")
+        {
+            Errors = errors;
+        }
+    }
+
     public class TestDataService
     {
         private readonly ITestDataRepository _repository;
@@ -189,6 +200,183 @@ namespace AutomationAPI.Repositories
             return (result, copied);
         }
 
+        public async Task<TestDataEffectiveDocument> GetEffectiveDocumentAsync(TestDataAssignment assignment, TestDataFlowSchema schema,
+            int userId, int environmentId)
+        {
+            var record = await _repository.GetDocumentAsync(assignment.LibraryName, assignment.ClassName, assignment.MethodName, userId, environmentId);
+            var saved = record == null || record.FlowName != schema.FlowName ? new JsonObject() : ParseDocument(record.DataJson);
+
+            var document = new JsonObject();
+            var savedSections = new List<string>();
+            foreach (var section in schema.Sections)
+            {
+                var isSaved = ReadSection(schema, section, saved) != null;
+                if (isSaved) savedSections.Add(section.SectionName);
+
+                if (IsRootSection(schema, section))
+                {
+                    var defaults = section.DefaultRows.FirstOrDefault();
+                    foreach (var field in section.Fields)
+                    {
+                        document[field.Name] = isSaved
+                            ? (saved.TryGetPropertyValue(field.Name, out var v) && v != null ? v.DeepClone() : Placeholder(field))
+                            : DefaultValue(field, defaults);
+                    }
+                }
+                else if (section.IsList)
+                {
+                    var array = new JsonArray();
+                    if (isSaved)
+                        foreach (var row in saved[section.SectionName]!.AsArray().OfType<JsonObject>())
+                            array.Add(FullRow(section, row));
+                    else
+                        foreach (var row in section.DefaultRows)
+                            array.Add(DefaultRow(section, row));
+                    document[section.SectionName] = array;
+                }
+                else
+                {
+                    document[section.SectionName] = isSaved
+                        ? FullRow(section, saved[section.SectionName]!.AsObject())
+                        : DefaultRow(section, section.DefaultRows.FirstOrDefault());
+                }
+            }
+
+            return new TestDataEffectiveDocument { Version = record?.Version, Document = document, SavedSections = savedSections };
+        }
+
+        public async Task<(TestDataSaveResult Result, List<string> Conversions, List<string> Sections)> SaveJsonAsync(
+            TestDataAssignment assignment, TestDataFlowSchema schema, string json, string? sectionName,
+            int userId, int environmentId, long? expectedVersion)
+        {
+            TestDataSectionSchema? section = null;
+            if (!string.IsNullOrEmpty(sectionName))
+            {
+                section = schema.Sections.FirstOrDefault(s => s.SectionName == sectionName)
+                    ?? throw new TestDataValidationException($"\"{sectionName}\" isn't a section of the {schema.FlowName} model.");
+            }
+
+            var validation = section == null
+                ? TestDataJsonValidator.ValidateDocument(schema, json)
+                : TestDataJsonValidator.ValidateSection(schema, section, json);
+            if (!validation.IsValid)
+                throw new TestDataJsonValidationException(validation.Errors);
+
+            var record = await _repository.GetDocumentAsync(assignment.LibraryName, assignment.ClassName, assignment.MethodName, userId, environmentId);
+            if (record?.Version != expectedVersion)
+                throw new TestDataConflictException(ConflictMessage);
+
+            var document = record == null || record.FlowName != schema.FlowName ? new JsonObject() : ParseDocument(record.DataJson);
+            var sections = new List<string>();
+
+            if (section == null)
+            {
+                foreach (var (key, value) in validation.Document!)
+                    document[key] = value?.DeepClone();
+                sections = schema.Sections
+                    .Where(s => IsRootSection(schema, s) ? s.Fields.Any(f => validation.Document!.ContainsKey(f.Name)) : validation.Document!.ContainsKey(s.SectionName))
+                    .Select(s => s.SectionName).ToList();
+            }
+            else if (IsRootSection(schema, section))
+            {
+                var values = validation.Section!.AsObject();
+                foreach (var field in section.Fields)
+                {
+                    if (values.TryGetPropertyValue(field.Name, out var v)) document[field.Name] = v?.DeepClone();
+                    else document.Remove(field.Name);
+                }
+                sections.Add(section.SectionName);
+            }
+            else
+            {
+                document[section.SectionName] = validation.Section!.DeepClone();
+                sections.Add(section.SectionName);
+            }
+
+            var result = await _repository.SaveDocumentAsync(assignment.LibraryName, assignment.ClassName, assignment.MethodName,
+                userId, environmentId, schema.FlowName, document.ToJsonString(), record?.Version);
+            if (result.IsConflict)
+                throw new TestDataConflictException(ConflictMessage);
+
+            return (result, validation.Conversions, sections);
+        }
+
+        public async Task<(TestDataSaveResult? Result, List<string> Sections)> ResetAsync(
+            TestDataAssignment assignment, TestDataFlowSchema schema, string? sectionName,
+            int userId, int environmentId, long? expectedVersion)
+        {
+            var record = await _repository.GetDocumentAsync(assignment.LibraryName, assignment.ClassName, assignment.MethodName, userId, environmentId);
+            if (record?.Version != expectedVersion)
+                throw new TestDataConflictException(ConflictMessage);
+            if (record == null || record.FlowName != schema.FlowName)
+                return (null, new List<string>());
+
+            var document = ParseDocument(record.DataJson);
+            var targets = string.IsNullOrEmpty(sectionName)
+                ? schema.Sections
+                : schema.Sections.Where(s => s.SectionName == sectionName).ToList();
+            if (targets.Count == 0)
+                throw new TestDataValidationException($"\"{sectionName}\" isn't a section of the {schema.FlowName} model.");
+
+            var reset = new List<string>();
+            foreach (var section in targets)
+            {
+                if (ReadSection(schema, section, document) == null) continue;
+                if (IsRootSection(schema, section))
+                    foreach (var field in section.Fields) document.Remove(field.Name);
+                else
+                    document.Remove(section.SectionName);
+                reset.Add(section.SectionName);
+            }
+
+            var result = await _repository.SaveDocumentAsync(assignment.LibraryName, assignment.ClassName, assignment.MethodName,
+                userId, environmentId, schema.FlowName, document.ToJsonString(), record.Version);
+            if (result.IsConflict)
+                throw new TestDataConflictException(ConflictMessage);
+
+            return (result, reset);
+        }
+
+        private static JsonObject FullRow(TestDataSectionSchema section, JsonObject source)
+        {
+            var row = new JsonObject();
+            foreach (var field in section.Fields)
+                row[field.Name] = source.TryGetPropertyValue(field.Name, out var v) && v != null ? v.DeepClone() : Placeholder(field);
+            return row;
+        }
+
+        private static JsonObject DefaultRow(TestDataSectionSchema section, Dictionary<string, string?>? defaults)
+        {
+            var row = new JsonObject();
+            foreach (var field in section.Fields)
+                row[field.Name] = DefaultValue(field, defaults);
+            return row;
+        }
+
+        private static JsonNode? DefaultValue(TestDataFieldSchema field, Dictionary<string, string?>? defaults)
+        {
+            if (defaults != null && defaults.TryGetValue(field.Name, out var raw) && !string.IsNullOrEmpty(raw))
+            {
+                try { return ToTypedValue(field, raw, "", null); }
+                catch (TestDataValidationException) { }
+            }
+            return Placeholder(field);
+        }
+
+        private static JsonNode? Placeholder(TestDataFieldSchema field)
+        {
+            if (field.Nullable) return null;
+            return field.Type switch
+            {
+                "integer" => JsonValue.Create(0L),
+                "decimal" => JsonValue.Create(0m),
+                "boolean" => JsonValue.Create(false),
+                "date" => JsonValue.Create("0001-01-01"),
+                "enum" => field.Options?.Count > 0 ? JsonValue.Create(field.Options[0]) : null,
+                _ => null
+            };
+        }
+
         private const string ConflictMessage =
             "This test case's data was changed somewhere else (another tab or user) since you opened it. Reload to get the latest, then save again.";
 
@@ -284,7 +472,10 @@ namespace AutomationAPI.Repositories
             switch (field.Type)
             {
                 case "integer":
-                    return long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var l) ? JsonValue.Create(l) : Fail("whole number");
+                    if (!long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var l)) return Fail("whole number");
+                    if ((field.Min.HasValue && l < field.Min) || (field.Max.HasValue && l > field.Max))
+                        return Fail($"whole number in range {field.Min}..{field.Max}");
+                    return JsonValue.Create(l);
                 case "decimal":
                     return decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var d) ? JsonValue.Create(d) : Fail("number");
                 case "date":

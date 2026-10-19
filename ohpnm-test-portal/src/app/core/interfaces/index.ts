@@ -154,6 +154,35 @@ export interface ITestDataFieldSchema {
   type: TestDataFieldType;
   nullable: boolean;
   options?: string[] | null;
+  min?: number | null;
+  max?: number | null;
+}
+
+export interface ITestDataEffectiveDocument {
+  version?: number | null;
+  document: Record<string, unknown>;
+  savedSections: string[];
+}
+
+export interface ITestDataJsonSaveRequest {
+  assignmentTestCaseId: number;
+  environmentId: number;
+  sectionName?: string | null;
+  json: string;
+  expectedVersion?: number | null;
+}
+
+export interface ITestDataJsonSaveResult {
+  version?: number | null;
+  conversions: string[];
+  sections: string[];
+}
+
+export interface ITestDataResetRequest {
+  assignmentTestCaseId: number;
+  environmentId: number;
+  sectionName?: string | null;
+  expectedVersion?: number | null;
 }
 
 export interface ITestDataSectionSchema {

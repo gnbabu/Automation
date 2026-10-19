@@ -225,6 +225,98 @@
   margin-bottom: 8px;
 }
 
+.view-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1.5px solid #d8d8e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.view-switch button {
+  border: none;
+  background: #ffffff;
+  color: #4b5563;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.view-switch button + button {
+  border-left: 1.5px solid #d8d8e0;
+}
+
+.view-switch button.active {
+  background: #f3e9fa;
+  color: #4a2762;
+  font-weight: 600;
+}
+
+.json-editor {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  white-space: pre;
+  overflow: auto;
+  min-height: 280px;
+  resize: vertical;
+  background: #fbfbfd;
+}
+
+.json-messages {
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-size: 0.83rem;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.json-messages ul {
+  padding-left: 18px;
+  font-family: Consolas, 'Courier New', monospace;
+}
+
+.json-errors {
+  border-left: 4px solid #dc3545;
+  background: #fdf2f3;
+  color: #842029;
+}
+
+.json-conversions {
+  border-left: 4px solid #f0ad4e;
+  background: #fff8ec;
+  color: #7a4b00;
+}
+
+.json-applied {
+  border-left: 4px solid #22a35c;
+  background: #f0faf4;
+  color: #166534;
+}
+
+label.copy-btn {
+  cursor: pointer;
+}
+
+.reset-btn {
+  border: 1.5px solid #b91c1c;
+  color: #b91c1c;
+  background: transparent;
+  border-radius: 8px;
+  padding: 0 14px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.reset-btn:hover {
+  background: #fdf2f3;
+}
+
 .btn-purple {
   background-color: #6c3483;
   color: white;

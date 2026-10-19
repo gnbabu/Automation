@@ -58,6 +58,110 @@
       </small>
     </div>
 
+    <div class="view-switch mb-3" role="tablist" aria-label="Editor view">
+      <button type="button" role="tab" [class.active]="view === 'form'" [attr.aria-selected]="view === 'form'" (click)="setView('form')">
+        <i class="bi bi-ui-checks-grid me-1"></i> Form
+      </button>
+      <button type="button" role="tab" [class.active]="view === 'section'" [attr.aria-selected]="view === 'section'" (click)="setView('section')">
+        <i class="bi bi-braces me-1"></i> Section JSON
+      </button>
+      <button type="button" role="tab" [class.active]="view === 'whole'" [attr.aria-selected]="view === 'whole'" (click)="setView('whole')">
+        <i class="bi bi-filetype-json me-1"></i> Whole request JSON
+      </button>
+    </div>
+
+    <ng-container *ngIf="view !== 'form'">
+      <div class="tdm-table-header">
+        <h6 class="mb-0 fw-bold">
+          {{ jsonScopeLabel }} <span class="text-muted fw-normal small">JSON &middot; {{ schema.flowName }}</span>
+        </h6>
+        <span class="field-count-badge" *ngIf="isJsonDirty">Unsaved changes</span>
+      </div>
+      <p class="small text-muted mb-2" *ngIf="view === 'whole'">
+        Must match the {{ schema.flowName }} model. Each section in the JSON replaces that section; sections left out stay as they are.
+      </p>
+      <p class="small text-muted mb-2" *ngIf="view === 'section'">
+        {{ section.isList ? 'An array of rows - [ { ... }, { ... } ].' : 'An object - { "Field": value }.' }} Must match the model.
+      </p>
+
+      <div class="text-muted small mb-2" *ngIf="jsonLoading"><i class="bi bi-hourglass-split me-1"></i>Loading JSON...</div>
+      <textarea
+        class="form-control json-editor"
+        [class.is-invalid]="jsonErrors.length || serverErrors.length"
+        spellcheck="false"
+        rows="18"
+        [attr.aria-label]="jsonScopeLabel + ' JSON'"
+        [(ngModel)]="jsonText"
+        (ngModelChange)="onJsonChange()"
+        [readonly]="readOnly"
+      ></textarea>
+
+      <div class="json-messages json-errors" *ngIf="jsonErrors.length || serverErrors.length" role="alert">
+        <strong><i class="bi bi-x-octagon me-1"></i>{{ (serverErrors.length ? serverErrors : jsonErrors).length }} problem(s) - nothing will be saved until fixed:</strong>
+        <ul class="mb-0">
+          <li *ngFor="let e of serverErrors.length ? serverErrors : jsonErrors">{{ e }}</li>
+        </ul>
+      </div>
+      <div class="json-messages json-conversions" *ngIf="!jsonErrors.length && !serverErrors.length && pendingConversions.length">
+        <strong><i class="bi bi-arrow-repeat me-1"></i>Will be converted to match the model on save (or click Format):</strong>
+        <ul class="mb-0">
+          <li *ngFor="let c of pendingConversions">{{ c }}</li>
+        </ul>
+      </div>
+      <div class="json-messages json-applied" *ngIf="appliedConversions.length">
+        <strong><i class="bi bi-check2-circle me-1"></i>Saved. Converted to match the model:</strong>
+        <ul class="mb-0">
+          <li *ngFor="let c of appliedConversions">{{ c }}</li>
+        </ul>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap align-items-center mt-3">
+        <button type="button" class="copy-btn" (click)="formatJson()" [disabled]="!jsonText" *ngIf="!readOnly">
+          <i class="bi bi-text-indent-left me-1"></i> Format
+        </button>
+        <button type="button" class="copy-btn" (click)="resetEdits()" [disabled]="!isJsonDirty" *ngIf="!readOnly">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Reset edits
+        </button>
+        <button type="button" class="copy-btn" (click)="downloadJson()" [disabled]="!jsonText">
+          <i class="bi bi-download me-1"></i> Download .json
+        </button>
+        <label class="copy-btn mb-0" *ngIf="!readOnly" tabindex="0" (keydown.enter)="jsonFile.click()">
+          <i class="bi bi-upload me-1"></i> Upload .json
+          <input #jsonFile type="file" accept=".json,application/json" class="d-none" (change)="onJsonFileSelected($event)" />
+        </label>
+        <span class="flex-grow-1"></span>
+        <button
+          type="button"
+          class="reset-btn"
+          *ngIf="!readOnly && view === 'whole' && configuredCount > 0"
+          (click)="resetToDefaults()"
+        >
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Reset all to defaults
+        </button>
+        <button
+          type="button"
+          class="reset-btn"
+          *ngIf="!readOnly && view === 'section' && isConfigured(section)"
+          (click)="resetToDefaults(section)"
+        >
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Reset section to default
+        </button>
+        <button
+          type="button"
+          class="btn-purple"
+          *ngIf="!readOnly"
+          [disabled]="isSaving || jsonLoading || !!jsonErrors.length"
+          (click)="saveJson()"
+        >
+          <i class="bi bi-save me-1"></i> {{ view === 'whole' ? 'Save all' : 'Save ' + section.sectionName }}
+        </button>
+      </div>
+      <div class="alert alert-warning py-2 mt-3 mb-0" *ngIf="readOnly">
+        You have Viewer (read-only) access. You can view and download the JSON, but not save or upload.
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="view === 'form'">
     <div class="tdm-table-header">
       <h6 class="mb-0 fw-bold">{{ section.sectionName }}</h6>
       <span class="field-count-badge">
@@ -169,12 +273,21 @@
         </button>
       </div>
     </div>
+    </ng-container>
   </div>
 
-  <div class="text-end" *ngIf="selectedSection">
-    <div class="alert alert-warning py-2 mb-2 text-start" *ngIf="readOnly">
+  <div class="d-flex justify-content-end gap-2 flex-wrap" *ngIf="selectedSection && view === 'form'">
+    <div class="alert alert-warning py-2 mb-2 text-start w-100" *ngIf="readOnly">
       You have Viewer (read-only) access. Saving test data is disabled.
     </div>
+    <button
+      type="button"
+      class="reset-btn"
+      *ngIf="!readOnly && isConfigured(selectedSection)"
+      (click)="resetToDefaults(selectedSection)"
+    >
+      <i class="bi bi-arrow-counterclockwise me-1"></i> Reset section to default
+    </button>
     <button class="btn-purple" type="button" [disabled]="readOnly || isSaving" (click)="save()">
       <i class="bi bi-save me-1"></i> Save {{ selectedSection.sectionName }}
     </button>

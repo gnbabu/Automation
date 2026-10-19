@@ -23,6 +23,8 @@ namespace AutomationAPI.Repositories.Models
         public string Type { get; set; } = "text";
         public bool Nullable { get; set; }
         public List<string>? Options { get; set; }
+        public long? Min { get; set; }
+        public long? Max { get; set; }
     }
 
     public class TestDataTestCase
@@ -90,6 +92,30 @@ namespace AutomationAPI.Repositories.Models
         public string? FromClass { get; set; }
         public string? FromMethod { get; set; }
         public int? FromEnvironmentId { get; set; }
+        public long? ExpectedVersion { get; set; }
+    }
+
+    public class TestDataEffectiveDocument
+    {
+        public long? Version { get; set; }
+        public System.Text.Json.Nodes.JsonObject Document { get; set; } = new();
+        public List<string> SavedSections { get; set; } = new();
+    }
+
+    public class TestDataJsonSaveRequest
+    {
+        public int AssignmentTestCaseId { get; set; }
+        public int EnvironmentId { get; set; }
+        public string? SectionName { get; set; }
+        public string Json { get; set; } = "";
+        public long? ExpectedVersion { get; set; }
+    }
+
+    public class TestDataResetRequest
+    {
+        public int AssignmentTestCaseId { get; set; }
+        public int EnvironmentId { get; set; }
+        public string? SectionName { get; set; }
         public long? ExpectedVersion { get; set; }
     }
 
