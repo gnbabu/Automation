@@ -110,7 +110,21 @@ namespace AutomationAPI.Repositories.TestRunner
                 wasIsolated = false;
             }
 
+            LogFailureStackTraces(runResult);
             return ParseRunResults(runResult, wasIsolated);
+        }
+
+        private void LogFailureStackTraces(XmlNode runResult)
+        {
+            foreach (XmlNode failure in runResult.SelectNodes("//*[failure/stack-trace]")!)
+            {
+                var stackTrace = failure.SelectSingleNode("failure/stack-trace")?.InnerText;
+                if (string.IsNullOrWhiteSpace(stackTrace)) continue;
+                _logger.LogWarning("Test failure in {Name}: {Message}\n{StackTrace}",
+                    failure.Attributes?["fullname"]?.Value ?? failure.Attributes?["name"]?.Value,
+                    failure.SelectSingleNode("failure/message")?.InnerText?.Trim(),
+                    stackTrace.Trim());
+            }
         }
 
         private XmlNode RunPackage(string dllPath, TestRunRequest request, TestFilter filter, bool isolated)

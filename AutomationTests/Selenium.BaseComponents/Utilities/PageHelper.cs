@@ -197,6 +197,32 @@ namespace Selenium.BaseComponents.Utilities
             catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
 
+        public static void WaitForPostback(this IWebDriver webDriver, TimeSpan timeout)
+        {
+            if (webDriver is not IJavaScriptExecutor js) return;
+            var deadline = DateTime.UtcNow + timeout;
+            while (DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    var busy = js.ExecuteScript(
+                        "if (document.readyState !== 'complete') return true;" +
+                        "try { return !!(window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager && " +
+                        "Sys.WebForms.PageRequestManager.getInstance().get_isInAsyncPostBack()); } catch (e) { return false; }");
+                    if (busy is bool b && !b) return;
+                }
+                catch (UnhandledAlertException)
+                {
+                    return;
+                }
+                catch (WebDriverException)
+                {
+                    return;
+                }
+                Thread.Sleep(200);
+            }
+        }
+
         /// <summary>
         /// Wait until the web element is not visible in the DOM.
         /// </summary>

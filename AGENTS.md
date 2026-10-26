@@ -4436,3 +4436,25 @@ notes -> attachments (file must exist on the test machine) -> Save. Dates are ty
 `MM/dd/yyyy`. `SubmitPAProfessional` defaults hold the recorded values (provider 2422659,
 recipient 102420808299, 2 diagnoses, 2 service lines). Saved test-case data overrides the
 defaults - use "Reset all to defaults" to run with the recorded values.
+
+## Stale elements and parallel test runs
+- **Cause of the stale errors:** Bulk Run was sequential, and each run already had its own process and browser. The stale errors came from holding `IWebElement` references across ASP.NET WebForms (UpdatePanel) postbacks: the login flow found the Password box and Login button straight after clicking Next, and `SmartElement` only checked staleness when fetching. A busy app server widens that timing gap.
+- **`SmartElement` actions** (`Click`, `Set`, `Clear`, `SendKeys`, `Text`, `GetAttribute`, `SelectByText`, `Displayed`…) wait for any postback to finish, then re-find the element by locator and retry up to 3 times on `StaleElementReferenceException`. A click that is intercepted falls back to a JS click. Prefer these over `.Element.Click()`.
+- **`PageHelper.WaitForPostback(driver, timeout)`** waits for `document.readyState == 'complete'` and `Sys.WebForms.PageRequestManager.get_isInAsyncPostBack() == false`. It returns straight away if an alert is open; it never accepts or dismisses alerts, because the Save steps check them.
+- **`LoginService.Login`** looks up each element just before using it, waits for the Password box and the terms checkbox, and retries the whole login once on a stale, timeout or missing-element error.
+- **`ProfessionalPAPage` helpers** (`Click`, `Type`, `Select`, `ClickVisibleLink`, `ClickLinkInPopup`, `ClickButtonInPopup`) run through `Stable()`: postback wait, then the action, retried on stale, then another postback wait. Its waits ignore stale and missing-element errors while polling.
+- **Isolated browser profiles:** every Chrome/Edge session uses its own temporary `--user-data-dir` under `%TEMP%\ohpnm-browser-profiles\`, which `WebDriverService.DisposeWebDriver` deletes. Parallel browsers never share cookies or sessions.
+- **Parallel queue:** `TestExecution:MaxParallelRuns` in the API's appsettings. The default is 1, which keeps the old one-at-a-time behaviour.
+  - `TestQueueWorker` starts up to N queue items at once, each in its own DI scope and NUnit runner. It wakes as soon as a run finishes, keeps going if reading the queue fails, and waits for running items on shutdown.
+  - `QueueRunScheduler` (unit-tested in `AutomationAPI.Tests/QueueRunSchedulerTests.cs`) enforces the limit, never reserves an item twice, and allows **only one run per login user at a time**. The key is `LoginUserId`, or the environment's default account when there is none. The application under test can end a session when the same account logs in elsewhere, which produces stale or missing elements.
+  - Recommended limit 2–4, depending on server CPU and RAM.
+  - Runs that fall back to in-process execution (bare DLL without a full publish output) share the API process, so isolated runs are strongly preferred when running in parallel.
+- **Deployment:** these changes live in the shared `Selenium.BaseComponents.dll`. Each release folder needs the rebuilt DLL to benefit; so far only REL-54 has it.
+- **Account lock key:** the scheduler locks on **environment + login user name** (`LoginUserName`, returned by `usp_GetPendingExecutionQueues` through `Database/ParallelRuns_LoginUserName_Migration.sql`), not on `LoginUserId`. E2EP3 has several LoginUser rows (4, 7, 9, 10) for the same `autotechadmin` account. If there's no user name, it falls back to `LoginUserId`, then to the environment's default.
+- **Run Now / Bulk Run / schedules** all insert into `aut.TestCaseExecutionQueue`, so the same parallel rules apply to all of them.
+- **Verified 2026-10-26** with `TestExecution__MaxParallelRuns=3` and three Run Now items:
+  - TC_PA_PROF_01 (autotechadmin) and TC_PA_PROF_02 (test1) ran at the same time, in separate browsers and profiles.
+  - TCDentalPASave (autotechadmin via LoginUser 9) stayed Queued until TC_PA_PROF_01 finished.
+  - Both runs' profile folders were deleted afterwards. Profile folders older than 12 hours (left by killed runs) are swept when the next browser starts.
+- **Failed tests' stack traces** are now logged to the API console by `NUnitEngineTestRunner.LogFailureStackTraces`.
+- **Login failures** say which step timed out: user name box, password box, or terms checkbox. A missing terms checkbox usually means the stored password is wrong or expired.

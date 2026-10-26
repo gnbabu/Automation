@@ -132,6 +132,7 @@ namespace AutomationAPI.Repositories
                     Browser = reader.GetNullableString("Browser"),
                     AssignedUser = reader.GetNullableInt("AssignedUser"),
                     LoginUserId = reader.GetNullableInt("LoginUserId"),
+                    LoginUserName = reader.GetNullableString("LoginUserName"),
                     QueueStatus = reader.GetNullableString("QueueStatus"),
                     ExecutionDateTime = reader.GetNullableDateTime("ExecutionDateTime")
                 }

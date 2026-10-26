@@ -50,26 +50,18 @@ namespace Selenium.BaseComponents.Services
         {
             try
             {
-                _webDriver.Navigate().GoToUrl(loginUrl);
-                _webDriver.WaitUntilDocumentIsReady(TimeSpan.FromSeconds(5));
-
-                // Step 1: Enter username and click Next
-                var userNameElement = _webDriver.CreateSmartElement(By.XPath("//input[@id='ctl00_MainContent_Login1_UserName']")).Element;
-                var nextButton = _webDriver.CreateSmartElement(By.XPath("//input[@id='ctl00_MainContent_Login1_btnNext']")).Element;
-
-                userNameElement.Set(userName);
-                nextButton.Click();
-
-                // Step 2: Enter password and click Login (elements appear after Next click)
-                var passwordElement = _webDriver.CreateSmartElement(By.XPath("//input[@id='ctl00_MainContent_Login1_Password']")).Element;
-                var loginButton = _webDriver.CreateSmartElement(By.XPath("//input[@id='ctl00_MainContent_Login1_LoginButton']")).Element;
-
-                passwordElement.Set(password);
-                loginButton.Click();
-
-                // Step 3: Accept terms (checkbox appears after login)
-                var chkTerms = _webDriver.CreateSmartElement(By.XPath("//input[@id='ctl00_MainContent_chkTerms']")).Element;
-                chkTerms.Click();
+                for (var attempt = 1; ; attempt++)
+                {
+                    try
+                    {
+                        PerformLoginSteps(loginUrl, userName, password);
+                        break;
+                    }
+                    catch (Exception ex) when (attempt == 1 && ex is StaleElementReferenceException or WebDriverTimeoutException or NoSuchElementException)
+                    {
+                        Console.WriteLine($"Login attempt {attempt} failed ({ex.GetType().Name}: {ex.Message}). Retrying once.");
+                    }
+                }
 
                 if (_webDriver.Url.Contains("EmailVerification"))
                 {
@@ -85,6 +77,45 @@ namespace Selenium.BaseComponents.Services
             catch (Exception ex)
             {
                 throw new Exception($"Login failed: {ex.Message}", ex);
+            }
+        }
+
+        private void PerformLoginSteps(string loginUrl, string userName, string password)
+        {
+            var userNameBox = By.Id("ctl00_MainContent_Login1_UserName");
+            var nextButton = By.Id("ctl00_MainContent_Login1_btnNext");
+            var passwordBox = By.Id("ctl00_MainContent_Login1_Password");
+            var loginButton = By.Id("ctl00_MainContent_Login1_LoginButton");
+            var terms = By.Id("ctl00_MainContent_chkTerms");
+            var timeout = TimeSpan.FromSeconds(60);
+
+            _webDriver.Navigate().GoToUrl(loginUrl);
+            _webDriver.WaitUntilDocumentIsReady(TimeSpan.FromSeconds(5));
+
+            WaitForLoginStep(userNameBox, timeout, "The user name box didn't appear on the login page.");
+            _webDriver.CreateSmartElement(userNameBox).Set(userName);
+            _webDriver.CreateSmartElement(nextButton).Click();
+
+            _webDriver.WaitForPostback(timeout);
+            WaitForLoginStep(passwordBox, timeout, $"The password box didn't appear after entering user name '{userName}' and clicking Next.");
+            _webDriver.CreateSmartElement(passwordBox).Set(password);
+            _webDriver.CreateSmartElement(loginButton).Click();
+
+            _webDriver.WaitForPostback(timeout);
+            WaitForLoginStep(terms, timeout, $"The terms checkbox didn't appear after logging in as '{userName}'. The password stored for this login user may be wrong or expired.");
+            _webDriver.CreateSmartElement(terms).Click();
+            _webDriver.WaitForPostback(timeout);
+        }
+
+        private void WaitForLoginStep(By locator, TimeSpan timeout, string failureMessage)
+        {
+            try
+            {
+                _webDriver.WaitUntilElementIsVisibleAndReturn(locator, timeout);
+            }
+            catch (WebDriverTimeoutException ex)
+            {
+                throw new WebDriverTimeoutException($"{failureMessage} (waited {timeout.TotalSeconds:0} s)", ex);
             }
         }
 

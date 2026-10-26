@@ -244,14 +244,59 @@ namespace Selenium.BaseComponents.Utilities
         // Use the .Element property explicitly instead
 
         // Common element operations that automatically handle staleness
-        public void Click() => Element.Click();
-        public void Clear() => Element.Clear();
-        public void SendKeys(string text) => Element.SendKeys(text);
-        public string Text => Element.Text;
-        public bool Displayed => Element.Displayed;
-        public bool Enabled => Element.Enabled;
-        public bool Selected => Element.Selected;
-        public string GetAttribute(string name) => Element.GetAttribute(name);
+        public void Click() => Retry(e =>
+        {
+            try
+            {
+                e.Click();
+            }
+            catch (ElementClickInterceptedException)
+            {
+                ((IJavaScriptExecutor)_driver).ExecuteScript("arguments[0].click();", e);
+            }
+            return true;
+        });
+
+        public void Clear() => Retry(e => { e.Clear(); return true; });
+        public void SendKeys(string text) => Retry(e => { e.SendKeys(text); return true; });
+        public void Set(string text) => Retry(e => { e.Clear(); e.SendKeys(text ?? string.Empty); return true; });
+        public string Text => Retry(e => e.Text);
+        public bool Displayed => Retry(e => e.Displayed);
+        public bool Enabled => Retry(e => e.Enabled);
+        public bool Selected => Retry(e => e.Selected);
+        public string GetAttribute(string name) => Retry(e => e.GetAttribute(name));
+
+        public void SelectByText(string text) => Retry(e =>
+        {
+            new OpenQA.Selenium.Support.UI.SelectElement(e).SelectByText(text);
+            return true;
+        });
+
+        public const int MaxStaleRetries = 3;
+
+        private T Retry<T>(Func<IWebElement, T> action)
+        {
+            for (var attempt = 1; ; attempt++)
+            {
+                PageHelper.WaitForPostback(_driver, TimeSpan.FromSeconds(30));
+                var element = attempt == 1 ? Element : RefreshElement();
+                try
+                {
+                    return action(element);
+                }
+                catch (StaleElementReferenceException) when (attempt < MaxStaleRetries)
+                {
+                    _cachedElement = null;
+                    Thread.Sleep(300 * attempt);
+                }
+                catch (StaleElementReferenceException ex)
+                {
+                    var locator = _locatorFunc != null ? _locatorFunc() : _locator;
+                    throw new StaleElementReferenceException(
+                        $"Element {locator} kept going stale after {MaxStaleRetries} attempts (the page kept re-rendering it).", ex);
+                }
+            }
+        }
     }
 
     /// <summary>

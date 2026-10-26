@@ -15,6 +15,7 @@
         public string? Browser { get; set; }
         public int? AssignedUser { get; set; }
         public int? LoginUserId { get; set; }
+        public string? LoginUserName { get; set; }
         public string? QueueStatus { get; set; }
         public DateTime? ExecutionDateTime { get; set; }
     }

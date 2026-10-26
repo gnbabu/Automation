@@ -59,6 +59,8 @@ namespace Selenium.BaseComponents.Services
                 chromeOptions.AddArgument("--window-size=1920,1080");
             }
 
+            chromeOptions.AddArgument($"--user-data-dir={CreateProfileFolder()}");
+
             var service = ChromeDriverService.CreateDefaultService();
             var chromeDriver = new ChromeDriver(service, chromeOptions, TimeSpan.FromMinutes(5));
 
@@ -98,6 +100,8 @@ namespace Selenium.BaseComponents.Services
                 edgeOptions.AddArgument("--headless");
                 edgeOptions.AddArgument("--window-size=1920,1080");
             }
+
+            edgeOptions.AddArgument($"--user-data-dir={CreateProfileFolder()}");
 
             var service = EdgeDriverService.CreateDefaultService();
             var edgeDriver = new EdgeDriver(service, edgeOptions, TimeSpan.FromMinutes(5));
@@ -139,6 +143,59 @@ namespace Selenium.BaseComponents.Services
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error disposing WebDriver: {ex.Message}");
+                }
+            }
+            DeleteProfileFolder();
+        }
+
+        private string? _profileFolder;
+
+        private string CreateProfileFolder()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "ohpnm-browser-profiles");
+            DeleteAbandonedProfiles(root);
+            _profileFolder = Path.Combine(root, Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(_profileFolder);
+            return _profileFolder;
+        }
+
+        private static void DeleteAbandonedProfiles(string root)
+        {
+            if (!Directory.Exists(root)) return;
+            foreach (var folder in Directory.GetDirectories(root))
+            {
+                try
+                {
+                    if (Directory.GetLastWriteTimeUtc(folder) < DateTime.UtcNow.AddHours(-12))
+                        Directory.Delete(folder, true);
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+
+        private void DeleteProfileFolder()
+        {
+            if (string.IsNullOrEmpty(_profileFolder)) return;
+            for (var attempt = 0; attempt < 5; attempt++)
+            {
+                try
+                {
+                    if (Directory.Exists(_profileFolder)) Directory.Delete(_profileFolder, true);
+                    _profileFolder = null;
+                    return;
+                }
+                catch (IOException)
+                {
+                    Thread.Sleep(500);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    Thread.Sleep(500);
                 }
             }
         }

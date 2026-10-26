@@ -100,7 +100,27 @@ namespace TC.PriorAuthoriztion.Pages
         public IWebElement Visible(By by) =>
             SeleniumHelper.WaitUntilElementIsVisibleAndReturn(_driver, by, TimeoutConfiguration.Element);
 
-        public void Click(By by)
+        private void Stable(Action action)
+        {
+            for (var attempt = 1; ; attempt++)
+            {
+                SeleniumHelper.WaitForPostback(_driver, TimeSpan.FromSeconds(30));
+                try
+                {
+                    action();
+                    SeleniumHelper.WaitForPostback(_driver, TimeSpan.FromSeconds(30));
+                    return;
+                }
+                catch (StaleElementReferenceException) when (attempt < 3)
+                {
+                    Thread.Sleep(300 * attempt);
+                }
+            }
+        }
+
+        public void Click(By by) => Stable(() => ClickOnce(by));
+
+        private void ClickOnce(By by)
         {
             var element = SeleniumHelper.WaitUntilElementIsClickableAndReturn(_driver, by, TimeoutConfiguration.Element);
             try
@@ -113,9 +133,11 @@ namespace TC.PriorAuthoriztion.Pages
             }
         }
 
-        public void ClickVisibleLink(string text)
+        public void ClickVisibleLink(string text) => Stable(() => ClickVisibleLinkOnce(text));
+
+        private void ClickVisibleLinkOnce(string text)
         {
-            var wait = new WebDriverWait(_driver, TimeoutConfiguration.Element);
+            var wait = NewWait();
             var link = wait.Until(d => d.FindElements(LinkWithText(text)).FirstOrDefault(e => e.Displayed));
             ((IJavaScriptExecutor)_driver).ExecuteScript("arguments[0].scrollIntoView({block:'center'});", link);
             try
@@ -128,9 +150,11 @@ namespace TC.PriorAuthoriztion.Pages
             }
         }
 
-        public void ClickLinkInPopup(By popup, string text)
+        public void ClickLinkInPopup(By popup, string text) => Stable(() => ClickLinkInPopupOnce(popup, text));
+
+        private void ClickLinkInPopupOnce(By popup, string text)
         {
-            var wait = new WebDriverWait(_driver, TimeoutConfiguration.Element);
+            var wait = NewWait();
             var link = wait.Until(d =>
             {
                 var panel = d.FindElements(popup).FirstOrDefault(p => p.Displayed);
@@ -147,10 +171,12 @@ namespace TC.PriorAuthoriztion.Pages
             }
         }
 
-        public void ClickButtonInPopup(By popup, string label)
+        public void ClickButtonInPopup(By popup, string label) => Stable(() => ClickButtonInPopupOnce(popup, label));
+
+        private void ClickButtonInPopupOnce(By popup, string label)
         {
             var literal = XPathLiteral(label);
-            var wait = new WebDriverWait(_driver, TimeoutConfiguration.Element);
+            var wait = NewWait();
             var button = wait.Until(d =>
             {
                 var panel = d.FindElements(popup).FirstOrDefault(p => p.Displayed);
@@ -213,22 +239,34 @@ namespace TC.PriorAuthoriztion.Pages
         public void Type(By by, string? value, bool pressEnter = false)
         {
             if (string.IsNullOrWhiteSpace(value)) return;
-            var element = Visible(by);
-            element.Clear();
-            element.SendKeys(value);
-            if (pressEnter) element.SendKeys(Keys.Enter);
+            Stable(() =>
+            {
+                var element = Visible(by);
+                element.Clear();
+                element.SendKeys(value);
+            });
+            if (pressEnter) Stable(() => _driver.FindElement(by).SendKeys(Keys.Enter));
         }
 
         public void Select(By by, string? text)
         {
             if (string.IsNullOrWhiteSpace(text)) return;
-            var wait = new WebDriverWait(_driver, TimeoutConfiguration.Element);
-            wait.Until(d =>
+            Stable(() =>
             {
-                var select = new SelectElement(d.FindElement(by));
-                return select.Options.Any(o => o.Text.Trim() == text.Trim());
+                NewWait().Until(d =>
+                {
+                    var select = new SelectElement(d.FindElement(by));
+                    return select.Options.Any(o => o.Text.Trim() == text.Trim());
+                });
+                new SelectElement(_driver.FindElement(by)).SelectByText(text.Trim());
             });
-            new SelectElement(_driver.FindElement(by)).SelectByText(text.Trim());
+        }
+
+        private WebDriverWait NewWait(TimeSpan? timeout = null)
+        {
+            var wait = new WebDriverWait(_driver, timeout ?? TimeoutConfiguration.Element);
+            wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException), typeof(NoSuchElementException));
+            return wait;
         }
 
         public void ExpandSection(By header, By contentInside)
@@ -238,17 +276,11 @@ namespace TC.PriorAuthoriztion.Pages
             Visible(contentInside);
         }
 
-        public void WaitForValue(By by, TimeSpan timeout)
-        {
-            var wait = new WebDriverWait(_driver, timeout);
-            wait.Until(d => !string.IsNullOrEmpty(d.FindElement(by).GetAttribute("value")));
-        }
+        public void WaitForValue(By by, TimeSpan timeout) =>
+            NewWait(timeout).Until(d => !string.IsNullOrEmpty(d.FindElement(by).GetAttribute("value")));
 
-        public void WaitForText(By by, TimeSpan timeout)
-        {
-            var wait = new WebDriverWait(_driver, timeout);
-            wait.Until(d => !string.IsNullOrWhiteSpace(d.FindElement(by).Text));
-        }
+        public void WaitForText(By by, TimeSpan timeout) =>
+            NewWait(timeout).Until(d => !string.IsNullOrWhiteSpace(d.FindElement(by).Text));
 
         private static string XPathLiteral(string value) =>
             !value.Contains('\'') ? $"'{value}'"
