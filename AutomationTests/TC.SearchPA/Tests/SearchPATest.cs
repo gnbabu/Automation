@@ -28,7 +28,7 @@ namespace TC.PriorAuthSearch.Tests
     public class SearchPATest : BaseFeatureFixture
     {
         // AssignmentId/AssignmentTestCaseId are inherited from BaseFeatureFixture, which
-        // now populates them automatically from TestParameters - see AGENTS.md "Phase 3".
+        // now populates them automatically from TestParameters.
 
         public string? MethodName { get; set; }
 

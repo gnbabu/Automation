@@ -3,7 +3,7 @@
 -- (caller only got rows-affected via ExecuteNonQueryAsync) - now returns the generated
 -- ScreenshotId via SCOPE_IDENTITY(), so a caller can link a specific screenshot back to
 -- a specific TestCaseExecutionLog row via TestCaseExecutionLog.ScreenshotId (used by
--- BaseFeatureFixture.LogFailureIfAny's failure screenshot - see AGENTS.md). The bulk
+-- BaseFeatureFixture.LogFailureIfAny's failure screenshot). The bulk
 -- insert path (usp_InsertBulkTestScreenshots / BulkInsertScreenshotsAsync, used by every
 -- test class's own success-path TearDown) is unchanged - it still doesn't return IDs,
 -- since success-path screenshots were never linked to a specific log row and don't need

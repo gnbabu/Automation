@@ -6,7 +6,7 @@
 -- and selects all of these). Brought in line with usp_GetAllUsers's joins/columns.
 --
 -- SET QUOTED_IDENTIFIER ON for consistency with every other proc that touches aut.[User]
--- (see User_Self_Profile_Migration.sql / AGENTS.md) - not strictly required for a
+-- (see User_Self_Profile_Migration.sql) - not strictly required for a
 -- SELECT-only proc against the filtered-index table, but keeps this proc's baked-in
 -- setting correct in case anything here ever changes to a modification statement.
 SET QUOTED_IDENTIFIER ON

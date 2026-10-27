@@ -13,7 +13,7 @@ namespace TC.E2EP3Demo.SearchPA
 {
     // 6 real test cases against the real E2EP3 Search Prior Authorization page, reusing
     // the same Page Objects already proven in TC.SearchPA/Tests/SearchPATest.cs
-    // (physically copied into this project - see AGENTS.md). Each test pulls real data
+    // (physically copied into this project). Each test pulls real data
     // configured via Test Data Management (Flow "SearchPA", Section "SearchPA") instead
     // of the hard-coded "2422659" the original test used, and varies which criteria
     // field(s) drive the search.

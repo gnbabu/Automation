@@ -15,8 +15,7 @@ import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropd
 // There is no separate "Flow" entity/table anywhere in the backend - a Flow is just
 // the distinct set of FlowName values across aut.AutomationDataSections
 // (usp_get_AutomationFlowNames is literally "SELECT DISTINCT FlowName"). So "creating a
-// new Flow" here is really "creating a Section whose FlowName doesn't exist yet" - see
-// AGENTS.md "Flow & Section management" for the full backend investigation.
+// new Flow" here is really "creating a Section whose FlowName doesn't exist yet".
 @Component({
   selector: 'app-flow-section-management',
   standalone: true,

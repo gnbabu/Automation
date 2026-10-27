@@ -35,8 +35,8 @@ export class AddEditUserComponent implements OnInit {
   // Two-Factor - options are the exact same literal strings the original native
   // <select value="true"/value="false"> used (not real booleans) - user.twoFactor is
   // typed `boolean` but a plain `value="..."` attribute always coerces to a string at
-  // runtime once picked, same pre-existing behavior preserved deliberately here (see
-  // AGENTS.md "AppDropdown migration" - onSubmit's own `? true : false` coercion has a
+  // runtime once picked, same pre-existing behavior preserved deliberately here
+  // (onSubmit's own `? true : false` coercion has a
   // real, narrow pre-existing bug for the "No" case, left exactly as-is on request).
   twoFactorOptions = ['true', 'false'];
   twoFactorLabel = (opt: string) => (opt === 'true' ? 'Yes' : 'No');

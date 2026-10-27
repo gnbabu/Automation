@@ -13,8 +13,8 @@
 -- without re-uploading a photo every time. @PhoneNumber/@TimeZone are always set to
 -- whatever was submitted (including clearing them to NULL).
 --
--- aut.[User] has a filtered index (IX_User_ResetPasswordToken), so - same as aut.Release,
--- see AGENTS.md - any UPDATE against it requires QUOTED_IDENTIFIER ON. A stored procedure
+-- aut.[User] has a filtered index (IX_User_ResetPasswordToken), so - same as aut.Release
+-- - any UPDATE against it requires QUOTED_IDENTIFIER ON. A stored procedure
 -- bakes in whatever QUOTED_IDENTIFIER setting was active at CREATE time, so this must be
 -- set explicitly here rather than relying on the caller's session/sqlcmd's -I flag.
 SET QUOTED_IDENTIFIER ON

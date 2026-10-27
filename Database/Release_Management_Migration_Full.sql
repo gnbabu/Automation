@@ -6,7 +6,7 @@
   application implementation exactly (not an aspirational/superset schema).
   Use THIS file for new deployments; the separate Phase1/Phase2 files are
   kept only as a historical record of how the schema evolved, including
-  objects that were later removed (see Release_Management_Migration_Notes.md).
+  objects that were later removed.
 
   Purpose:
     Make aut.Release the ROOT BUSINESS CONTEXT while preserving all existing
@@ -43,7 +43,7 @@
     - Existing text columns (ReleaseName / Environment) are RETAINED for
       backward compatibility with current code / stored procedures.
 
-  Run order is top-to-bottom. See Release_Management_Migration_Notes.md.
+  Run order is top-to-bottom.
 ============================================================================*/
 
 SET NOCOUNT ON;
@@ -983,7 +983,7 @@ GO
 -- 7.13 also select AssignmentId (via ATC), threaded into TestParameters alongside
 --      AssignmentTestCaseId so an isolated test can populate both on itself for
 --      step-level log/screenshot uploads (e.g. TC.PriorAuthSearch's SaveTestCaseLog/
---      SaveMethodScreenShots) - see Phase 3 in AGENTS.md.
+--      SaveMethodScreenShots).
 CREATE OR ALTER PROCEDURE aut.usp_GetPendingExecutionQueues
 AS
 BEGIN

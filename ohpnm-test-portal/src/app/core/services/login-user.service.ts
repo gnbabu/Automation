@@ -11,7 +11,7 @@ export class LoginUserService {
 
   // Unfiltered - every login user for the environment, any owner. No longer called by
   // any part of the Portal's UI after the self-service change (kept, unused, rather
-  // than removed - see AGENTS.md).
+  // than removed).
   getByEnvironment(environmentId: number): Observable<ILoginUserModel[]> {
     return this.httpService.get<ILoginUserModel[]>(
       `LoginUser/environment/${environmentId}`

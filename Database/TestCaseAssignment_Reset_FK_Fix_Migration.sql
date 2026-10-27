@@ -22,7 +22,7 @@
 -- Verified none of AssignedTestCases/TestCaseExecutionQueue/TestScreenshots/
 -- TestCaseExecutionLogs/TestCaseAssignment have a filtered index, so QUOTED_IDENTIFIER
 -- isn't actually load-bearing here - set explicitly anyway per this project's established
--- convention (see AGENTS.md's aut.Release/aut.[User] notes) so this proc's baked-in
+-- convention so this proc's baked-in
 -- setting is never a foot-gun if a filtered index is ever added to any of these tables.
 SET QUOTED_IDENTIFIER ON
 GO

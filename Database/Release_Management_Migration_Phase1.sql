@@ -14,7 +14,7 @@
     - Existing text columns (ReleaseName / Environment) are RETAINED for
       backward compatibility with current code / stored procedures.
 
-  Run order is top-to-bottom. See Release_Management_Migration_Notes.md.
+  Run order is top-to-bottom.
 ============================================================================*/
 
 SET NOCOUNT ON;

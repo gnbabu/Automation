@@ -15,7 +15,7 @@ import {
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
 // Self-service: every user manages only their own login credential per environment -
-// no Portal User picker, no visibility into other users' credentials (see AGENTS.md).
+// no Portal User picker, no visibility into other users' credentials.
 // Reached from its own top-level sidebar tab ("Credential Configuration") - not nested
 // under a specific environment anymore, hence the on-page Environment dropdown below
 // (mirrors TestDataManagementComponent's exact "pick an environment first" pattern).

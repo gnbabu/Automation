@@ -121,8 +121,8 @@ namespace Selenium.BaseComponents.Pages
             // The queue item is now marked "InProgress" server-side by TestQueueWorker,
             // immediately before this isolated process is even started - more reliable
             // than a push from in here (which would never fire if this process failed to
-            // launch at all) and needs no API call/auth from the test's side. See
-            // AGENTS.md "Phase 3" for the reasoning; this used to push queueId/"InProgress"
+            // launch at all) and needs no API call/auth from the test's side.
+            // This used to push queueId/"InProgress"
             // via APIGatway.UpdateQueue, now retired.
             await ResolveCredentialsAndUrlAsync();
 
@@ -152,8 +152,8 @@ namespace Selenium.BaseComponents.Pages
             }
         }
 
-        // Resolution order (see AGENTS.md - "per-environment login users, selected
-        // explicitly at Run Now/Schedule time"):
+        // Resolution order (per-environment login users, selected
+        // explicitly at Run Now/Schedule time):
         //   1. Environment + LoginUserId available (queue-driven run): call the API.
         //      - RequiresAuthentication == false, or EnableSso == true (third-party/SSO
         //        auth in production - no login screen to automate against): skip login
@@ -167,7 +167,7 @@ namespace Selenium.BaseComponents.Pages
         //      Explorer run outside the queue pipeline, an environment with no
         //      EnvironmentUrl/LoginUser data configured yet, API unreachable, etc.):
         //      fail clearly instead of silently logging in with hard-coded credentials
-        //      (removed - see AGENTS.md "getting rid of hardcoded test project values").
+        //      (removed).
         //      No profile at all means this fixture was never meant to log in (matches
         //      today's existing "Username stays null" no-op behavior for that case).
         private async Task ResolveCredentialsAndUrlAsync()

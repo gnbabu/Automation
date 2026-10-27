@@ -447,8 +447,8 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
   // case - previously skipped entirely (defaulting to a hard-coded 'Chrome' with no
   // login user) whenever the target environment didn't require authentication. When it
   // does require authentication, resolves the current user's own configured login
-  // credentials (self-service - only ever their own, never someone else's, see
-  // AGENTS.md) and passes them to the dialog so its Login User field is shown/required;
+  // credentials (self-service - only ever their own, never someone else's)
+  // and passes them to the dialog so its Login User field is shown/required;
   // otherwise the dialog opens with an empty login user list (field hidden, same as
   // before). If auth is required but the current user has no credential configured yet,
   // calls onBlocked instead of ever opening the dialog - there is nothing to select, so
@@ -665,7 +665,7 @@ export class TestCaseExecutionPanelComponent implements OnInit, OnDestroy {
 
   // Checks the selected assignment's Release's environment - if it requires
   // authentication, resolves the current user's own configured login credentials
-  // (self-service, see AGENTS.md) for the Schedule dialog's dropdown. Returns an empty
+  // (self-service) for the Schedule dialog's dropdown. Returns an empty
   // array via onReady otherwise, in which case ScheduleTestcasesDialogComponent shows no
   // Login User field at all - matches today's behavior exactly for any environment that
   // doesn't need auth. If auth is required but the current user has no credential

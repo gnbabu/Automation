@@ -155,8 +155,8 @@ export class AppDropdownComponent implements ControlValueAccessor, OnChanges {
       // real type doesn't match the options' own type - e.g. AddEditUserComponent's
       // twoFactor: a real boolean (`false`, from the User model/backend) matched
       // against options deliberately kept as the literal strings 'true'/'false' (to
-      // preserve an existing native <select> string-coercion quirk on request - see
-      // AGENTS.md "AppDropdown migration"). Falls through to the original value
+      // preserve an existing native <select> string-coercion quirk on request).
+      // Falls through to the original value
       // unchanged if no option matches even loosely, same as before this fix.
       if (this.options.some((opt) => opt === value)) return value;
       const looseMatch = this.options.find(
@@ -171,7 +171,7 @@ export class AppDropdownComponent implements ControlValueAccessor, OnChanges {
     // correctly - e.g. a boolean/number value coming from the backend (JSON) being
     // matched against options whose bindValue intentionally mirrors an existing
     // native <select>'s plain `value="..."` attribute coercion (always a string) -
-    // see AGENTS.md "AppDropdown migration" for why some fields deliberately keep
+    // some fields deliberately keep
     // that pre-existing string-coercion behavior instead of being fixed to real types.
     return (
       this.options.find((opt) => this.getBoundValue(opt) === value) ??

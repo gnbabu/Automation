@@ -29,7 +29,7 @@ interface ITestDataRow {
   showValue: boolean;
 }
 
-// Simple keyword heuristic (not a real secrets feature - see AGENTS.md) used only to
+// Simple keyword heuristic (not a real secrets feature) used only to
 // decide whether a row's Value should default to masked, matching the same show/hide
 // eye-icon pattern already used on Login/Register.
 const SENSITIVE_KEY_PATTERN = /password|pwd|secret/i;

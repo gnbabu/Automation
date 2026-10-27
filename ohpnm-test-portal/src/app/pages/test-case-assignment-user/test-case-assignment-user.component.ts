@@ -213,7 +213,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
     'Failed',
     'Cancelled',
     // NUnit's own outcomes ([Ignore]/[Explicit] -> Skipped; unresolved assertion ->
-    // Inconclusive), now that the runner reports these honestly - see AGENTS.md.
+    // Inconclusive), now that the runner reports these honestly.
     'Skipped',
     'Inconclusive',
   ]);
@@ -335,7 +335,7 @@ export class TestCaseAssignmentUserComponent implements OnInit {
                       this.originallyAssignedIds = myAssignedIds;
 
                       // TestCases assigned to ANY user (reverted to the original,
-                      // pre-disable-checkbox behavior per explicit request - see AGENTS.md).
+                      // pre-disable-checkbox behavior per explicit request).
                       const allAssignedIds = new Set(
                         allAssigned.map((a) => a.testCaseId)
                       );

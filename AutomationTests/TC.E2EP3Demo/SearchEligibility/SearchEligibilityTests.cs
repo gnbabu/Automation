@@ -14,7 +14,7 @@ namespace TC.E2EP3Demo.SearchEligibility
     // TC.SearchEligibility/Tests/SearchEligiblityTest.cs (physically copied into this
     // project). Flow "SearchMemberEligiblity" / Section "SearchMemberEligiblity" had no
     // configured Test Data Management data before this session's Flow & Section
-    // Management work - see AGENTS.md.
+    // Management work.
     [TestFixture("TechAdmin")]
     public class SearchEligibilityTests : BaseFeatureFixture
     {

@@ -87,8 +87,8 @@ namespace TC.E2EP3Demo.DentalPA
             return dentalPA;
         }
 
-        // Full, faithful reproduction of the original DentalPA_Submit test - see
-        // AGENTS.md for why the whole multi-section form fill isn't hand-split further
+        // Full, faithful reproduction of the original DentalPA_Submit test - the whole
+        // multi-section form fill isn't hand-split further
         // (real risk of subtle bugs I have no way to verify against the live site).
         [Test]
         [Author("Vishu")]
@@ -239,7 +239,7 @@ namespace TC.E2EP3Demo.DentalPA
         }
 
         // Chains off the Patient Tracking Number captured by DentalPA_Submit/
-        // DentalPA_Save (see AGENTS.md's "ProcessModel=Separate" caveat on
+        // DentalPA_Save (see the "ProcessModel=Separate" caveat on
         // SearchEligibilityTests for when static chaining like this does/doesn't
         // survive across the Portal's isolated-per-test-case queue pipeline).
         [Test]

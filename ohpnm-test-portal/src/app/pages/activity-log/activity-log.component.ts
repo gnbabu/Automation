@@ -6,8 +6,8 @@ import { AuditLogService, UsersService } from '@services';
 import { DataGridComponent } from 'app/core/components/data-grid/data-grid.component';
 import { AppDropdownComponent } from 'app/core/components/app-dropdown/app-dropdown.component';
 
-// Fixed, known set of Action values actually written by the backend today (see
-// AGENTS.md's Audit Log section) - kept as a small hard-coded list rather than a
+// Fixed, known set of Action values actually written by the backend today
+// - kept as a small hard-coded list rather than a
 // distinct-values-seen-so-far endpoint (unlike Entity Type below) since a brand new
 // app install has logged nothing yet and would otherwise show an empty, useless filter.
 const KNOWN_ACTIONS = [

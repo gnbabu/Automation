@@ -6,7 +6,7 @@
 -- generalizing aut.ReleaseNotification, which is tied to ReleaseId specifically.
 --
 -- No automatic retry is implemented here - only a notification, so a human decides
--- whether to retry (see AGENTS.md). Recipients are the assigned user + all Admins,
+-- whether to retry. Recipients are the assigned user + all Admins,
 -- resolved at send time by TestExecutionNotificationService (mirrors
 -- ReleaseNotificationService's own Manager/Admin resolution).
 

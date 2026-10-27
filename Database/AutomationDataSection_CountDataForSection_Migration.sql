@@ -1,6 +1,6 @@
 -- AutomationDataSection_CountDataForSection_Migration.sql
 -- Idempotent (safe to re-run). Adds a small helper proc used only by the new delete
--- guard for Sections (see AGENTS.md - "Flow & Section management") - confirmed via
+-- guard for Sections - confirmed via
 -- sys.foreign_keys there is NO FK constraint at all between aut.AutomationData.
 -- SectionID and aut.AutomationDataSections, so deleting a Section that already has
 -- saved test data would otherwise silently orphan it forever (invisible in the UI from

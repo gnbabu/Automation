@@ -14,8 +14,7 @@ namespace TC.E2EP3Demo.Registration
 {
     // 6 real test cases against the real E2EP3 Registration wizard, all reusing the
     // exact same Page Objects already proven in TC.Registration/Tests/RegistrationTest.cs
-    // (physically copied into this project - see AGENTS.md "30 demo test cases" for why
-    // no project reference is used). Rather than surgically slicing that one ~1000-line,
+    // (physically copied into this project - no project reference is used). Rather than surgically slicing that one ~1000-line,
     // multi-role-switching (StateAdmin/EnrollmentSpecialist approval workflow) mega-test
     // into pieces - real risk of introducing subtle bugs I have no way to verify against
     // the live site - these are built from smaller, genuinely independent checkpoints in
