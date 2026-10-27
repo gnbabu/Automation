@@ -58,7 +58,8 @@ namespace AutomationAPI.Repositories.TestRunner
                             Description = GetProperty(testCaseNode, "Description"),
                             Priority = GetProperty(testCaseNode, "Priority"),
                             TestCaseId = GetProperty(testCaseNode, "TestCaseId"),
-                            TestDataFlow = GetProperty(testCaseNode, "TestDataFlow")
+                            TestDataFlow = GetProperty(testCaseNode, "TestDataFlow"),
+                            TestDataNotes = GetProperties(testCaseNode, "TestDataNote")
                         });
                     }
                 }
@@ -98,6 +99,28 @@ namespace AutomationAPI.Repositories.TestRunner
             }
 
             return "";
+        }
+
+        public static List<string> GetProperties(XmlNode testCaseNode, string propertyName)
+        {
+            var values = new List<string>();
+            var levels = new List<XmlNode>();
+            for (var node = testCaseNode; node != null && node.Attributes?["classname"] != null; node = node.ParentNode)
+                levels.Add(node);
+
+            for (var i = levels.Count - 1; i >= 0; i--)
+            {
+                var propNodes = levels[i].SelectNodes($"properties/property[@name='{propertyName}']");
+                if (propNodes == null) continue;
+                foreach (XmlNode propNode in propNodes)
+                {
+                    var value = propNode.Attributes?["value"]?.Value;
+                    if (!string.IsNullOrWhiteSpace(value) && !values.Contains(value))
+                        values.Add(value);
+                }
+            }
+
+            return values;
         }
     }
 }

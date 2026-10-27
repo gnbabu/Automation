@@ -67,11 +67,12 @@ namespace AutomationAPI.Repositories
                 throw new TestDataValidationException("The test case's release has no folder configured.");
 
             var libraries = await _testSuites.GetLibrariesAsync(assignment.ReleaseFolderPath);
-            var testDataFlow = FindTestDataFlow(libraries, assignment.LibraryName, assignment.ClassName, assignment.MethodName);
-            if (string.IsNullOrEmpty(testDataFlow))
+            var method = FindModelMethod(libraries, assignment.LibraryName, assignment.ClassName, assignment.MethodName);
+            if (method == null)
                 return null;
 
-            var schema = TestDataSchemaReader.Read(assignment.ReleaseFolderPath, testDataFlow);
+            var schema = TestDataSchemaReader.Read(assignment.ReleaseFolderPath, method.TestDataFlow);
+            var (notes, noteWarnings) = ParseNotes(schema, method.TestDataNotes);
 
             var synced = (await _repository.UpsertModelSectionsAsync(schema.FlowName, schema.Sections.Select(s => s.SectionName)))
                 .Where(s => s.SectionId.HasValue && s.SectionName != null)
@@ -81,7 +82,8 @@ namespace AutomationAPI.Repositories
             {
                 FlowName = schema.FlowName,
                 ModelType = schema.ModelType,
-                Warnings = schema.Warnings.ToList(),
+                Warnings = schema.Warnings.Concat(noteWarnings).ToList(),
+                Notes = notes,
                 Sections = schema.Sections.Select(s => new TestDataSectionSchema
                 {
                     SectionId = synced.TryGetValue(s.SectionName, out var id) ? id : 0,
@@ -495,15 +497,70 @@ namespace AutomationAPI.Repositories
             }
         }
 
-        private static string? FindTestDataFlow(IEnumerable<LibraryInfo> libraries, string libraryName, string className, string methodName)
+        private static string? FindTestDataFlow(IEnumerable<LibraryInfo> libraries, string libraryName, string className, string methodName) =>
+            FindModelMethod(libraries, libraryName, className, methodName)?.TestDataFlow;
+
+        private static LibraryMethodInfo? FindModelMethod(IEnumerable<LibraryInfo> libraries, string libraryName, string className, string methodName)
         {
             return libraries
                 .Where(l => l.LibraryName.Equals(libraryName, StringComparison.OrdinalIgnoreCase))
                 .SelectMany(l => l.Classes)
                 .Where(c => c.ClassName == className)
                 .SelectMany(c => c.Methods)
-                .FirstOrDefault(m => m.MethodName == methodName && !string.IsNullOrEmpty(m.TestDataFlow))
-                ?.TestDataFlow;
+                .FirstOrDefault(m => m.MethodName == methodName && !string.IsNullOrEmpty(m.TestDataFlow));
         }
+
+        public static (List<TestDataNote> Notes, List<string> Warnings) ParseNotes(TestDataFlowSchema schema, IEnumerable<string>? rawNotes)
+        {
+            var notes = new List<TestDataNote>();
+            var warnings = new List<string>();
+
+            foreach (var raw in rawNotes ?? Enumerable.Empty<string>())
+            {
+                TestDataNote note;
+                try
+                {
+                    using var json = JsonDocument.Parse(raw);
+                    var root = json.RootElement;
+                    note = new TestDataNote
+                    {
+                        Section = ReadString(root, "section"),
+                        Field = ReadString(root, "field"),
+                        Message = ReadString(root, "message") ?? ""
+                    };
+                }
+                catch (JsonException)
+                {
+                    note = new TestDataNote { Message = raw };
+                }
+
+                if (string.IsNullOrWhiteSpace(note.Message)) continue;
+
+                var section = note.Section == null ? null
+                    : schema.Sections.FirstOrDefault(s => s.SectionName == note.Section);
+                if (note.Section != null && section == null)
+                {
+                    warnings.Add($"TestDataNote: section \"{note.Section}\" isn't in {schema.FlowName} - shown as a general note.");
+                    note.Section = null;
+                    note.Field = null;
+                }
+                else if (note.Field != null && (section == null || section.Fields.All(f => f.Name != note.Field)))
+                {
+                    warnings.Add(section == null
+                        ? $"TestDataNote: field \"{note.Field}\" needs a section - shown as a general note."
+                        : $"TestDataNote: field \"{note.Field}\" isn't in section {section.SectionName} - shown as a section note.");
+                    note.Field = null;
+                }
+
+                notes.Add(note);
+            }
+
+            return (notes, warnings);
+        }
+
+        private static string? ReadString(JsonElement root, string name) =>
+            root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+                ? (string.IsNullOrWhiteSpace(value.GetString()) ? null : value.GetString()!.Trim())
+                : null;
     }
 }

@@ -9,6 +9,7 @@ import {
   ITestDataEffectiveDocument,
   ITestDataFieldSchema,
   ITestDataFlowSchema,
+  ITestDataNote,
   ITestDataSectionSchema,
   ITestDataTestCase,
   TestDataRow,
@@ -137,6 +138,38 @@ export class ModelTestDataComponent implements OnChanges {
 
   get otherEnvironments(): IEnvironmentModel[] {
     return this.environments.filter((e) => e.environmentId !== this.environment?.environmentId);
+  }
+
+  get notes(): ITestDataNote[] {
+    return this.schema?.notes ?? [];
+  }
+
+  get generalNotes(): ITestDataNote[] {
+    return this.notes.filter((n) => !n.section);
+  }
+
+  get sectionsWithNotes(): ITestDataSectionSchema[] {
+    return this.schema?.sections.filter((s) => this.hasNotes(s)) ?? [];
+  }
+
+  sectionNotes(section: ITestDataSectionSchema): ITestDataNote[] {
+    return this.notes.filter((n) => n.section === section.sectionName);
+  }
+
+  hasNotes(section: ITestDataSectionSchema): boolean {
+    return this.notes.some((n) => n.section === section.sectionName);
+  }
+
+  fieldNotes(section: ITestDataSectionSchema, field: ITestDataFieldSchema): ITestDataNote[] {
+    return this.notes.filter((n) => n.section === section.sectionName && n.field === field.name);
+  }
+
+  noteText(note: ITestDataNote): string {
+    return note.field ? `${note.field}: ${note.message}` : note.message;
+  }
+
+  notesTitle(notes: ITestDataNote[]): string {
+    return notes.map((n) => this.noteText(n)).join('\n');
   }
 
   isConfigured(section: ITestDataSectionSchema): boolean {

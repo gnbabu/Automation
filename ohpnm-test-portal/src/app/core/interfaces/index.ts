@@ -198,6 +198,13 @@ export interface ITestDataFlowSchema {
   modelType: string;
   sections: ITestDataSectionSchema[];
   warnings: string[];
+  notes?: ITestDataNote[];
+}
+
+export interface ITestDataNote {
+  section?: string | null;
+  field?: string | null;
+  message: string;
 }
 
 export type TestDataRow = Record<string, string | null>;

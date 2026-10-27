@@ -325,3 +325,50 @@ label.copy-btn {
   font-weight: 600;
   border: none;
 }
+
+.tdm-notes {
+  border: 1px solid #d6c3e6;
+  border-left: 4px solid #6c3483;
+  background: #f8f2fc;
+  border-radius: 6px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.875rem;
+  color: #3b2150;
+}
+
+.tdm-notes-title {
+  font-weight: 600;
+  color: #4a2762;
+  margin-bottom: 0.25rem;
+}
+
+.tdm-notes ul {
+  padding-left: 1.25rem;
+}
+
+.note-section-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #6c3483;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.section-chip .chip-note {
+  color: #6c3483;
+  margin-left: 0.15rem;
+}
+
+.field-note {
+  color: #6c3483;
+  cursor: help;
+  margin-left: 0.2rem;
+}
+
+.field-note-text {
+  font-size: 0.78rem;
+  color: #5f4b70;
+  margin: -0.15rem 0 0.3rem;
+}

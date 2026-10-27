@@ -8,9 +8,20 @@
 
 <ng-container *ngIf="schema && !loading">
   <div class="alert alert-warning py-2 small" *ngIf="schema.warnings.length">
-    <strong>Some model properties can't be edited here:</strong>
+    <strong>Warnings from the model in code:</strong>
     <ul class="mb-0">
       <li *ngFor="let w of schema.warnings">{{ w }}</li>
+    </ul>
+  </div>
+
+  <div class="tdm-notes mb-3" *ngIf="notes.length" role="note">
+    <div class="tdm-notes-title"><i class="bi bi-info-circle-fill me-1"></i>About this test case's data</div>
+    <ul class="mb-0">
+      <li *ngFor="let note of generalNotes">{{ note.message }}</li>
+      <li *ngFor="let section of sectionsWithNotes">
+        <button type="button" class="note-section-link" (click)="selectSection(section)">{{ section.sectionName }}</button>:
+        <span *ngFor="let note of sectionNotes(section); let last = last">{{ noteText(note) }}<ng-container *ngIf="!last"> &middot; </ng-container></span>
+      </li>
     </ul>
   </div>
 
@@ -40,6 +51,7 @@
         <i class="bi" [ngClass]="isConfigured(section) ? 'bi-check-circle-fill' : usesDefaults(section) ? 'bi-circle-half' : 'bi-circle'"></i>
         {{ section.sectionName }}
         <span class="chip-count" *ngIf="section.isList && savedRowCount(section) > 0">({{ savedRowCount(section) }})</span>
+        <i class="bi bi-info-circle-fill chip-note" *ngIf="hasNotes(section)" [title]="notesTitle(sectionNotes(section))" aria-label="Has notes"></i>
       </button>
     </div>
   </div>
@@ -56,6 +68,15 @@
         Used only when {{ testCase.testCaseId || testCase.methodName }} runs in {{ environment.environmentName }}.
         Specific to your account.
       </small>
+    </div>
+
+    <div class="tdm-notes section-notes mb-3" *ngIf="view !== 'whole' && hasNotes(section)" role="note">
+      <div class="tdm-notes-title"><i class="bi bi-info-circle-fill me-1"></i>Notes for {{ section.sectionName }}</div>
+      <ul class="mb-0">
+        <li *ngFor="let note of sectionNotes(section)">
+          <strong *ngIf="note.field">{{ note.field }}:</strong> {{ note.message }}
+        </li>
+      </ul>
     </div>
 
     <div class="view-switch mb-3" role="tablist" aria-label="Editor view">
@@ -176,7 +197,11 @@
 
     <div class="model-form" *ngIf="!section.isList">
       <div class="model-field" *ngFor="let field of section.fields">
-        <label class="form-label fw-semibold mb-1" [for]="'f-' + field.name">{{ field.name }}</label>
+        <label class="form-label fw-semibold mb-1" [for]="'f-' + field.name">
+          {{ field.name }}
+          <i class="bi bi-info-circle field-note" *ngIf="fieldNotes(section, field).length" [title]="notesTitle(fieldNotes(section, field))"></i>
+        </label>
+        <div class="field-note-text" *ngFor="let note of fieldNotes(section, field)">{{ note.message }}</div>
         <ng-container *ngTemplateOutlet="input; context: { row: rows[0], field: field, id: 'f-' + field.name }"></ng-container>
       </div>
     </div>
@@ -191,7 +216,10 @@
           <thead>
             <tr>
               <th class="row-num">#</th>
-              <th *ngFor="let field of section.fields">{{ field.name }}</th>
+              <th *ngFor="let field of section.fields">
+                {{ field.name }}
+                <i class="bi bi-info-circle field-note" *ngIf="fieldNotes(section, field).length" [title]="notesTitle(fieldNotes(section, field))"></i>
+              </th>
               <th class="row-actions" *ngIf="!readOnly"></th>
             </tr>
           </thead>

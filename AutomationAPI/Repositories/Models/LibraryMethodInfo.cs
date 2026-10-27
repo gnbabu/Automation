@@ -7,5 +7,6 @@
         public string Priority { get; set; }
         public string TestCaseId { get; set; }
         public string TestDataFlow { get; set; }
+        public List<string> TestDataNotes { get; set; } = new();
     }
 }

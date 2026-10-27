@@ -6,6 +6,14 @@ namespace AutomationAPI.Repositories.Models
         public string ModelType { get; set; } = "";
         public List<TestDataSectionSchema> Sections { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
+        public List<TestDataNote> Notes { get; set; } = new();
+    }
+
+    public class TestDataNote
+    {
+        public string? Section { get; set; }
+        public string? Field { get; set; }
+        public string Message { get; set; } = "";
     }
 
     public class TestDataSectionSchema

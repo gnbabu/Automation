@@ -14,6 +14,9 @@ namespace TC.PriorAuthoriztion.Tests
 {
     [TestFixture("TechAdmin")]
     [TestDataFlow(typeof(SubmitPAProfessional))]
+    [TestDataNote("Attachments", "Professional PAs need at least one attachment.")]
+    [TestDataNote("Attachments", "Use a full path that exists on the machine that runs the test, e.g. D:\\TestFiles\\xray.pdf.", Field = "FilePath")]
+    [TestDataNote("Requester", "Enter the phone number as 10 digits, no dashes.", Field = "ContactNumber")]
     public class SubmitPAProfessionalTest : BaseFeatureFixture
     {
         private TestCaseExecutionLog _testCaseExecutionLog = null!;
@@ -44,6 +47,9 @@ namespace TC.PriorAuthoriztion.Tests
         [Property("Description", "Save a Professional Prior Authorization with multiple diagnoses and no ordering provider")]
         [Property("Priority", "Medium")]
         [Property("TestCaseId", "TC_PA_PROF_02")]
+        [TestDataNote("This scenario saves a PA with several diagnoses and no ordering provider.")]
+        [TestDataNote("Diagnoses", "Needs at least 2 diagnosis rows.")]
+        [TestDataNote("OrderingProvider", "Not used by this test case.")]
         [CancelAfter(600000)]
         public void ProfessionalPA_SaveMultipleDiagnosesWithoutOrderingProvider()
         {

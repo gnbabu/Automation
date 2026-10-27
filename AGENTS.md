@@ -4467,3 +4467,22 @@ defaults - use "Reset all to defaults" to run with the recorded values.
 - **Second layer (works whatever the IIS configuration):** the Portal's `HttpService.put()` and `delete()` send **POST** with an `X-HTTP-Method-Override: PUT|DELETE` header. The API calls `app.UseHttpMethodOverride()` and then an explicit `app.UseRouting()`, so the override is applied before endpoint matching. Controllers keep their `[HttpPut]`/`[HttpDelete]` attributes, and real PUT/DELETE (Swagger, curl) still work. The CORS preflight allows the header (`AllowAnyHeader`).
   - **Verified locally:** POST without the header to a PUT route returns 405; POST with the override header returns 401 without a token, meaning the route matched.
   - **Keep the routing order:** don't move `UseRouting()` above `UseHttpMethodOverride()`.
+
+## Test data notes: `[TestDataNote]`
+- **Purpose:** information only, for whoever configures data in Test Data Management. There's no validation and nothing blocks Save or Run.
+- **Usage** (`Selenium.BaseComponents.Attributes.TestDataNoteAttribute`, `AllowMultiple`, method or class; class notes apply to every test in the fixture):
+  - `[TestDataNote("message")]`: general note;
+  - `[TestDataNote("Section", "message")]`: section note;
+  - `[TestDataNote("Section", "message", Field = "FieldName")]`: field note.
+- **How it reaches the Portal:**
+  - it's an NUnit `IApplyToTest` that adds a `TestDataNote` property whose value is JSON `{"section","field","message"}`;
+  - `ExploreXmlParser.GetProperties` collects every value, from the fixture down to the method, into `LibraryMethodInfo.TestDataNotes`;
+  - `TestDataService.ParseNotes` maps them into `TestDataFlowSchema.Notes`, returned by `GET /api/TestData/schema`.
+  - A note naming a section that isn't in the model becomes a general note plus a schema warning; an unknown field becomes a section note plus a warning. Plain text that isn't JSON becomes a general note.
+- **Portal (`model-test-data`):**
+  - an "About this test case's data" panel (section names are clickable);
+  - ⓘ on section chips with a tooltip;
+  - a "Notes for <section>" callout in the Form and Section JSON views;
+  - ⓘ plus helper text on fields.
+- **Old releases:** releases built before this simply have no notes.
+- **Unit tests:** `AutomationAPI.Tests/TestDataNotesTests.cs`. NUnit.Engine can't start inside the `dotnet test` host, so check real discovery through the running API instead.
