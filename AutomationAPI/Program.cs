@@ -179,6 +179,9 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
+app.UseHttpMethodOverride();
+app.UseRouting();
+
 // Use CORS policy
 app.UseCors("AllowAll");
 

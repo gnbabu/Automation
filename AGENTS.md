@@ -4458,3 +4458,12 @@ defaults - use "Reset all to defaults" to run with the recorded values.
   - Both runs' profile folders were deleted afterwards. Profile folders older than 12 hours (left by killed runs) are swept when the next browser starts.
 - **Failed tests' stack traces** are now logged to the API console by `NUnitEngineTestRunner.LogFailureStackTraces`.
 - **Login failures** say which step timed out: user name box, password box, or terms checkbox. A missing terms checkbox usually means the stored password is wrong or expired.
+
+## IIS deployment: 405 on PUT/DELETE
+- **Symptom:** on IIS, `PUT`/`DELETE` requests (Test Data save, Release/Environment/Login User/Users edit and delete, recurring schedules) return **405 Method Not Allowed**, while locally (Kestrel) they work.
+- **Cause:** IIS's WebDAV module/handler intercepts PUT and DELETE before ASP.NET Core sees them.
+- **Fix:** `AutomationAPI/web.config` removes `WebDAVModule` and the `WebDAV` handler. `dotnet publish` merges it into the published `web.config`, replacing `%LAUNCHER_PATH%`/`%LAUNCHER_ARGS%` with `dotnet .\AutomationAPI.dll`. Redeploy the API from a full publish so the server gets this `web.config`.
+- **Alternative if the file can't be changed:** uninstall the "WebDAV Publishing" Windows feature on the server.
+- **Second layer (works whatever the IIS configuration):** the Portal's `HttpService.put()` and `delete()` send **POST** with an `X-HTTP-Method-Override: PUT|DELETE` header. The API calls `app.UseHttpMethodOverride()` and then an explicit `app.UseRouting()`, so the override is applied before endpoint matching. Controllers keep their `[HttpPut]`/`[HttpDelete]` attributes, and real PUT/DELETE (Swagger, curl) still work. The CORS preflight allows the header (`AllowAnyHeader`).
+  - **Verified locally:** POST without the header to a PUT route returns 405; POST with the override header returns 401 without a token, meaning the route matched.
+  - **Keep the routing order:** don't move `UseRouting()` above `UseHttpMethodOverride()`.

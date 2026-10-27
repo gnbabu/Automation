@@ -64,8 +64,8 @@ export class HttpService {
   ): Observable<T> {
     const payload = toApi ? toApi(model) : model;
     return this.http
-      .put<any>(this.fullUrl(url), payload, {
-        headers: this.getHeaders(),
+      .post<any>(this.fullUrl(url), payload, {
+        headers: this.getHeaders().set('X-HTTP-Method-Override', 'PUT'),
       })
       .pipe(
         map((res) => (fromApi ? fromApi(res) : res)),
@@ -75,8 +75,8 @@ export class HttpService {
 
   delete<T>(url: string): Observable<T> {
     return this.http
-      .delete<any>(this.fullUrl(url), {
-        headers: this.getHeaders(),
+      .post<any>(this.fullUrl(url), null, {
+        headers: this.getHeaders().set('X-HTTP-Method-Override', 'DELETE'),
       })
       .pipe(catchError(this.handleError.bind(this)));
   }
