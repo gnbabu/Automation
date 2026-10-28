@@ -21,6 +21,7 @@ namespace TC.PriorAuthoriztion.Pages
         public By DestinationPayer => Id("ddlAuthorization");
         public By Assignment => Id("ddlAssignment");
         public By ServiceType => Id("ddlServiceType");
+        public By DestinationPayerId => Id("ddlSubCapitaPayerIDs");
 
         public By MedicaidBillingNumber => Id("txtMedicaidBillingNumber");
         public By BirthDate => Id("txtBirthDate");
@@ -93,6 +94,19 @@ namespace TC.PriorAuthoriztion.Pages
         public By ProviderNotesHeader => Id("lblsepProvidersNotes");
         public By SaveButton => Id("btnSave");
         public By SaveMessage => Id("lblpriorautherror");
+        public By SubmitButton => Id("btnSubmit");
+        public static By HeaderField(string label) =>
+            By.XPath($"//*[normalize-space(text())={XPathLiteral(label + ":")}]/following::input[1]");
+        public By PaStatusField => HeaderField("PA Status");
+        public By PaNumberField => HeaderField("PA Number");
+        public By PaSubmissionDateField => HeaderField("PA Submission Date");
+        public By WarningPanel => Id("pnlWarningAcknowledgment");
+        public By WarningYes => Id("btnWarningAcknowledgmentYes");
+        public By SubmitSuccessPanel => Id("pnmPATXNSuccess");
+        public By SubmitFailurePanel => Id("pnmPATXNFailure");
+        public By SubmitFailureMessage => By.XPath($"//*[@id='{Prefix}grdTXNResponse']/tbody/tr/td[2]");
+        public By ValidationMessages => By.XPath(
+            "//*[(contains(@id,'Validator') or contains(@id,'lblError') or contains(@id,'lblerror') or contains(@class,'validation-summary') or contains(@class,'field-validation-error')) and normalize-space()]");
 
         public static By LinkWithText(string text) =>
             By.XPath($"//a[normalize-space()={XPathLiteral(text)}]");
@@ -196,7 +210,17 @@ namespace TC.PriorAuthoriztion.Pages
             }
         }
 
-        public bool IsDisplayed(By by) => _driver.FindElements(by).Any(e => e.Displayed);
+        public bool IsDisplayed(By by)
+        {
+            try
+            {
+                return _driver.FindElements(by).Any(e => e.Displayed);
+            }
+            catch (StaleElementReferenceException)
+            {
+                return false;
+            }
+        }
 
         public bool WaitUntilHidden(By by, TimeSpan timeout)
         {

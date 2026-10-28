@@ -4486,3 +4486,26 @@ defaults - use "Reset all to defaults" to run with the recorded values.
   - ⓘ plus helper text on fields.
 - **Old releases:** releases built before this simply have no notes.
 - **Unit tests:** `AutomationAPI.Tests/TestDataNotesTests.cs`. NUnit.Engine can't start inside the `dotnet test` host, so check real discovery through the running API instead.
+
+## TC_PA_PROF_01: Submit Professional PA (verified in E2E 2026-10-27, PA AUTHT0000004357)
+- **Assignment:** `ProfessionalPA_Save` keeps its method name so the existing assignment (190) still matches, but it now **submits**.
+  - E2E rejects G0299/G0151 under "Enteral Nutrition and Supplies" ("Procedure Code … is not valid for PA Assignment"). The default Assignment is "Home Health", which `SelectBestOption` matches to "State Plan Home Health". An exact label match wins, otherwise "contains"; the dropdown options are logged.
+- **Destination Payer ID** (`ddlSubCapitaPayerIDs`): uses the test-data value if given, otherwise the first real option.
+- **Attachment default:** `TestFiles\SampleAttachment.pdf` ships with the test project (copied to the output). Relative paths are resolved against the test DLL folder, so `TestFiles\` must be copied into the release folder with the DLLs.
+  - The test waits about 20 s after adding the attachment.
+  - On "Attachment Id: N … is not uploaded properly", it deletes and re-uploads the attachment, then submits again (up to 2 times).
+- **Recipient name cleared:** the attachment upload reloads the page and clears the recipient's First/Last Name boxes ("Recipient information is required"). `EnsureRecipientLoaded` re-runs the lookup before Submit.
+- **Submit flow:** click Submit.
+  - The warning popup (`pnlWarningAcknowledgment`: "may not require prior authorization", "recipient may not be eligible") is acknowledged, then the test waits up to 20 s for an outcome before clicking Submit again.
+  - Success panel `pnmPATXNSuccess`: "Transaction Successfully Submitted! … Prior Authorization Number: AUTHT…". Failure panel `pnmPATXNFailure` / `grdTXNResponse`.
+  - Any new page text matching error wording (not valid / is required / …) fails the run immediately with that text.
+- **After success:** requires "Transaction Successfully Submitted!" plus a PA number (e.g. "Prior Authorization Number: AUTHT0000004360") in the success panel, then closes it. Closing resets the form, so the header's PA Number and Submission Date are empty.
+  - **Not checked:** Search PA. It says "Newly submitted PAs may take up to 30 minutes to show up" and requires Payer Name, so the submission date can't be checked straight after submitting.
+  - **Grids:** checked only before Submit. Checking while the success panel is open was unreliable.
+- **Dates:** diagnosis dates can't be in the future ("Diagnosis date should not be future date"); only the service-line dates need a new window per run.
+- **Fixed service dates:** E2E refuses a second PA for the same member/provider/dates ("Valid authorization (AUTH…) is present…"). Dates stay fixed on purpose (no automatic shifting): change the service-line dates in Test Data Management before re-running; the failure message says so.
+- **E2E date rules (seen in runs):**
+  - Diagnosis dates can't be in the future.
+  - Service dates too far ahead (Feb 2027 when run on 10/28/2026) fail with "Provider not eligible to provide the service as of today's date". The test now catches "not eligible" immediately.
+  - Windows already used by AUTHT0000004357–4361: 09/01/2026–02/02/2027.
+- **"Unsubmitted PA will be saved for 72 hours" prompt during a slow Submit:** dismissed, then Submit is clicked again. A Patient Tracking Number (`PROF<yyMMddHHmmss>`) is generated when the test data has none.

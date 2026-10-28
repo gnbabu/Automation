@@ -15,7 +15,7 @@ namespace TC.PriorAuthoriztion.Tests
     [TestFixture("TechAdmin")]
     [TestDataFlow(typeof(SubmitPAProfessional))]
     [TestDataNote("Attachments", "Professional PAs need at least one attachment.")]
-    [TestDataNote("Attachments", "Use a full path that exists on the machine that runs the test, e.g. D:\\TestFiles\\xray.pdf.", Field = "FilePath")]
+    [TestDataNote("Attachments", "A full path on the machine that runs the test, or a path relative to the test DLL folder, e.g. TestFiles\\SampleAttachment.pdf (shipped with the tests).", Field = "FilePath")]
     [TestDataNote("Requester", "Enter the phone number as 10 digits, no dashes.", Field = "ContactNumber")]
     public class SubmitPAProfessionalTest : BaseFeatureFixture
     {
@@ -28,18 +28,26 @@ namespace TC.PriorAuthoriztion.Tests
 
         [Test]
         [Category("IntegrationTests")]
-        [Property("Description", "Save a Professional Prior Authorization from code-defined test data")]
+        [Property("Description", "Submit a Professional PA with two diagnoses, two service lines and an attachment")]
         [Property("Priority", "High")]
         [Property("TestCaseId", "TC_PA_PROF_01")]
-        [CancelAfter(600000)]
+        [TestDataNote("Diagnoses", "Needs at least 2 diagnosis rows.")]
+        [TestDataNote("ServiceDetails", "Needs at least 2 service lines.")]
+        [TestDataNote("ServiceDetails", "E2E rejects a second PA for the same member, provider and dates. Change the service line dates here before re-running.")]
+        [TestDataNote("Diagnoses", "Diagnosis dates can't be in the future.", Field = "DiagnosisDate")]
+        [CancelAfter(900000)]
         public void ProfessionalPA_Save()
         {
-            StartTest("TC_PA_PROF_01", "Save a Professional Prior Authorization from code-defined test data");
+            StartTest("TC_PA_PROF_01", "Submit a Professional PA with two diagnoses, two service lines and an attachment");
 
             var data = TestData.Load<SubmitPAProfessional>();
-            var page = FillProfessionalPA(data, includeOrderingProvider: true);
+            Assert.That(data.Diagnoses.Count, Is.GreaterThanOrEqualTo(2), "This scenario needs at least 2 rows in the Diagnoses section of its test data.");
+            Assert.That(data.ServiceDetails.Count, Is.GreaterThanOrEqualTo(2), "This scenario needs at least 2 rows in the ServiceDetails section of its test data.");
+            Assert.That(data.Attachments.Count, Is.GreaterThanOrEqualTo(1), "This scenario needs at least 1 row in the Attachments section of its test data.");
 
-            SaveAndVerify(page, data);
+            var page = FillProfessionalPA(data, includeOrderingProvider: true);
+            VerifyFormGrids(data, "before submitting");
+            SubmitAndVerify(page, data);
         }
 
         [Test]
@@ -128,6 +136,369 @@ namespace TC.PriorAuthoriztion.Tests
                 $"PA request saved for recipient {data.Recipient.MedicaidBillingNumber} with {data.Diagnoses.Count} diagnosis line(s) and {data.ServiceDetails.Count} service line(s)");
         }
 
+        private void VerifyFormGrids(SubmitPAProfessional data, string when)
+        {
+            var source = TestWebDriver.PageSource;
+            var missing = new List<string>();
+            missing.AddRange(data.Diagnoses.Where(d => !source.Contains(d.DiagnosisCode, StringComparison.OrdinalIgnoreCase))
+                .Select(d => $"diagnosis {d.DiagnosisCode}"));
+            missing.AddRange(data.ServiceDetails.Where(s => !source.Contains(s.ProcedureCode, StringComparison.OrdinalIgnoreCase))
+                .Select(s => $"service line {s.ProcedureCode}"));
+            missing.AddRange(data.Attachments.Select(a => Path.GetFileName(a.FilePath ?? ""))
+                .Where(name => name.Length > 0 && !source.Contains(name, StringComparison.OrdinalIgnoreCase))
+                .Select(name => $"attachment {name}"));
+
+            if (missing.Count > 0)
+            {
+                LogStep("Grid check failed", $"Not shown {when}: {string.Join(", ", missing)}");
+                Assert.Fail($"These lines aren't shown in their grids {when}: {string.Join(", ", missing)}");
+            }
+
+            LogStep("Grid check",
+                $"Shown {when}: diagnoses {string.Join(", ", data.Diagnoses.Select(d => d.DiagnosisCode))}; " +
+                $"service lines {string.Join(", ", data.ServiceDetails.Select(s => s.ProcedureCode))}; " +
+                $"attachments {string.Join(", ", data.Attachments.Select(a => Path.GetFileName(a.FilePath ?? "")))}");
+        }
+
+        private void SubmitAndVerify(ProfessionalPAPage page, SubmitPAProfessional data)
+        {
+            var js = (IJavaScriptExecutor)TestWebDriver;
+            if (data.Attachments.Count > 0)
+                WaitForAttachmentProcessing();
+            EnsureRecipientLoaded(page, data.Recipient);
+
+            var textBeforeSubmit = new HashSet<string>(PageTextLines(), StringComparer.OrdinalIgnoreCase);
+            js.ExecuteScript("arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", page.Visible(page.SubmitButton));
+            LogStep("Submit", "Clicked Submit");
+
+            var deadline = DateTime.UtcNow.AddMinutes(3);
+            var resubmitted = 0;
+            var reuploads = 0;
+            while (true)
+            {
+                if (DateTime.UtcNow > deadline)
+                {
+                    LogStep("Submit timed out", "No success or failure message appeared within 3 minutes of clicking Submit.");
+                    Assert.Fail("No success or failure message appeared within 3 minutes of clicking Submit.");
+                }
+
+                var alertText = HandleSubmitAlert();
+                if (alertText != null)
+                {
+                    LogStep("Submit message", alertText);
+                    if (alertText.Contains("will be saved in the system", StringComparison.OrdinalIgnoreCase) && resubmitted++ < 2)
+                    {
+                        PageHelperWaitForPostback();
+                        EnsureRecipientLoaded(page, data.Recipient);
+                        textBeforeSubmit = new HashSet<string>(PageTextLines(), StringComparer.OrdinalIgnoreCase);
+                        js.ExecuteScript("arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", page.Visible(page.SubmitButton));
+                        LogStep("Submit", "Dismissed the save prompt and clicked Submit again");
+                        deadline = DateTime.UtcNow.AddMinutes(3);
+                    }
+                    continue;
+                }
+
+                if (page.IsDisplayed(page.SubmitSuccessPanel) || !string.IsNullOrEmpty(FieldValue(page.PaNumberField)))
+                    break;
+
+                if (page.IsDisplayed(page.SubmitFailurePanel))
+                {
+                    var reason = TestWebDriver.FindElements(page.SubmitFailureMessage).FirstOrDefault()?.Text?.Trim();
+                    var panelText = TestWebDriver.FindElement(page.SubmitFailurePanel).Text.Trim();
+                    var message = string.IsNullOrEmpty(reason) ? panelText : reason;
+                    if (message.Contains("Valid authorization", StringComparison.OrdinalIgnoreCase))
+                        message += " - a PA already exists for these dates. Change the service line dates in Test Data Management before running again.";
+                    LogStep("Submission failed", message);
+                    Assert.Fail($"The PA was not submitted: {message}");
+                }
+
+                if (page.IsDisplayed(page.WarningPanel))
+                {
+                    var warning = TestWebDriver.FindElement(page.WarningPanel).Text.Trim();
+                    LogStep("Submit warning", $"Acknowledged: {warning}");
+                    js.ExecuteScript("arguments[0].click();", TestWebDriver.FindElement(page.WarningYes));
+                    page.WaitUntilHidden(page.WarningPanel, TimeoutConfiguration.Element);
+                    PageHelperWaitForPostback();
+
+                    var settleUntil = DateTime.UtcNow.AddSeconds(20);
+                    while (DateTime.UtcNow < settleUntil && !page.IsDisplayed(page.SubmitSuccessPanel) && !page.IsDisplayed(page.SubmitFailurePanel)
+                        && string.IsNullOrEmpty(FieldValue(page.PaNumberField)) && !page.IsDisplayed(page.WarningPanel)
+                        && !PageTextLines().Any(line => !textBeforeSubmit.Contains(line) && ErrorText.IsMatch(line)))
+                        Thread.Sleep(500);
+
+                    var outcomeShown = page.IsDisplayed(page.SubmitSuccessPanel) || page.IsDisplayed(page.SubmitFailurePanel)
+                        || !string.IsNullOrEmpty(FieldValue(page.PaNumberField)) || page.IsDisplayed(page.WarningPanel)
+                        || PageTextLines().Any(line => !textBeforeSubmit.Contains(line) && ErrorText.IsMatch(line));
+                    if (!outcomeShown && resubmitted++ < 2 && page.IsDisplayed(page.SubmitButton))
+                    {
+                        EnsureRecipientLoaded(page, data.Recipient);
+                        js.ExecuteScript("arguments[0].click();", TestWebDriver.FindElement(page.SubmitButton));
+                        LogStep("Submit", "Clicked Submit again after acknowledging the warnings");
+                    }
+                    continue;
+                }
+
+                var errors = VisibleValidationErrors(page);
+                errors.AddRange(PageTextLines().Where(line => !textBeforeSubmit.Contains(line) && ErrorText.IsMatch(line)));
+                if (errors.Count > 0)
+                {
+                    PageHelperWaitForPostback();
+                    errors = errors.Distinct().ToList();
+
+                    var notUploaded = errors.Select(e => NotUploadedAttachment.Match(e)).FirstOrDefault(m => m.Success);
+                    if (notUploaded != null && reuploads < 2 && errors.All(e => NotUploadedAttachment.IsMatch(e) || e.StartsWith("An asterisk", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        reuploads++;
+                        LogStep("Attachment re-upload", $"Attempt {reuploads}: {string.Join(" | ", errors)}");
+                        DeleteAttachment(page, notUploaded.Groups[1].Value);
+                        FillAttachments(page, data.Attachments);
+                        WaitForAttachmentProcessing();
+                        EnsureRecipientLoaded(page, data.Recipient);
+
+                        textBeforeSubmit = new HashSet<string>(PageTextLines(), StringComparer.OrdinalIgnoreCase);
+                        js.ExecuteScript("arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", page.Visible(page.SubmitButton));
+                        LogStep("Submit", $"Clicked Submit again after re-uploading the attachment (attempt {reuploads})");
+                        deadline = DateTime.UtcNow.AddMinutes(3);
+                        continue;
+                    }
+
+                    LogStep("Submission rejected", string.Join(" | ", errors));
+                    Assert.Fail($"The application rejected the submission: {string.Join(" | ", errors)}");
+                }
+
+                Thread.Sleep(500);
+            }
+
+            PageHelperWaitForPostback();
+            var successText = page.IsDisplayed(page.SubmitSuccessPanel)
+                ? TestWebDriver.FindElement(page.SubmitSuccessPanel).Text.Trim()
+                : "";
+            var status = FieldValue(page.PaStatusField);
+            LogStep("PA submitted", $"Status: {status}. {successText}".Trim());
+
+            var paNumber = FindPaNumber(successText);
+            if (string.IsNullOrEmpty(paNumber)) paNumber = FieldValue(page.PaNumberField);
+            if (string.IsNullOrEmpty(paNumber))
+            {
+                LogStep("PA number missing", $"Couldn't find a PA number after submitting. Success message: {successText}. {DescribeCandidates("PANum", "PANo", "PriorAuthNum", "AuthNum")}");
+                Assert.Fail($"The PA was submitted but no PA number was found. Success message: {successText}");
+            }
+
+            if (!successText.Contains("Successfully Submitted", StringComparison.OrdinalIgnoreCase))
+            {
+                LogStep("Submission not confirmed", $"PA {paNumber}: the success message wasn't shown. {successText}");
+                Assert.Fail($"PA {paNumber}: the success message wasn't shown.");
+            }
+
+            CloseSuccessPanel(page);
+
+            LogStep("Test case executed successfully...!",
+                $"PA {paNumber} submitted on {DateTime.Today:MM/dd/yyyy} (status Pend) for recipient {data.Recipient.MedicaidBillingNumber} with " +
+                $"{data.Diagnoses.Count} diagnoses, {data.ServiceDetails.Count} service lines and {data.Attachments.Count} attachment(s)");
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex ErrorText = new(
+            @"\b(is not valid|not valid for|is invalid|invalid\b|is required|are required|must be|must not|cannot|can not|not allowed|not eligible|failed|error)\b",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        private static readonly System.Text.RegularExpressions.Regex NotUploadedAttachment = new(
+            @"Attachment Id:\s*(\d+).*not uploaded properly", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        private void EnsureRecipientLoaded(ProfessionalPAPage page, RecipientInfo recipient)
+        {
+            PageHelperWaitForPostback();
+            if (!string.IsNullOrEmpty(FieldValue(page.RecipientFirstName)))
+                return;
+
+            LogStep("Recipient reload", "The recipient's name was cleared by a page reload - running the recipient lookup again before submitting");
+            FillRecipient(page, recipient);
+        }
+
+        private void WaitForAttachmentProcessing()
+        {
+            PageHelperWaitForPostback();
+            Thread.Sleep(TimeSpan.FromSeconds(20));
+            PageHelperWaitForPostback();
+        }
+
+        private void DeleteAttachment(ProfessionalPAPage page, string documentId)
+        {
+            var delete = By.XPath(
+                $"//td[normalize-space()='{documentId}']/ancestor::tr[1]//*[(self::input and normalize-space(@value)='Delete') or ((self::button or self::a) and normalize-space()='Delete')]");
+            var button = TestWebDriver.FindElements(delete).FirstOrDefault(e => e.Displayed);
+            if (button == null)
+            {
+                LogStep("Attachment re-upload failed", $"Couldn't find the Delete button for attachment {documentId}.");
+                Assert.Fail($"Couldn't find the Delete button for attachment {documentId}.");
+            }
+
+            ((IJavaScriptExecutor)TestWebDriver).ExecuteScript("arguments[0].click();", button);
+            for (var i = 0; i < 10 && AcceptAlertIfPresent() == null; i++) Thread.Sleep(300);
+            PageHelperWaitForPostback();
+
+            try
+            {
+                new OpenQA.Selenium.Support.UI.WebDriverWait(TestWebDriver, TimeoutConfiguration.Element)
+                    .Until(d => !d.FindElements(By.XPath($"//td[normalize-space()='{documentId}']")).Any(e => e.Displayed));
+            }
+            catch (WebDriverTimeoutException)
+            {
+                LogStep("Attachment re-upload failed", $"Attachment {documentId} is still in the grid after clicking Delete.");
+                Assert.Fail($"Attachment {documentId} is still in the grid after clicking Delete.");
+            }
+
+            LogStep("Attachment deleted", $"Deleted attachment {documentId}");
+        }
+
+        private IEnumerable<string> PageTextLines()
+        {
+            try
+            {
+                var text = TestWebDriver.FindElement(By.TagName("body")).Text ?? "";
+                return text.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
+            }
+            catch (WebDriverException)
+            {
+                return Enumerable.Empty<string>();
+            }
+        }
+
+        private string? FieldValue(By field)
+        {
+            try
+            {
+                var element = TestWebDriver.FindElements(field).FirstOrDefault();
+                var value = element?.GetAttribute("value")?.Trim();
+                return string.IsNullOrEmpty(value) ? null : value;
+            }
+            catch (WebDriverException)
+            {
+                return null;
+            }
+        }
+
+        private void PageHelperWaitForPostback() =>
+            Selenium.BaseComponents.Utilities.PageHelper.WaitForPostback(TestWebDriver, TimeSpan.FromSeconds(30));
+
+        private string? HandleSubmitAlert()
+        {
+            try
+            {
+                var alert = TestWebDriver.SwitchTo().Alert();
+                var text = alert.Text;
+                if (text.Contains("will be saved in the system", StringComparison.OrdinalIgnoreCase))
+                    alert.Dismiss();
+                else
+                    alert.Accept();
+                return text;
+            }
+            catch (NoAlertPresentException)
+            {
+                return null;
+            }
+        }
+
+        private string? AcceptAlertIfPresent()
+        {
+            try
+            {
+                var alert = TestWebDriver.SwitchTo().Alert();
+                var text = alert.Text;
+                alert.Accept();
+                return text;
+            }
+            catch (NoAlertPresentException)
+            {
+                return null;
+            }
+        }
+
+        private List<string> VisibleValidationErrors(ProfessionalPAPage page)
+        {
+            var errors = TestWebDriver.FindElements(page.ValidationMessages)
+                .Where(e => { try { return e.Displayed; } catch (StaleElementReferenceException) { return false; } })
+                .Select(e => e.Text.Trim())
+                .Where(t => t.Length > 0)
+                .Distinct()
+                .ToList();
+
+            var paError = TestWebDriver.FindElements(page.SaveMessage).FirstOrDefault(e => e.Displayed)?.Text?.Trim();
+            if (!string.IsNullOrEmpty(paError) && !paError.Contains("saved", StringComparison.OrdinalIgnoreCase)
+                && !paError.Contains("submitted", StringComparison.OrdinalIgnoreCase))
+                errors.Add(paError);
+
+            return errors;
+        }
+
+        private string? FindPaNumber(string successText)
+        {
+            var labelled = System.Text.RegularExpressions.Regex.Match(successText,
+                @"(PA|Prior\s*Auth(orization)?)\s*(Number|No\.?|#)\s*(is)?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\-]{4,})",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (labelled.Success) return labelled.Groups[5].Value;
+
+            var fieldValue = FieldValueById(id =>
+                (id.Contains("PANum", StringComparison.OrdinalIgnoreCase) || id.Contains("PANo", StringComparison.OrdinalIgnoreCase)
+                    || id.Contains("PriorAuthNum", StringComparison.OrdinalIgnoreCase))
+                && !id.EndsWith("txtPANumInst", StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(fieldValue)) return fieldValue;
+
+            var digits = System.Text.RegularExpressions.Regex.Match(successText, @"\b\d{7,}\b");
+            return digits.Success ? digits.Value : null;
+        }
+
+        private void CloseSuccessPanel(ProfessionalPAPage page)
+        {
+            if (!page.IsDisplayed(page.SubmitSuccessPanel)) return;
+
+            var close = TestWebDriver.FindElement(page.SubmitSuccessPanel)
+                .FindElements(By.XPath(".//input[@type='submit' or @type='button'][normalize-space(@value)='Close'] | .//button[normalize-space()='Close'] | .//a[normalize-space()='Close']"))
+                .FirstOrDefault(e => e.Displayed);
+            if (close == null) return;
+
+            ((IJavaScriptExecutor)TestWebDriver).ExecuteScript("arguments[0].click();", close);
+            PageHelperWaitForPostback();
+            page.WaitUntilHidden(page.SubmitSuccessPanel, TimeoutConfiguration.Element);
+        }
+
+        private string? FieldValueById(Func<string, bool> idMatches)
+        {
+            foreach (var element in TestWebDriver.FindElements(By.XPath("//*[@id]")))
+            {
+                try
+                {
+                    var id = element.GetAttribute("id") ?? "";
+                    if (!idMatches(id) || !element.Displayed) continue;
+                    var value = (element.TagName.Equals("input", StringComparison.OrdinalIgnoreCase)
+                        ? element.GetAttribute("value") : element.Text)?.Trim();
+                    if (!string.IsNullOrEmpty(value)) return value;
+                }
+                catch (StaleElementReferenceException)
+                {
+                }
+            }
+            return null;
+        }
+
+        private string DescribeCandidates(params string[] idParts)
+        {
+            var found = new List<string>();
+            foreach (var element in TestWebDriver.FindElements(By.XPath("//*[@id]")))
+            {
+                try
+                {
+                    var id = element.GetAttribute("id") ?? "";
+                    if (!idParts.Any(p => id.Contains(p, StringComparison.OrdinalIgnoreCase))) continue;
+                    var value = element.TagName.Equals("input", StringComparison.OrdinalIgnoreCase) ? element.GetAttribute("value") : element.Text;
+                    found.Add($"{id}={(value ?? "").Trim()}{(element.Displayed ? "" : " (hidden)")}");
+                }
+                catch (StaleElementReferenceException)
+                {
+                }
+            }
+            return found.Count == 0 ? "No candidate fields found on the page." : "Candidate fields: " + string.Join("; ", found.Take(15));
+        }
+
         private void OpenSubmitPriorAuthorization(ProviderHeaderInfomration header)
         {
             SidebarMenu.Click();
@@ -161,9 +532,71 @@ namespace TC.PriorAuthoriztion.Tests
             VerifyLabel(By.Id("ctl00_MainContent_ucRegProgressBar_lblProviderName2"), header.ProviderName, "Provider name");
 
             page.Select(page.DestinationPayer, header.DestinationPayer);
-            page.Select(page.Assignment, header.Assignment);
-            page.Select(page.ServiceType, header.ServiceType);
-            LogStep("Header Information", $"Professional PA: {header.DestinationPayer} / {header.Assignment} / {header.ServiceType}");
+            var assignment = SelectBestOption(page, page.Assignment, header.Assignment, "Assignment", fallbackToFirst: false);
+            var serviceType = SelectBestOption(page, page.ServiceType, header.ServiceType, "Service Type", fallbackToFirst: true);
+            var payerId = SelectDestinationPayerId(page, header.DestinationPayerId);
+            LogStep("Header Information", $"Professional PA: {header.DestinationPayer} / {assignment} / payer ID {payerId ?? "-"} / {serviceType}");
+        }
+
+        private string? SelectBestOption(ProfessionalPAPage page, By dropdown, string? wanted, string what, bool fallbackToFirst)
+        {
+            if (string.IsNullOrWhiteSpace(wanted)) return null;
+
+            string[] options = Array.Empty<string>();
+            try
+            {
+                new OpenQA.Selenium.Support.UI.WebDriverWait(TestWebDriver, TimeoutConfiguration.Element).Until(d =>
+                {
+                    options = new OpenQA.Selenium.Support.UI.SelectElement(d.FindElement(dropdown)).Options
+                        .Select(o => o.Text.Trim())
+                        .Where(t => t.Length > 0 && !t.StartsWith("--") && !t.StartsWith("Select", StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    return options.Length > 0;
+                });
+            }
+            catch (WebDriverTimeoutException)
+            {
+                Assert.Fail($"The {what} dropdown has no options.");
+            }
+
+            var target = wanted.Trim();
+            var choice = options.FirstOrDefault(o => o.Equals(target, StringComparison.OrdinalIgnoreCase))
+                ?? options.FirstOrDefault(o => o.Contains(target, StringComparison.OrdinalIgnoreCase))
+                ?? (fallbackToFirst ? options.First() : null);
+
+            if (choice == null)
+            {
+                LogStep($"{what} not found", $"No {what} option matches \"{target}\". Options: {string.Join(" | ", options)}");
+                Assert.Fail($"No {what} option matches \"{target}\". Options: {string.Join(" | ", options)}");
+            }
+
+            if (!choice!.Equals(target, StringComparison.OrdinalIgnoreCase))
+                LogStep($"{what} options", $"\"{target}\" matched \"{choice}\". Options: {string.Join(" | ", options)}");
+
+            page.Select(dropdown, choice);
+            return choice;
+        }
+
+        private string? SelectDestinationPayerId(ProfessionalPAPage page, string? payerId)
+        {
+            var element = TestWebDriver.FindElements(page.DestinationPayerId).FirstOrDefault(e => e.Displayed && e.Enabled);
+            if (element == null) return null;
+
+            if (!string.IsNullOrWhiteSpace(payerId))
+            {
+                page.Select(page.DestinationPayerId, payerId);
+                return payerId.Trim();
+            }
+
+            var select = new OpenQA.Selenium.Support.UI.SelectElement(element);
+            var current = select.SelectedOption?.Text?.Trim() ?? "";
+            if (current.Length > 0 && !current.StartsWith("--") && !current.StartsWith("Select", StringComparison.OrdinalIgnoreCase))
+                return current;
+
+            var firstValid = select.Options.Select(o => o.Text.Trim())
+                .FirstOrDefault(t => t.Length > 0 && !t.StartsWith("--") && !t.StartsWith("Select", StringComparison.OrdinalIgnoreCase));
+            if (firstValid != null) page.Select(page.DestinationPayerId, firstValid);
+            return firstValid;
         }
 
         private void FillRecipient(ProfessionalPAPage page, RecipientInfo recipient)
@@ -189,8 +622,10 @@ namespace TC.PriorAuthoriztion.Tests
             if (!loaded)
                 Assert.Fail($"Recipient details weren't loaded for Medicaid billing number {recipient.MedicaidBillingNumber} and date of birth {FormatDate(recipient.DateOfBirth)}.");
 
+            if (string.IsNullOrWhiteSpace(recipient.PatientTrackingNumber))
+                recipient.PatientTrackingNumber = $"PROF{DateTime.Now:yyMMddHHmmss}";
             page.Type(page.PatientTrackingNumber, recipient.PatientTrackingNumber);
-            LogStep("Recipient Information", $"Recipient {recipient.MedicaidBillingNumber} loaded");
+            LogStep("Recipient Information", $"Recipient {recipient.MedicaidBillingNumber} loaded, patient tracking number {recipient.PatientTrackingNumber}");
         }
 
         private void FillRequester(ProfessionalPAPage page, RequesterContactInfo requester)
@@ -321,7 +756,7 @@ namespace TC.PriorAuthoriztion.Tests
                 page.Type(page.Modifier(3), line.Modifier3);
                 page.Type(page.Modifier(4), line.Modifier4);
                 page.Type(page.RequestedUnits, line.RequestedUnits.ToString(CultureInfo.InvariantCulture));
-                page.Type(page.RequestedDollars, line.RequestedDollars.ToString(CultureInfo.InvariantCulture));
+                page.Type(page.RequestedDollars, line.RequestedDollars.ToString("0.00", CultureInfo.InvariantCulture));
                 TypeDate(page, page.RequestedFromDate, line.RequestedFromDate);
                 TypeDate(page, page.RequestedToDate, line.RequestedToDate);
 
@@ -358,17 +793,41 @@ namespace TC.PriorAuthoriztion.Tests
 
             foreach (var attachment in attachments.OrderBy(a => a.LineItem))
             {
-                if (string.IsNullOrWhiteSpace(attachment.FilePath) || !File.Exists(attachment.FilePath))
-                    Assert.Fail($"Attachment file \"{attachment.FilePath}\" was not found on the machine running the test.");
+                var path = ResolveAttachmentPath(attachment.FilePath);
+                if (path == null)
+                    Assert.Fail($"Attachment file \"{attachment.FilePath}\" was not found on the machine running the test (also checked next to the test DLL).");
 
-                TestWebDriver.FindElement(page.AttachmentUpload).SendKeys(attachment.FilePath);
+                TestWebDriver.FindElement(page.AttachmentUpload).SendKeys(path);
                 page.Select(page.AttachmentDocumentType, attachment.DocumentType);
                 page.Type(page.AttachmentNote, attachment.Note);
                 page.Click(page.AttachmentAdd);
                 BasePageHelper.WaitUntilDocumentIsReady(TestWebDriver, TimeoutConfiguration.Element);
+
+                var fileName = Path.GetFileName(path);
+                try
+                {
+                    new OpenQA.Selenium.Support.UI.WebDriverWait(TestWebDriver, TimeoutConfiguration.Element)
+                        .Until(d => d.PageSource.Contains(fileName, StringComparison.OrdinalIgnoreCase));
+                }
+                catch (WebDriverTimeoutException)
+                {
+                    var errors = VisibleValidationErrors(page);
+                    LogStep("Attachment failed", $"{fileName} didn't appear in the attachment grid. {string.Join(" | ", errors)}");
+                    Assert.Fail($"Attachment {fileName} didn't appear in the attachment grid. {string.Join(" | ", errors)}");
+                }
             }
 
-            LogStep("Attachments", $"{attachments.Count} attachment(s) added");
+            LogStep("Attachments", $"{attachments.Count} attachment(s) added: {string.Join(", ", attachments.Select(a => Path.GetFileName(a.FilePath ?? "")))}");
+        }
+
+        private static string? ResolveAttachmentPath(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return null;
+            if (Path.IsPathRooted(filePath)) return File.Exists(filePath) ? filePath : null;
+
+            var testFolder = Path.GetDirectoryName(typeof(SubmitPAProfessionalTest).Assembly.Location) ?? AppContext.BaseDirectory;
+            var candidate = Path.GetFullPath(Path.Combine(testFolder, filePath));
+            return File.Exists(candidate) ? candidate : null;
         }
 
         private void TypeDate(ProfessionalPAPage page, By field, DateTime? value)
@@ -396,7 +855,10 @@ namespace TC.PriorAuthoriztion.Tests
             }
             catch (WebDriverTimeoutException)
             {
-                Assert.Fail($"The line wasn't added - the edit row ({by}) is still open. Check the screenshot for a validation message.");
+                var messages = PageTextLines().Where(line => ErrorText.IsMatch(line) || line.Contains("should not", StringComparison.OrdinalIgnoreCase)).Distinct().ToList();
+                var detail = messages.Count > 0 ? string.Join(" | ", messages) : "Check the screenshot for a validation message.";
+                LogStep("Line not added", detail);
+                Assert.Fail($"The line wasn't added - the edit row ({by}) is still open. {detail}");
             }
         }
 

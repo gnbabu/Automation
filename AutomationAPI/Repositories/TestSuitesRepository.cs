@@ -50,8 +50,9 @@ namespace AutomationAPI.Repositories
                             });
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        Console.WriteLine($"Test discovery skipped {dllPath}: {ex.GetType().Name}: {ex.GetBaseException().Message}");
                         // Not a test assembly, or failed to load (e.g. missing dependency) -
                         // skip it and keep scanning the rest of the folder, same as before.
                         continue;

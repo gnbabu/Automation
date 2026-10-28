@@ -13,7 +13,7 @@ namespace TestDataModels
             ProviderName = "CROSSROADS HOSPICE OF CINCINNATI, LLC",
             PriorAuthorizationType = "Professional",
             DestinationPayer = "Ohio Department of Medicaid",
-            Assignment = "Enteral Nutrition and Supplies",
+            Assignment = "Home Health",
             ServiceType = "Alcoholism",
         };
         // Recipient Information
@@ -28,7 +28,7 @@ namespace TestDataModels
         {
             FirstName = "Danyele",
             LastName = "Loughridge",
-            ContactNumber = "6145059595",
+            ContactNumber = "6145059558",
         };
 
         // Service Information
@@ -64,7 +64,7 @@ namespace TestDataModels
             {
                 Sequence = 2,
                 DiagnosisCodeType = "Admitting",
-                DiagnosisCode = "H15022",
+                DiagnosisCode = "I5022",
                 DiagnosisDate = new DateTime(2026, 10, 1),
             },
         };
@@ -110,7 +110,16 @@ namespace TestDataModels
         public List<OutcomeOfReview> Outcomes { get; set; } = new();
 
         // Attachments
-        public List<AttachmentInfo> Attachments { get; set; } = new();
+        public List<AttachmentInfo> Attachments { get; set; } = new()
+        {
+            new AttachmentInfo
+            {
+                LineItem = 1,
+                DocumentType = "X-Rays",
+                Note = "test",
+                FilePath = @"TestFiles\SampleAttachment.pdf",
+            },
+        };
     }
 
     public class ProviderHeaderInfomration

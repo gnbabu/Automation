@@ -29,4 +29,10 @@
     <ProjectReference Include="..\TestDataModels\TestDataModels.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestFiles\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
