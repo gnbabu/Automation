@@ -5,13 +5,13 @@ using Selenium.BaseComponents.Pages;
 using Selenium.BaseComponents.Utilities;
 using SeleniumExtensions.Extensions;
 using System.Globalization;
-using TC.PriorAuthoriztion.Pages;
+using TC.MemberEligibilitySearch.Pages;
 using TestDataModels;
 
-namespace TC.PriorAuthoriztion.Tests
+namespace TC.MemberEligibilitySearch.Tests
 {
     [TestFixture("TechAdmin")]
-    [TestDataFlow(typeof(MemberEligibilitySearch))]
+    [TestDataFlow(typeof(TestDataModels.MemberEligibilitySearch))]
     [TestDataNote("SearchCriteria", "One search per test case: the member to look up and the From/To DOS eligibility window. \"No records returned\" counts as a completed search.")]
     [TestDataNote("SearchCriteria", "Optional. Leave empty to search by Medicaid Billing Number and date of birth only.", Field = "Ssn")]
     public class SearchMemberEligibilityTest : BaseFeatureFixture
@@ -44,7 +44,7 @@ namespace TC.PriorAuthoriztion.Tests
             _screenshots = new Screeshots { AssignmentTestCaseId = AssignmentTestCaseId, screenShot = new List<byte[]>() };
             LogStep("Login to PNM", "Login to PNM succesfully...!");
 
-            var data = TestData.Load<MemberEligibilitySearch>();
+            var data = TestData.Load<TestDataModels.MemberEligibilitySearch>();
             Assert.That(data.SearchCriteria?.MedicaidBillingNumber, Is.Not.Null.And.Not.Empty,
                 "Enter a Medicaid Billing Number in the SearchCriteria section of the test data.");
 

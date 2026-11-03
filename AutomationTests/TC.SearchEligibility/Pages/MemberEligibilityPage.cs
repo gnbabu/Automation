@@ -4,7 +4,7 @@ using Selenium.BaseComponents.Utilities;
 using SeleniumExtensions.Configurations;
 using SeleniumHelper = Selenium.BaseComponents.Utilities.PageHelper;
 
-namespace TC.PriorAuthoriztion.Pages
+namespace TC.MemberEligibilitySearch.Pages
 {
     public class MemberEligibilityPage
     {

@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Selenium.BaseComponents\Selenium.BaseComponents.csproj" />
+    <ProjectReference Include="..\TestDataModels\TestDataModels.csproj" />
   </ItemGroup>
 
 </Project>
