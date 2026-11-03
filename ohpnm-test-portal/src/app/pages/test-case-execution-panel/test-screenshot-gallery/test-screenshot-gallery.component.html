@@ -1,65 +1,86 @@
-<div #galleryModal class="modal fade" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Screenshots</h5>
-        <button type="button" class="btn-close" (click)="close()"></button>
+<div #galleryModal class="modal fade" tabindex="-1" aria-labelledby="screenshotGalleryTitle" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered gallery-dialog">
+    <div class="modal-content gallery-content">
+      <div class="modal-header gallery-header">
+        <div class="gallery-title-block">
+          <h5 class="modal-title" id="screenshotGalleryTitle">{{ title }}</h5>
+          <span class="gallery-count" *ngIf="screenshots?.length">{{ index + 1 }} of {{ screenshots.length }}</span>
+        </div>
+        <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
       </div>
 
-      <div class="modal-body p-0">
-        <!-- Your Carousel HTML here -->
-        <div class="carousel-container" *ngIf="screenshots?.length">
-          <div class="carousel-card">
-            <div
-              id="mainCarousel"
-              class="carousel slide carousel-fade"
-              data-bs-ride="carousel"
+      <div class="modal-body gallery-body">
+        <div class="gallery-empty" *ngIf="!screenshots?.length">
+          <i class="bi bi-image"></i>
+          <span>No screenshots were captured for this test case.</span>
+        </div>
+
+        <ng-container *ngIf="current as shot">
+          <div class="viewer" [class.actual-size]="actualSize">
+            <button
+              type="button"
+              class="nav-btn prev"
+              *ngIf="screenshots.length > 1"
+              (click)="prev()"
+              aria-label="Previous screenshot"
+              title="Previous (Left arrow)"
             >
-              <div class="carousel-indicators">
-                <button
-                  *ngFor="let img of screenshots; let i = index"
-                  type="button"
-                  data-bs-target="#mainCarousel"
-                  [attr.data-bs-slide-to]="i"
-                  [class.active]="i === 0"
-                ></button>
-              </div>
+              <i class="bi bi-chevron-left"></i>
+            </button>
 
-              <div class="carousel-inner">
-                <div
-                  *ngFor="let img of screenshots; let i = index"
-                  class="carousel-item"
-                  [class.active]="i === 0"
-                >
-                  <img [src]="img.screenshot" [alt]="img.caption" />
+            <div class="image-frame" (click)="toggleSize()" [title]="actualSize ? 'Click to fit to window' : 'Click to view at actual size'">
+              <img [src]="shot.screenshot" [alt]="label(shot, index)" />
+            </div>
 
-                  <div class="carousel-caption">
-                    <span class="caption-badge">Screenshot</span>
-                    <h3>{{ img.caption }}</h3>
-                    <p>Taken At: {{ img.takenAt | date : "short" }}</p>
-                  </div>
-                </div>
-              </div>
+            <button
+              type="button"
+              class="nav-btn next"
+              *ngIf="screenshots.length > 1"
+              (click)="next()"
+              aria-label="Next screenshot"
+              title="Next (Right arrow)"
+            >
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
 
-              <button
-                class="carousel-control-prev"
-                type="button"
-                data-bs-target="#mainCarousel"
-                data-bs-slide="prev"
-              >
-                <span class="carousel-control-prev-icon"></span>
+          <div class="caption-bar" [class.failure]="isFailure(shot)">
+            <div class="caption-text">
+              <span class="caption-badge" [class.failure]="isFailure(shot)">
+                {{ isFailure(shot) ? 'Failure' : 'Step ' + (index + 1) }}
+              </span>
+              <span class="caption-label">{{ label(shot, index) }}</span>
+              <span class="caption-time"><i class="bi bi-clock me-1"></i>{{ shot.takenAt | date : 'MM/dd/yyyy hh:mm:ss a' }}</span>
+            </div>
+            <div class="caption-actions">
+              <button type="button" class="action-btn" (click)="toggleSize()">
+                <i class="bi" [ngClass]="actualSize ? 'bi-arrows-angle-contract' : 'bi-arrows-angle-expand'"></i>
+                {{ actualSize ? 'Fit to window' : 'Actual size' }}
               </button>
-              <button
-                class="carousel-control-next"
-                type="button"
-                data-bs-target="#mainCarousel"
-                data-bs-slide="next"
-              >
-                <span class="carousel-control-next-icon"></span>
+              <button type="button" class="action-btn" (click)="openFullSize()">
+                <i class="bi bi-box-arrow-up-right"></i> Open
+              </button>
+              <button type="button" class="action-btn" (click)="download()">
+                <i class="bi bi-download"></i> Download
               </button>
             </div>
           </div>
-        </div>
+
+          <div class="thumb-strip" #thumbStrip *ngIf="screenshots.length > 1">
+            <button
+              type="button"
+              class="thumb"
+              *ngFor="let img of screenshots; let i = index"
+              [class.active]="i === index"
+              [class.failure]="isFailure(img)"
+              (click)="select(i)"
+              [title]="label(img, i)"
+            >
+              <img [src]="img.screenshot" [alt]="label(img, i)" loading="lazy" />
+              <span class="thumb-label">{{ i + 1 }}. {{ label(img, i) }}</span>
+            </button>
+          </div>
+        </ng-container>
       </div>
     </div>
   </div>

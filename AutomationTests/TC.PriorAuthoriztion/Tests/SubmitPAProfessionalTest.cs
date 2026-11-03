@@ -21,6 +21,7 @@ namespace TC.PriorAuthoriztion.Tests
     {
         private TestCaseExecutionLog _testCaseExecutionLog = null!;
         private Screeshots? _screenshots;
+        private readonly List<string> _captions = new();
 
         public SubmitPAProfessionalTest(string profile) : base(profile)
         {
@@ -870,7 +871,9 @@ namespace TC.PriorAuthoriztion.Tests
             _testCaseExecutionLog.StepName = stepName;
             _testCaseExecutionLog.LogMessage = message;
             APIGateway.SaveTestCaseLog(_testCaseExecutionLog);
-            _screenshots?.screenShot.Add(Common.PrintScreenShot(TestWebDriver, stepName));
+            if (_screenshots?.screenShot == null) return;
+            _screenshots.screenShot.Add(Common.PrintScreenShot(TestWebDriver, stepName));
+            _captions.Add(stepName);
         }
 
         [TearDown]
@@ -884,7 +887,7 @@ namespace TC.PriorAuthoriztion.Tests
                 {
                     ID = index + 1,
                     AssignmentTestCaseId = _screenshots.AssignmentTestCaseId,
-                    Caption = $"Screenshot_{index + 1}",
+                    Caption = index < _captions.Count ? _captions[index] : $"Screenshot_{index + 1}",
                     Screenshot = $"data:image/png;base64,{Convert.ToBase64String(screen)}",
                     TakenAt = DateTime.Now,
                 })
