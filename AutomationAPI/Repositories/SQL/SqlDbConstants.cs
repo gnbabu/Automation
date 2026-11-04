@@ -76,6 +76,8 @@
         public const string BulkScheduleTestCases = "[aut].[usp_BulkScheduleTestCases]";
         public const string GetPendingExecutionQueues = "[aut].[usp_GetPendingExecutionQueues]";
         public const string UpdateQueueStatus = "[aut].[usp_UpdateQueueStatus]";
+        public const string UpdateQueueResult = "[aut].[usp_UpdateQueueResult]";
+        public const string GetReleaseExecutionTrend = "[aut].[usp_GetReleaseExecutionTrend]";
 
 
         //Test Case Execution Logs

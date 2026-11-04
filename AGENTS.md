@@ -4509,3 +4509,15 @@ defaults - use "Reset all to defaults" to run with the recorded values.
   - Service dates too far ahead (Feb 2027 when run on 10/28/2026) fail with "Provider not eligible to provide the service as of today's date". The test now catches "not eligible" immediately.
   - Windows already used by AUTHT0000004357–4361: 09/01/2026–02/02/2027.
 - **"Unsubmitted PA will be saved for 72 hours" prompt during a slow Submit:** dismissed, then Submit is clicked again. A Patient Tracking Number (`PROF<yyMMddHHmmss>`) is generated when the test data has none.
+
+## Dashboard: Execution Overview and Execution Trend
+- **Run history lives on `aut.TestCaseExecutionQueue`:** new nullable columns `TestCaseStatus`, `StartTime`, `EndTime`, `DurationSeconds`, `ErrorMessage` and `ResultRecordedOn` (from `Database/Execution_Trend_Migration.sql`, idempotent).
+  - `TestQueueWorker` calls `usp_UpdateQueueResult` after `UpdateAssignedTestCaseStatusAsync`, for real results and for launch failures.
+  - Run Now, Bulk Run, Schedule, Bulk Schedule and Recurring all create queue rows run by `TestQueueWorker`, so all are covered. Runs outside the Portal (Test Explorer, `dotnet test`) are not.
+  - **Don't purge queue rows** (archive them instead): they are the history.
+- **Backfill:** each test case's latest finished queue row got its outcome from `AssignedTestCases`, timestamped with the queue row's `ModifiedDate`. Older runs have no outcome, so earlier days undercount.
+- **`usp_GetReleaseExecutionTrend(@ReleaseId, @Days, @AssignedUser)`:** for each day, each release test case's latest queue result with `ResultRecordedOn` before the end of that day. Skipped includes Cancelled/Inconclusive. Running is only for today, from current statuses.
+- **API:** `GET /api/Dashboard/execution-trend?releaseId=&days=` (days clamped 7–30; Tester role scoped to their own test cases).
+- **Portal:**
+  - `core/components/chart` (`app-chart`): a standalone wrapper around chart.js 3.9 (doughnut and line registered). ng2-charts 4 isn't used because it targets older Angular.
+  - Dashboard row: Execution Overview donut (existing counts plus "Not run"), Execution Trend (7/14/30 days), and the Execution Details card. The log summary is on its own row below.

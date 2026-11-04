@@ -390,6 +390,14 @@ export enum TestCaseStatus {
   Blocked = 7,
 }
 
+export interface IExecutionTrendPoint {
+  date: string;
+  passed: number;
+  failed: number;
+  skipped: number;
+  running: number;
+}
+
 export interface ITestScreenshot {
   id: number;
   queueId: string;

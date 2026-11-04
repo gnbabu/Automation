@@ -13,12 +13,14 @@ import {
   IReleaseModel,
   ITestCaseExecutionLog,
   ITestCaseModel,
+  IExecutionTrendPoint,
   ITestScreenshot,
   LibraryInfo,
 } from '@interfaces';
 import {
   AuthService,
   CommonToasterService,
+  DashboardService,
   ReleaseService,
   ScreenshotService,
   TestCaseAssignmentService,
@@ -33,6 +35,8 @@ import { TestScreenshotGalleryComponent } from '../test-case-execution-panel/tes
 import { ExecutionLogsViewerComponent } from 'app/common-components/execution-logs-viewer/execution-logs-viewer.component';
 import { ExecutionLogsDialogComponent } from 'app/common-modals/execution-logs-dialog/execution-logs-dialog.component';
 import { pairBadgeTextColor } from 'app/core/utils/badge-class.util';
+import { ChartComponent } from 'app/core/components/chart/chart.component';
+import { ChartData, ChartOptions } from 'chart.js';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -46,6 +50,7 @@ import autoTable from 'jspdf-autotable';
     TestScreenshotGalleryComponent,
     ExecutionLogsViewerComponent,
     ExecutionLogsDialogComponent,
+    ChartComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
@@ -107,6 +112,41 @@ export class DashboardComponent implements OnInit, OnDestroy {
   testersInvolvedCount = 0;
   averageTestDurationLabel = '—';
 
+  readonly statusColors = {
+    passed: this.themeColor('--bs-success', '#198754'),
+    failed: this.themeColor('--bs-danger', '#dc3545'),
+    skipped: this.themeColor('--bs-secondary', '#6c757d'),
+    running: this.themeColor('--bs-warning', '#ffc107'),
+    notRun: this.themeColor('--bs-primary', '#0d6efd'),
+  };
+
+  readonly trendRanges = [
+    { days: 7, label: 'Last 7 Days' },
+    { days: 14, label: 'Last 14 Days' },
+    { days: 30, label: 'Last 30 Days' },
+  ];
+  selectedTrendRange = this.trendRanges[0];
+
+  overviewTotal = 0;
+  overviewLegend: { label: string; count: number; percent: number; color: string }[] = [];
+  overviewData: ChartData<'doughnut'> = { labels: [], datasets: [] };
+  readonly overviewOptions: ChartOptions<'doughnut'> = {
+    cutout: '72%',
+    plugins: { legend: { display: false } },
+  };
+
+  trendLoading = false;
+  trendHasData = false;
+  trendData: ChartData<'line'> = { labels: [], datasets: [] };
+  readonly trendOptions: ChartOptions<'line'> = {
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#eef0f4' } },
+    },
+  };
+
   // Freshness indicator - previously data was only ever as fresh as the last manual
   // Refresh click, with no indication of how stale it might be. lastUpdatedLabel ticks
   // forward on its own (tickTimer) independent of any actual data refresh, so "2
@@ -133,7 +173,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private testCaseAssignmentService: TestCaseAssignmentService,
     private screenshotService: ScreenshotService,
     private executionLogsService: TestCaseExecutionLogsService,
-    private releaseService: ReleaseService
+    private releaseService: ReleaseService,
+    private dashboardService: DashboardService
   ) {}
 
   ngOnInit(): void {
@@ -214,6 +255,98 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ];
   }
 
+  private themeColor(variable: string, fallback: string): string {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+    return value || fallback;
+  }
+
+  buildOverviewChart(): void {
+    const personal = this.isPersonalizedView;
+    const total = personal ? this.myTotalCases : this.totalCases;
+    const passed = personal ? this.myPassedCount : this.passedCount;
+    const failed = personal ? this.myFailedCount : this.failedCount;
+    const source = personal ? this.myTestCases : this.testCases;
+    const skipped = personal
+      ? source.filter((tc) => tc.testCaseStatus === 'Skipped' || tc.testCaseStatus === 'Cancelled').length
+      : this.skippedCount;
+    const running = personal
+      ? source.filter((tc) => ['InProgress', 'Scheduled', 'Queued'].includes(tc.testCaseStatus)).length
+      : this.runningCount;
+    const notRun = Math.max(0, total - passed - failed - skipped - running);
+
+    const slices = [
+      { label: 'Passed', count: passed, color: this.statusColors.passed },
+      { label: 'Failed', count: failed, color: this.statusColors.failed },
+      { label: 'Skipped', count: skipped, color: this.statusColors.skipped },
+      { label: 'Running', count: running, color: this.statusColors.running },
+      { label: 'Not run', count: notRun, color: this.statusColors.notRun },
+    ];
+
+    this.overviewTotal = total;
+    this.overviewLegend = slices.map((s) => ({ ...s, percent: total ? (s.count / total) * 100 : 0 }));
+    this.overviewData = {
+      labels: slices.map((s) => s.label),
+      datasets: [
+        {
+          data: total ? slices.map((s) => s.count) : [1],
+          backgroundColor: total ? slices.map((s) => s.color) : [this.statusColors.notRun],
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverOffset: 4,
+        },
+      ],
+    };
+  }
+
+  onTrendRangeChange(range: { days: number; label: string } | null): void {
+    if (!range) return;
+    this.selectedTrendRange = range;
+    this.loadExecutionTrend();
+  }
+
+  loadExecutionTrend(): void {
+    const release = this.selectedRelease;
+    if (!release) return;
+
+    this.trendLoading = true;
+    this.dashboardService.getExecutionTrend(release.releaseId, this.selectedTrendRange.days).subscribe({
+      next: (points) => {
+        if (this.selectedRelease?.releaseId !== release.releaseId) return;
+        this.trendLoading = false;
+        this.setTrendData(points ?? []);
+      },
+      error: () => {
+        this.trendLoading = false;
+        this.setTrendData([]);
+      },
+    });
+  }
+
+  private setTrendData(points: IExecutionTrendPoint[]): void {
+    this.trendHasData = points.some((p) => p.passed + p.failed + p.skipped + p.running > 0);
+    const line = (label: string, color: string, values: number[]) => ({
+      label,
+      data: values,
+      borderColor: color,
+      backgroundColor: color,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      borderWidth: 2,
+      tension: 0.3,
+    });
+    this.trendData = {
+      labels: points.map((p) => new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })),
+      datasets: [
+        line('Passed', this.statusColors.passed, points.map((p) => p.passed)),
+        line('Failed', this.statusColors.failed, points.map((p) => p.failed)),
+        line('Skipped', this.statusColors.skipped, points.map((p) => p.skipped)),
+        line('Running', this.statusColors.running, points.map((p) => p.running)),
+      ],
+    };
+  }
+
+  trendRangeLabel = (range: { label: string }) => range.label;
+
   onReleaseChange(release: IReleaseModel | null) {
     this.selectedRelease = release;
 
@@ -260,6 +393,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       this.computeMyCounts(merged);
       this.computeRunTimeline(merged);
+      this.buildOverviewChart();
 
       this.lastUpdatedAt = new Date();
       this.updateLastUpdatedLabel();
@@ -267,6 +401,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     this.loadReleaseExecutionLogs(releaseId);
+    this.loadExecutionTrend();
   }
 
   get isPersonalizedView(): boolean {
@@ -492,6 +627,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   resetSummaryCounts() {
+    this.overviewTotal = 0;
+    this.overviewLegend = [];
+    this.overviewData = { labels: [], datasets: [] };
+    this.trendHasData = false;
+    this.trendData = { labels: [], datasets: [] };
     this.totalCases = 0;
     this.assignedCount = 0;
     this.unassignedCount = 0;
@@ -715,6 +855,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       case 'Cancelled':
         return 'bg-dark text-white';
+
+      case 'Skipped':
+      case 'Inconclusive':
+        return 'bg-secondary text-white';
 
       case 'Unassigned':
         return 'bg-secondary text-white';

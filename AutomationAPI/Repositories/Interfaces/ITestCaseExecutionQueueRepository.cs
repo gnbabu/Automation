@@ -12,6 +12,8 @@ namespace AutomationAPI.Repositories.Interfaces
         Task<bool> BulkScheduleAsync(int assignmentId, List<int> assignmentTestCaseIds, DateTime scheduleDate, string browser, int? loginUserId = null);
         Task<IEnumerable<PendingExecutionQueue>> GetPendingExecutionQueuesAsync();
         Task<int> UpdateQueueStatusAsync(Guid queueId, string status);
+        Task<int> UpdateQueueResultAsync(Guid queueId, AssignedTestCaseStatusUpdate result);
+        Task<IEnumerable<ExecutionTrendPoint>> GetReleaseExecutionTrendAsync(int releaseId, int days, int? assignedUser);
 
     }
 }

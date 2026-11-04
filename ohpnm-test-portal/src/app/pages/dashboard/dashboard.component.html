@@ -167,55 +167,104 @@
   </p>
 
   <div class="row g-3 mb-4" *ngIf="selectedRelease">
-    <!-- RUN DETAILS -->
-    <div class="col-md-6 d-flex">
-      <div class="run-details-card card-equal flex-fill">
-        <!-- Header (matches app-execution-logs-viewer's header style) -->
-        <div class="rd-header d-flex align-items-center justify-content-between">
-          <h6 class="mb-0 fw-bold">Run Details & Timeline</h6>
+    <div class="col-xl-4 col-lg-6 d-flex">
+      <div class="insight-card flex-fill">
+        <div class="insight-header">
+          <h6 class="mb-0 fw-bold">Execution Overview</h6>
+          <span class="insight-sub" *ngIf="isPersonalizedView">My test cases</span>
         </div>
-
-        <div class="rd-body">
-        <div class="rd-row">
-          <span class="rd-label">Start Time:</span>
-          <span>{{
-            overallStartTime
-              ? (overallStartTime | date : "hh:mm a, yyyy-MM-dd")
-              : "—"
-          }}</span>
-        </div>
-
-        <div class="rd-row">
-          <span class="rd-label">End Time:</span>
-          <span>{{
-            overallEndTime
-              ? (overallEndTime | date : "hh:mm a, yyyy-MM-dd")
-              : runStatusLabel === "In Progress"
-              ? "In Progress"
-              : "—"
-          }}</span>
-        </div>
-
-        <div class="rd-row">
-          <span class="rd-label">Execution Duration:</span>
-          <span>{{ executionDurationLabel }}</span>
-        </div>
-
-        <div class="rd-row">
-          <span class="rd-label">Testers Involved:</span>
-          <span>{{ testersInvolvedCount }}</span>
-        </div>
-
-        <div class="rd-row">
-          <span class="rd-label">Average Test Duration:</span>
-          <span>{{ averageTestDurationLabel }}</span>
-        </div>
+        <div class="overview-body">
+          <div class="donut-wrap">
+            <app-chart type="doughnut" [data]="overviewData" [options]="overviewOptions" ariaLabel="Execution overview"></app-chart>
+            <div class="donut-center">
+              <div class="donut-total">{{ overviewTotal }}</div>
+              <div class="donut-label">Total Tests</div>
+            </div>
+          </div>
+          <ul class="overview-legend">
+            <li *ngFor="let item of overviewLegend">
+              <span class="legend-dot" [style.background]="item.color"></span>
+              <span class="legend-label">{{ item.label }}</span>
+              <span class="legend-count">{{ item.count }}</span>
+              <span class="legend-percent">({{ item.percent | number : "1.0-1" }}%)</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
 
-    <!-- LOG SUMMARY -->
-    <div class="col-md-6 d-flex">
+    <div class="col-xl-5 col-lg-6 d-flex">
+      <div class="insight-card flex-fill">
+        <div class="insight-header">
+          <h6 class="mb-0 fw-bold">Execution Trend</h6>
+          <app-dropdown
+            class="trend-range"
+            [options]="trendRanges"
+            [textAccessor]="trendRangeLabel"
+            [selected]="selectedTrendRange"
+            (selectionChange)="onTrendRangeChange($event)"
+          ></app-dropdown>
+        </div>
+        <div class="trend-body">
+          <app-chart
+            *ngIf="trendHasData"
+            type="line"
+            [data]="trendData"
+            [options]="trendOptions"
+            ariaLabel="Execution trend"
+          ></app-chart>
+          <div class="trend-empty" *ngIf="!trendHasData">
+            <i class="bi" [ngClass]="trendLoading ? 'bi-hourglass-split' : 'bi-graph-up'"></i>
+            <span>{{ trendLoading ? "Loading trend..." : "No executions in this period yet. Results appear here as tests run." }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-12 d-flex">
+      <div class="insight-card flex-fill">
+        <div class="insight-header">
+          <h6 class="mb-0 fw-bold">Execution Details</h6>
+        </div>
+        <div class="details-body">
+          <div class="detail-row">
+            <i class="bi bi-clock"></i>
+            <span class="detail-label">Start Time</span>
+            <span class="detail-value">{{ overallStartTime ? (overallStartTime | date : "MMM d, y hh:mm a") : "—" }}</span>
+          </div>
+          <div class="detail-row">
+            <i class="bi bi-clock-history"></i>
+            <span class="detail-label">End Time</span>
+            <span class="detail-value">{{
+              overallEndTime
+                ? (overallEndTime | date : "MMM d, y hh:mm a")
+                : runStatusLabel === "In Progress"
+                ? "In Progress"
+                : "—"
+            }}</span>
+          </div>
+          <div class="detail-row">
+            <i class="bi bi-hourglass-split"></i>
+            <span class="detail-label">Execution Duration</span>
+            <span class="detail-value">{{ executionDurationLabel }}</span>
+          </div>
+          <div class="detail-row">
+            <i class="bi bi-people"></i>
+            <span class="detail-label">Testers Involved</span>
+            <span class="detail-value">{{ testersInvolvedCount }}</span>
+          </div>
+          <div class="detail-row">
+            <i class="bi bi-stopwatch"></i>
+            <span class="detail-label">Average Test Duration</span>
+            <span class="detail-value">{{ averageTestDurationLabel }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4" *ngIf="selectedRelease">
+    <div class="col-12 d-flex">
       <app-execution-logs-viewer
         class="flex-fill"
         [logs]="recentLogs"

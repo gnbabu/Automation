@@ -150,6 +150,41 @@ namespace AutomationAPI.Repositories
             return await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.UpdateQueueStatus, parameters);
         }
 
+        public async Task<IEnumerable<ExecutionTrendPoint>> GetReleaseExecutionTrendAsync(int releaseId, int days, int? assignedUser)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@ReleaseId", SqlDbType.Int) { Value = releaseId },
+                new SqlParameter("@Days", SqlDbType.Int) { Value = days },
+                new SqlParameter("@AssignedUser", SqlDbType.Int) { Value = (object?)assignedUser ?? DBNull.Value }
+            };
+
+            return await _sqlDataAccessHelper.ExecuteReaderAsync(SqlDbConstants.GetReleaseExecutionTrend, parameters,
+                reader => new ExecutionTrendPoint
+                {
+                    Date = reader.GetNullableDateTime("TrendDate") ?? DateTime.Today,
+                    Passed = reader.GetNullableInt("Passed") ?? 0,
+                    Failed = reader.GetNullableInt("Failed") ?? 0,
+                    Skipped = reader.GetNullableInt("Skipped") ?? 0,
+                    Running = reader.GetNullableInt("Running") ?? 0
+                });
+        }
+
+        public async Task<int> UpdateQueueResultAsync(Guid queueId, AssignedTestCaseStatusUpdate result)
+        {
+            var parameters = new[]
+            {
+                new SqlParameter("@QueueId", SqlDbType.UniqueIdentifier) { Value = queueId },
+                new SqlParameter("@TestCaseStatus", SqlDbType.NVarChar, 50) { Value = (object?)result.TestCaseStatus ?? DBNull.Value },
+                new SqlParameter("@StartTime", SqlDbType.DateTime) { Value = (object?)result.StartTime ?? DBNull.Value },
+                new SqlParameter("@EndTime", SqlDbType.DateTime) { Value = (object?)result.EndTime ?? DBNull.Value },
+                new SqlParameter("@Duration", SqlDbType.Float) { Value = (object?)result.Duration ?? DBNull.Value },
+                new SqlParameter("@ErrorMessage", SqlDbType.NVarChar, -1) { Value = (object?)result.ErrorMessage ?? DBNull.Value }
+            };
+
+            return await _sqlDataAccessHelper.ExecuteNonQueryAsync(SqlDbConstants.UpdateQueueResult, parameters);
+        }
+
 
     }
 

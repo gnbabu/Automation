@@ -183,6 +183,7 @@ namespace AutomationAPI.Repositories.TestRunner
                     };
 
                     await resultsRepo.UpdateAssignedTestCaseStatusAsync(tesrResult);
+                    await SaveQueueResultAsync(queueRepo, queue.QueueId, tesrResult);
 
                     if (wasScheduled && tesrResult.TestCaseStatus == "Failed")
                     {
@@ -217,12 +218,14 @@ namespace AutomationAPI.Repositories.TestRunner
                 // showing "Queued" indefinitely instead of "Failed".
                 try
                 {
-                    await resultsRepo.UpdateAssignedTestCaseStatusAsync(new AssignedTestCaseStatusUpdate
+                    var failure = new AssignedTestCaseStatusUpdate
                     {
                         AssignmentTestCaseId = queue.AssignmentTestCaseId,
                         TestCaseStatus = "Failed",
                         ErrorMessage = ex.Message
-                    });
+                    };
+                    await resultsRepo.UpdateAssignedTestCaseStatusAsync(failure);
+                    await SaveQueueResultAsync(queueRepo, queue.QueueId, failure);
                 }
                 catch (Exception statusEx)
                 {
@@ -233,6 +236,18 @@ namespace AutomationAPI.Repositories.TestRunner
             }
 
             await queueRepo.UpdateQueueStatusAsync(queue.QueueId, queue.QueueStatus);
+        }
+
+        private async Task SaveQueueResultAsync(ITestCaseExecutionQueueRepository queueRepo, Guid queueId, AssignedTestCaseStatusUpdate result)
+        {
+            try
+            {
+                await queueRepo.UpdateQueueResultAsync(queueId, result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save the result on queue item {QueueId}.", queueId);
+            }
         }
     }
 }
