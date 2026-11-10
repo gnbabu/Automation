@@ -177,7 +177,7 @@ namespace AutomationAPI.Repositories.TestRunner
             // `id` - confirmed by direct testing that ids are only valid within the exact
             // TestPackage/runner instance that produced them, so a name-based filter is
             // required here to be safely reusable against this brand-new package/runner.
-            using var runner = NUnitEngineHelper.Engine.GetRunner(package);
+            using var runner = NUnitEngineHelper.CreateRunner(package);
             return runner.Run(listener: null, filter: filter);
         }
 

@@ -16,6 +16,17 @@ namespace AutomationAPI.Repositories.TestRunner
 
         public static ITestEngine Engine => _engine.Value;
 
+        private static readonly object RunnerCreationLock = new();
+
+        // The engine's internal ServiceManager isn't thread-safe: startup discovery warm-up
+        // and a queued run calling GetRunner at the same time corrupted it for the rest of
+        // the process. Only runner creation is serialized; Explore/Run still run in parallel.
+        public static NUnit.Engine.ITestRunner CreateRunner(TestPackage package)
+        {
+            lock (RunnerCreationLock)
+                return Engine.GetRunner(package);
+        }
+
         // Explore() is called on every Assignment-screen/Dashboard load, potentially across
         // many DLLs with many classes/methods for a "huge" enterprise suite - re-scanning
         // from scratch every time doesn't scale. Cache keyed by (path, last-write-time), so
@@ -39,7 +50,7 @@ namespace AutomationAPI.Repositories.TestRunner
 
             var package = new TestPackage(dllPath);
             package.AddSetting(EnginePackageSettings.ProcessModel, "InProcess");
-            using var runner = Engine.GetRunner(package);
+            using var runner = CreateRunner(package);
             var xml = runner.Explore(TestFilter.Empty);
 
             _exploreCache[dllPath] = (lastWriteUtc, xml);
