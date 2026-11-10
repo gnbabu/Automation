@@ -30,6 +30,9 @@
     <None Include="appSettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="appSettings.Local.json" Condition="Exists('appSettings.Local.json')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
