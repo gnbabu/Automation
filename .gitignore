@@ -110,3 +110,4 @@ Thumbs.db
 **/v*/        # Catches version folders at any depth
 # Local secrets (OH|ID TOTP key) - never commit
 **/appSettings.Local.json
+**/demo.secrets.json

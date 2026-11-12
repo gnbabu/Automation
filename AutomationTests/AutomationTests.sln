@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestDataModels", "TestDataM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Selenium.BaseComponents.Tests", "Selenium.BaseComponents.Tests\Selenium.BaseComponents.Tests.csproj", "{74C6EF78-7F3D-4F2C-B71D-FAD60A14E11D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TC.OhidEligibilityDemo", "TC.OhidEligibilityDemo\TC.OhidEligibilityDemo.csproj", "{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -251,6 +253,18 @@ Global
 		{74C6EF78-7F3D-4F2C-B71D-FAD60A14E11D}.Release|x64.Build.0 = Release|Any CPU
 		{74C6EF78-7F3D-4F2C-B71D-FAD60A14E11D}.Release|x86.ActiveCfg = Release|Any CPU
 		{74C6EF78-7F3D-4F2C-B71D-FAD60A14E11D}.Release|x86.Build.0 = Release|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Debug|x64.Build.0 = Debug|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Debug|x86.Build.0 = Debug|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Release|x64.ActiveCfg = Release|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Release|x64.Build.0 = Release|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Release|x86.ActiveCfg = Release|Any CPU
+		{0A172319-0A12-4A51-8CC9-DFD25DAFCDFE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
