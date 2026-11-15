@@ -1,0 +1,46 @@
+﻿{
+    "ServiceDetails":  [
+                           {
+                               "RequestedDollars":  370,
+                               "Modifier3":  "12",
+                               "Modifier1":  "12",
+                               "ProcedureCode":  "G0299",
+                               "Status":  null,
+                               "Modifier4":  "12",
+                               "RequestedUnits":  40,
+                               "LineNumber":  1,
+                               "Modifier2":  "12",
+                               "RequestedFromDate":  "2026-09-01",
+                               "RequestedToDate":  "2026-09-20"
+                           },
+                           {
+                               "RequestedDollars":  760,
+                               "Modifier3":  "13",
+                               "Modifier1":  "13",
+                               "ProcedureCode":  "G0151",
+                               "Status":  null,
+                               "Modifier4":  "13",
+                               "RequestedUnits":  32,
+                               "LineNumber":  2,
+                               "Modifier2":  "13",
+                               "RequestedFromDate":  "2026-09-08",
+                               "RequestedToDate":  "2026-09-29"
+                           }
+                       ],
+    "Diagnoses":  [
+                      {
+                          "DiagnosisDate":  "2026-09-01",
+                          "DiagnosisDescription":  null,
+                          "DiagnosisCode":  "E1122",
+                          "Sequence":  1,
+                          "DiagnosisCodeType":  null
+                      },
+                      {
+                          "DiagnosisDate":  "2026-09-01",
+                          "DiagnosisDescription":  null,
+                          "DiagnosisCode":  "I5022",
+                          "Sequence":  2,
+                          "DiagnosisCodeType":  "Admitting"
+                      }
+                  ]
+}

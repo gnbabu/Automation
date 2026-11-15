@@ -4550,6 +4550,6 @@ defaults - use "Reset all to defaults" to run with the recorded values.
 - **Enabled per project:**
   - `localrun.json` (committed: browser, environment, usernames) plus `localrun.secrets.json` (git-ignored via `**/localrun.secrets.json`: passwords and the TOTP key). The secrets file is merged on top of `localrun.json` at run time.
   - Both need csproj `None Include=... Condition="Exists(...)"` copy rules.
-  - Currently only `TC.SearchEligibility` (TC.MemberEligibilitySearch) has them.
+  - Enabled in `TC.SearchEligibility` (TC.MemberEligibilitySearch) and `TC.PriorAuthoriztion`.
   - Setup guide: `docs/LocalRun-VisualStudio.md`.
 - **Verified:** TC_ELIG_20 run via `dotnet test` with the API stopped left `aut.TestCaseExecutionLogs`, `aut.TestScreenshots`, `aut.TestCaseExecutionQueue` and the `AssignedTestCases` status checksum unchanged.

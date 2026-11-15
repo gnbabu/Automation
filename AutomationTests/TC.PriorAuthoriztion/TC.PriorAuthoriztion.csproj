@@ -35,4 +35,16 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="localrun.json" Condition="Exists('localrun.json')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="localrun.secrets.json" Condition="Exists('localrun.secrets.json')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="LocalRunData\*.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

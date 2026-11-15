@@ -7,7 +7,7 @@ Test cases normally run from the Automation Portal (Run Now / Schedule / Recurri
 - **Nothing written:** nothing is written to the Automation Portal database (no logs, screenshots, queue rows or status).
 - **Portal runs:** completely unchanged.
 
-Currently enabled for **TC.MemberEligibilitySearch** (`AutomationTests/TC.SearchEligibility`).
+Currently enabled for **TC.MemberEligibilitySearch** (`AutomationTests/TC.SearchEligibility`) and **TC.PriorAuthoriztion** (`AutomationTests/TC.PriorAuthoriztion`: `LocalRunData/TC_PA_PROF_01.json` and `TC_PA_PROF_02.json`).
 
 ---
 
