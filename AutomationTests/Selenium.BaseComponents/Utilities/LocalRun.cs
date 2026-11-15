@@ -1,20 +1,24 @@
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace Selenium.BaseComponents.Utilities
 {
     // Visual Studio / dotnet test runs: no Portal AccessToken, and a localrun.json next to the
-    // test DLLs. Every APIGatway call is then answered from that file and logs/screenshots stay
-    // on this machine, so nothing touches the Automation API or database. Portal runs always
-    // carry an AccessToken and never take this path.
+    // test DLLs. Every APIGatway call is then answered from that file (with passwords/keys merged
+    // in from the git-ignored localrun.secrets.json) and logs/screenshots stay on this machine,
+    // so nothing touches the Automation API or database. Portal runs always carry an
+    // AccessToken and never take this path.
     public static class LocalRun
     {
         public const string FileName = "localrun.json";
+        public const string SecretsFileName = "localrun.secrets.json";
 
         private static readonly object Gate = new();
         private static readonly string RunStamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         private static string? _cachedPath;
         private static DateTime _cachedWriteTime;
+        private static DateTime _cachedSecretsWriteTime;
         private static JObject? _cached;
 
         public static string? DirectoryOverride { get; set; }
@@ -22,6 +26,8 @@ namespace Selenium.BaseComponents.Utilities
         private static string BaseDirectory => DirectoryOverride ?? AppContext.BaseDirectory;
 
         public static string FilePath => Path.Combine(BaseDirectory, FileName);
+
+        public static string SecretsFilePath => Path.Combine(BaseDirectory, SecretsFileName);
 
         public static bool IsPortalRun => !string.IsNullOrWhiteSpace(TestContext.Parameters["AccessToken"]);
 
@@ -141,14 +147,22 @@ namespace Selenium.BaseComponents.Utilities
                 if (!File.Exists(path))
                     throw new InvalidOperationException($"Local run: {FileName} not found next to the test DLLs ({BaseDirectory}).");
 
+                var secretsPath = SecretsFilePath;
                 lock (Gate)
                 {
                     var writeTime = File.GetLastWriteTimeUtc(path);
-                    if (_cached == null || _cachedPath != path || _cachedWriteTime != writeTime)
+                    var secretsWriteTime = File.Exists(secretsPath) ? File.GetLastWriteTimeUtc(secretsPath) : DateTime.MinValue;
+                    if (_cached == null || _cachedPath != path || _cachedWriteTime != writeTime || _cachedSecretsWriteTime != secretsWriteTime)
                     {
-                        _cached = JObject.Parse(File.ReadAllText(path));
+                        var config = JObject.Parse(File.ReadAllText(path));
+                        if (File.Exists(secretsPath))
+                            config.Merge(JObject.Parse(File.ReadAllText(secretsPath)),
+                                new JsonMergeSettings { MergeArrayHandling = MergeArrayHandling.Replace, MergeNullValueHandling = MergeNullValueHandling.Ignore });
+
+                        _cached = config;
                         _cachedPath = path;
                         _cachedWriteTime = writeTime;
+                        _cachedSecretsWriteTime = secretsWriteTime;
                     }
                     return _cached;
                 }

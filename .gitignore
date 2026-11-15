@@ -108,3 +108,6 @@ Thumbs.db
 
 # Exclude versioned folders like v17/, v16/, etc., anywhere in the repo
 **/v*/        # Catches version folders at any depth
+
+# Local run passwords/keys (see docs/LocalRun-VisualStudio.md) - never commit
+**/localrun.secrets.json

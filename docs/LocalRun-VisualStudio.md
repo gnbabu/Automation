@@ -34,22 +34,21 @@ Currently enabled for **TC.MemberEligibilitySearch** (`AutomationTests/TC.Search
 
 ```
 AutomationTests/TC.SearchEligibility/
-├── localrun.template.json          template (committed, no passwords)
-├── localrun.json                  your local settings and passwords (NOT committed, see section 3)
+├── localrun.json                  shared settings: browser, environment, usernames (committed, no passwords)
+├── localrun.secrets.json          passwords and keys only (NOT committed, see section 3)
 └── LocalRunData/                  test data, one file per test case (committed)
     ├── TC_ELIG_01.json            SearchMemberEligibilityTest
     ├── TC_ELIG_20.json            OhidEligibilitySearchTest
     └── TCSearchEligibility.json   legacy SearchEligiblityTest (array of automation-data rows)
 ```
 
-The project file copies `localrun.json` (when present) and `LocalRunData\*.json` to the build output on every build.
+The project file copies `localrun.json`, `localrun.secrets.json` (when present) and `LocalRunData\*.json` to the build output on every build. At run time the values in `localrun.secrets.json` are merged on top of `localrun.json`.
 
 ---
 
 ## 3. One-time setup on your machine
 
-1. **Create `localrun.json`:** copy `localrun.template.json` to `localrun.json` in the same folder.
-2. **Fill in the values:**
+1. **Check the shared settings:** `localrun.json` comes from Git and holds everything except passwords. Change it only if the environment or users change for everyone.
 
 ```json
 {
@@ -60,16 +59,25 @@ The project file copies `localrun.json` (when present) and `LocalRunData\*.json`
     "RequiresAuthentication": true,
     "EnableSso": false
   },
-  "LoginUser": { "UserName": "autotechadmin", "Password": "<password>" },
+  "LoginUser": { "UserName": "autotechadmin" },
   "LoginUsersByRole": { },
+  "Otp": { "PnmUserId": "123", "OhidUserName": "34277920" }
+}
+```
+
+2. **Create `localrun.secrets.json`** next to it, with only the passwords and keys:
+
+```json
+{
+  "LoginUser": { "Password": "<autotechadmin password>" },
   "Otp": {
     "TotpKey": "<OH|ID authenticator key, only for OH|ID tests>",
-    "PnmUserId": "123",
-    "OhidUserName": "<OH|ID username>",
     "OhidPassword": "<OH|ID password>"
   }
 }
 ```
+
+   Any setting can also be overridden in this file, e.g. a different `LoginUser.UserName` just for your machine.
 
 | Setting | Used for |
 |---|---|
@@ -79,8 +87,8 @@ The project file copies `localrun.json` (when present) and `LocalRunData\*.json`
 | `LoginUsersByRole` | Only for tests that switch role mid-test with `LoginByProfile("<Role>")`, e.g. `{ "StateAdmin": { "UserName": "...", "Password": "..." } }` |
 | `Otp` | Only for OH\|ID tests (`OhidFeatureFixture`, e.g. TC_ELIG_20): authenticator key, PNM user ID for E2E's "Go to IOP" step, OH\|ID username and password |
 
-3. **Keep `localrun.json` out of Git:** it contains passwords. It's listed in `.gitignore` (`**/localrun.json`).
-   - **For a shared or release machine:** create the file there by hand, or from your team's secret store.
+3. **Keep `localrun.secrets.json` out of Git:** it's listed in `.gitignore` (`**/localrun.secrets.json`).
+   - **For a shared or release machine:** create it there by hand, or from your team's secret store.
 
 ---
 
@@ -151,7 +159,7 @@ No code changes are needed; the switch lives in Selenium.BaseComponents.
    </ItemGroup>
    ```
 
-2. Add `localrun.template.json` (copy it from TC.SearchEligibility) and your own `localrun.json`.
+2. Add a `localrun.json` (copy it from TC.SearchEligibility and adjust) and your own git-ignored `localrun.secrets.json`. The `.csproj` also needs `<None Include="localrun.secrets.json" Condition="Exists('localrun.secrets.json')"><CopyToOutputDirectory>Always</CopyToOutputDirectory></None>`.
 3. Add `LocalRunData/<TestCaseId>.json` for each test case that needs data.
 
 ---
@@ -162,7 +170,7 @@ No code changes are needed; the switch lives in Selenium.BaseComponents.
 |---|---|
 | "Run this test from the Portal ... or add a localrun.json" | `localrun.json` isn't in the output folder: create it next to the `.csproj` and rebuild |
 | "Local run: "Environment" is missing in localrun.json" | Add the `Environment` section |
-| "Could not resolve login credentials for profile ..." | Fill in `LoginUser` (UserName and Password) |
+| "Could not resolve login credentials for profile ..." / login fails | `LoginUser.UserName` in `localrun.json` and `LoginUser.Password` in `localrun.secrets.json` |
 | "Local run: "LoginUsersByRole.<Role>" is missing" | Add that role under `LoginUsersByRole` |
 | Test data shows "model defaults" | No `LocalRunData/<TestCaseId>.json` for that TestCaseId, or the file wasn't rebuilt into the output |
 | OH\|ID "rejected the one-time code" | `Otp.TotpKey` doesn't match the authenticator registered on the OH\|ID account, or the PC clock is wrong. Stop and fix the key before retrying, to avoid locking the account |

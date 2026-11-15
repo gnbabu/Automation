@@ -99,6 +99,19 @@ namespace Selenium.BaseComponents.Tests
         }
 
         [Test]
+        public void SecretsFileIsMergedOverSharedSettings()
+        {
+            WriteConfig("{ \"LoginUser\": { \"UserName\": \"u1\" }, \"Otp\": { \"PnmUserId\": \"123\" } }");
+            File.WriteAllText(Path.Combine(_dir, LocalRun.SecretsFileName),
+                "{ \"LoginUser\": { \"Password\": \"secret\" }, \"Otp\": { \"TotpKey\": \"KEY\" } }");
+
+            Assert.That(LocalRun.LoginUser()!.UserName, Is.EqualTo("u1"));
+            Assert.That(LocalRun.LoginUser()!.Password, Is.EqualTo("secret"));
+            Assert.That(LocalRun.Otp("PnmUserId"), Is.EqualTo("123"));
+            Assert.That(LocalRun.Otp("TotpKey"), Is.EqualTo("KEY"));
+        }
+
+        [Test]
         public void ReadsLegacyAutomationData()
         {
             WriteConfig("{ \"AutomationData\": { \"SearchMemberEligiblity\": [ { \"SectionName\": \"S\", \"automationContents\": [ { \"FieldName\": \"SSN\", \"FieldValue\": \"1\" } ] } ] } }");

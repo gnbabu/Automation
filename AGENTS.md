@@ -4547,5 +4547,9 @@ defaults - use "Reset all to defaults" to run with the recorded values.
   - `SaveTestCaseLog` writes to the Test Explorer output;
   - screenshots go to `<output>\LocalRunResults\<TestCaseId>\<yyyyMMdd_HHmmss>\NN_<caption>.png`.
 - **Small supporting edits:** `TestData.Load` skips the assigned-test-case check locally. `BaseFeatureFixture` takes `Browser` from the file and also saves the failure screenshot locally. `OhidSettings`/`OhidFeatureFixture` read `Otp.TotpKey`/`PnmUserId`/`OhidUserName`/`OhidPassword` from the file.
-- **Enabled per project:** add `localrun.json` (git-ignored via `**/localrun.json`) plus a csproj `None Include="localrun.json" Condition="Exists(...)"` copy rule. Currently only `TC.SearchEligibility` (TC.MemberEligibilitySearch) has one; `localrun.template.json` is its committed template.
+- **Enabled per project:**
+  - `localrun.json` (committed: browser, environment, usernames) plus `localrun.secrets.json` (git-ignored via `**/localrun.secrets.json`: passwords and the TOTP key). The secrets file is merged on top of `localrun.json` at run time.
+  - Both need csproj `None Include=... Condition="Exists(...)"` copy rules.
+  - Currently only `TC.SearchEligibility` (TC.MemberEligibilitySearch) has them.
+  - Setup guide: `docs/LocalRun-VisualStudio.md`.
 - **Verified:** TC_ELIG_20 run via `dotnet test` with the API stopped left `aut.TestCaseExecutionLogs`, `aut.TestScreenshots`, `aut.TestCaseExecutionQueue` and the `AssignedTestCases` status checksum unchanged.

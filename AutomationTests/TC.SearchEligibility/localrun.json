@@ -7,16 +7,13 @@
                         "EnableSso":  false
                     },
     "LoginUser":  {
-                      "UserName":  "autotechadmin",
-                      "Password":  "Abcde123!"
+                      "UserName":  "autotechadmin"
                   },
     "LoginUsersByRole":  {
 
                          },
     "Otp":  {
-                "TotpKey":  "YPLHD2KL5NQAKBFH",
                 "PnmUserId":  "123",
-                "OhidUserName":  "34277920",
-                "OhidPassword":  "Rnspace@20312031"
+                "OhidUserName":  "34277920"
             }
 }
