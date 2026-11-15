@@ -4537,3 +4537,15 @@ defaults - use "Reset all to defaults" to run with the recorded values.
   - **Portal runs:** copy it into the release folder next to the DLLs.
 - **Code-entry locators not confirmed:** the code-entry page (`OhidPages.CodeInput`/`VerifyButton`) wasn't in the recording; check it on the first supervised run.
 - **Unit tests:** `AutomationTests/Selenium.BaseComponents.Tests` covers the RFC 6238 vectors, Base32, the window edge and settings precedence.
+
+## Local run from Visual Studio (no Portal, no API, no DB)
+- **Switch:** `Selenium.BaseComponents/Utilities/LocalRun.cs`. Local mode is on when the run has **no `AccessToken`** test parameter (Portal runs always pass one) **and** a `localrun.json` sits next to the test DLLs. Portal runs never take this path, even if the file is present.
+- **One choke point:** `APIGatway`, the only class that calls the Automation API/DB. In local mode every method answers from `localrun.json` and makes no HTTP call:
+  - environment, login user and role users come from the file;
+  - `GetTestCaseData` looks up `TestData[<TestCaseId>]`, then `TestData[<flow>]`, then `{}` (model defaults);
+  - legacy `GetAutomationData(flow)` reads `AutomationData[flow]`;
+  - `SaveTestCaseLog` writes to the Test Explorer output;
+  - screenshots go to `<output>\LocalRunResults\<TestCaseId>\<yyyyMMdd_HHmmss>\NN_<caption>.png`.
+- **Small supporting edits:** `TestData.Load` skips the assigned-test-case check locally. `BaseFeatureFixture` takes `Browser` from the file and also saves the failure screenshot locally. `OhidSettings`/`OhidFeatureFixture` read `Otp.TotpKey`/`PnmUserId`/`OhidUserName`/`OhidPassword` from the file.
+- **Enabled per project:** add `localrun.json` (git-ignored via `**/localrun.json`) plus a csproj `None Include="localrun.json" Condition="Exists(...)"` copy rule. Currently only `TC.SearchEligibility` (TC.MemberEligibilitySearch) has one; `localrun.example.json` is its committed template.
+- **Verified:** TC_ELIG_20 run via `dotnet test` with the API stopped left `aut.TestCaseExecutionLogs`, `aut.TestScreenshots`, `aut.TestCaseExecutionQueue` and the `AssignedTestCases` status checksum unchanged.

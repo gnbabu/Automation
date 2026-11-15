@@ -18,12 +18,36 @@ namespace Selenium.BaseComponents.Utilities
         {
             var flowName = typeof(T).Name;
 
+            if (LocalRun.IsActive)
+            {
+                var (localJson, source) = LocalRun.TestData(flowName);
+                var localModel = new T();
+                try
+                {
+                    JsonConvert.PopulateObject(localJson, localModel, Settings);
+                }
+                catch (JsonException ex)
+                {
+                    throw new InvalidOperationException($"Test data for '{flowName}' in {LocalRun.FileName} doesn't match the model: {ex.Message}", ex);
+                }
+
+                LocalRun.Log(new TestCaseExecutionLog
+                {
+                    StepName = "Test Data",
+                    LogMessage = $"Test data for flow \"{flowName}\" from {source}",
+                    LogLevel = TestCaseLogLevel.Info,
+                    ExecutionStatus = ExecutionStatus.Running
+                });
+                return localModel;
+            }
+
             if (!int.TryParse(NUnit.Framework.TestContext.Parameters["AssignmentTestCaseId"], out var assignmentTestCaseId)
                 || assignmentTestCaseId <= 0)
             {
                 throw new InvalidOperationException(
                     $"Test data for '{flowName}' is configured per test case. Run this test from the Portal " +
-                    "(Run Now/Schedule) so it knows which test case's data to load.");
+                    "(Run Now/Schedule) so it knows which test case's data to load, or add a " +
+                    $"{LocalRun.FileName} to the test project to run it locally from Visual Studio.");
             }
 
             var apiGateway = new APIGatway();

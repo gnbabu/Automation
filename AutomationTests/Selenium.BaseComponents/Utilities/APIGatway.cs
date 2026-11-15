@@ -27,8 +27,26 @@ namespace Selenium.BaseComponents.Utilities
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AccessToken);
         }
 
+        private static void SaveScreenshotLocally(TestScreenshot screenshot)
+        {
+            try
+            {
+                LocalRun.SaveScreenshot(screenshot);
+            }
+            catch (Exception ex)
+            {
+                NUnit.Framework.TestContext.WriteLine($"Local screenshot save failed: {ex.Message}");
+            }
+        }
+
         public void SaveTestCaseLog(TestCaseExecutionLog testCaseExecutionLog)
         {
+            if (LocalRun.IsActive)
+            {
+                LocalRun.Log(testCaseExecutionLog);
+                return;
+            }
+
             try
             {
                 string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
@@ -74,6 +92,12 @@ namespace Selenium.BaseComponents.Utilities
         // never throwing.
         public int? SaveMethodScreenShot(TestScreenshot screenshot)
         {
+            if (LocalRun.IsActive)
+            {
+                SaveScreenshotLocally(screenshot);
+                return null;
+            }
+
             try
             {
                 string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
@@ -112,6 +136,13 @@ namespace Selenium.BaseComponents.Utilities
 
         public void SaveMethodScreenShots(List<TestScreenshot> screenshots)
         {
+            if (LocalRun.IsActive)
+            {
+                foreach (var screenshot in screenshots)
+                    SaveScreenshotLocally(screenshot);
+                return;
+            }
+
             try
             {
                 string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
@@ -153,6 +184,9 @@ namespace Selenium.BaseComponents.Utilities
         // never throwing out of a best-effort call.
         public async Task<EnvironmentDetails?> GetEnvironmentDetails()
         {
+            if (LocalRun.IsActive)
+                return LocalRun.Environment();
+
             string? environmentId = NUnit.Framework.TestContext.Parameters["EnvironmentId"];
             if (string.IsNullOrWhiteSpace(environmentId))
                 return null;
@@ -197,6 +231,9 @@ namespace Selenium.BaseComponents.Utilities
         // to today's hard-coded UserCredentials behavior.
         public async Task<LoginUserCredentials?> GetLoginUserCredentials()
         {
+            if (LocalRun.IsActive)
+                return LocalRun.LoginUser();
+
             string? loginUserId = NUnit.Framework.TestContext.Parameters["LoginUserId"];
             if (string.IsNullOrWhiteSpace(loginUserId))
                 return null;
@@ -243,6 +280,9 @@ namespace Selenium.BaseComponents.Utilities
         // clearly rather than silently falling back to removed hard-coded data.
         public async Task<LoginUserCredentials?> GetLoginUserCredentialsByRole(string role)
         {
+            if (LocalRun.IsActive)
+                return LocalRun.LoginUserByRole(role);
+
             string? environmentId = NUnit.Framework.TestContext.Parameters["EnvironmentId"];
             if (string.IsNullOrWhiteSpace(environmentId) || string.IsNullOrWhiteSpace(role))
                 return null;
@@ -281,6 +321,9 @@ namespace Selenium.BaseComponents.Utilities
 
         public async Task<string> GetTestCaseData(string flowName, int assignmentTestCaseId)
         {
+            if (LocalRun.IsActive)
+                return LocalRun.TestData(flowName).Json;
+
             try
             {
                 string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
@@ -314,6 +357,9 @@ namespace Selenium.BaseComponents.Utilities
 
         public async Task<List<AutomationData>> GetAutomationData(string flowName)
         {
+            if (LocalRun.IsActive)
+                return LocalRun.AutomationData(flowName);
+
             List<AutomationData> AutomationData = new List<AutomationData>();
             string apiUrl = _settingReader.GetSetting("AppSettings:AutomationAPI");
             

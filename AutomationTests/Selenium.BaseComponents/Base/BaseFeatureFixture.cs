@@ -141,7 +141,7 @@ namespace Selenium.BaseComponents.Pages
         // all) or an explicit "Chrome" selection.
         private void InitializeBrowserAndLogin()
         {
-            string? browser = TestContext.Parameters["Browser"];
+            string? browser = TestContext.Parameters["Browser"] ?? (LocalRun.IsActive ? LocalRun.Browser : null);
             if (string.Equals(browser, "Edge", StringComparison.OrdinalIgnoreCase))
             {
                 InitializeEdgeAndLogin();
@@ -301,7 +301,7 @@ namespace Selenium.BaseComponents.Pages
             // Matches the existing guard already used by every test class's own
             // [TearDown] (e.g. SearchPATest.AfterTest()) - skip entirely when not
             // running through the queue pipeline (e.g. locally via Test Explorer).
-            if (AssignmentTestCaseId == 0)
+            if (AssignmentTestCaseId == 0 && !LocalRun.IsActive)
                 return;
 
             try

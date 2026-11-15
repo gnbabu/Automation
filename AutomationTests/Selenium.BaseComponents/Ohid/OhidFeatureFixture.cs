@@ -24,11 +24,12 @@ namespace Selenium.BaseComponents.Ohid
             if (string.IsNullOrWhiteSpace(environment?.EnvironmentUrl))
                 throw new InvalidOperationException("No environment URL is available. Run this test from the Portal against an environment with an Environment URL.");
 
-            var credentials = await APIGateway.GetLoginUserCredentials();
+            var credentials = LocalOhidCredentials() ?? await APIGateway.GetLoginUserCredentials();
             if (credentials == null || string.IsNullOrWhiteSpace(credentials.UserName))
                 throw new InvalidOperationException("No OH|ID login user was resolved. Pick the environment's OH|ID login user in Run Now / Schedule.");
 
-            TestWebDriver = string.Equals(TestContext.Parameters["Browser"], "Edge", StringComparison.OrdinalIgnoreCase)
+            var browser = TestContext.Parameters["Browser"] ?? (LocalRun.IsActive ? LocalRun.Browser : null);
+            TestWebDriver = string.Equals(browser, "Edge", StringComparison.OrdinalIgnoreCase)
                 ? WebDriverService.CreateEdgeDriver()
                 : WebDriverService.CreateChromeDriver();
 
@@ -36,10 +37,20 @@ namespace Selenium.BaseComponents.Ohid
                 .Login(environment!.EnvironmentUrl!, credentials.UserName!, credentials.Password ?? "", totp, OhidSettings.GetPnmUserId());
         }
 
+        private static LoginUserCredentials? LocalOhidCredentials()
+        {
+            if (!LocalRun.IsActive) return null;
+            var userName = LocalRun.Otp("OhidUserName");
+            return string.IsNullOrWhiteSpace(userName)
+                ? null
+                : new LoginUserCredentials { UserName = userName, Password = LocalRun.Otp("OhidPassword") };
+        }
+
         protected void LogOhidStep(string stepName, string message)
         {
-            TestContext.Progress.WriteLine($"[OH|ID] {stepName}: {message}");
-            if (AssignmentTestCaseId == 0) return;
+            if (!LocalRun.IsActive)
+                TestContext.Progress.WriteLine($"[OH|ID] {stepName}: {message}");
+            if (AssignmentTestCaseId == 0 && !LocalRun.IsActive) return;
 
             APIGateway.SaveTestCaseLog(new TestCaseExecutionLog
             {

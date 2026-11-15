@@ -111,3 +111,4 @@ Thumbs.db
 # Local secrets (OH|ID TOTP key) - never commit
 **/appSettings.Local.json
 **/demo.secrets.json
+**/localrun.json

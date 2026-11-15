@@ -1,0 +1,74 @@
+﻿[
+    {
+        "Id":  56,
+        "SectionID":  48,
+        "SectionName":  "SearchMemberEligiblity",
+        "TestContent":  "[\n  {\"FieldName\":\"RegID\",\"FieldValue\":\"0005987\"},\n  {\"FieldName\":\"MedicaidBillingNumber\",\"FieldValue\":\"0005987\"},\n  {\"FieldName\":\"DateOfBirth\",\"FieldValue\":\"6/12/1985\"},\n  {\"FieldName\":\"FromDOS\",\"FieldValue\":\"1/1/2026\"},\n  {\"FieldName\":\"ToDOS\",\"FieldValue\":\"9/1/2026\"},\n  {\"FieldName\":\"ProcedureCode\",\"FieldValue\":\"D0150\"},\n  {\"FieldName\":\"SSN\",\"FieldValue\":\"123456789\"}\n]",
+        "automationContents":  [
+                                   {
+                                       "FieldName":  "RegID",
+                                       "FieldValue":  "0005987"
+                                   },
+                                   {
+                                       "FieldName":  "MedicaidBillingNumber",
+                                       "FieldValue":  "0005987"
+                                   },
+                                   {
+                                       "FieldName":  "DateOfBirth",
+                                       "FieldValue":  "6/12/1985"
+                                   },
+                                   {
+                                       "FieldName":  "FromDOS",
+                                       "FieldValue":  "1/1/2026"
+                                   },
+                                   {
+                                       "FieldName":  "ToDOS",
+                                       "FieldValue":  "9/1/2026"
+                                   },
+                                   {
+                                       "FieldName":  "ProcedureCode",
+                                       "FieldValue":  "D0150"
+                                   },
+                                   {
+                                       "FieldName":  "SSN",
+                                       "FieldValue":  "123456789"
+                                   }
+                               ]
+    },
+    {
+        "Id":  80,
+        "SectionID":  48,
+        "SectionName":  "SearchMemberEligiblity",
+        "TestContent":  "[\n  {\"FieldName\":\"RegID\",\"FieldValue\":\"0005987\"},\n  {\"FieldName\":\"MedicaidBillingNumber\",\"FieldValue\":\"0005987\"},\n  {\"FieldName\":\"DateOfBirth\",\"FieldValue\":\"6/12/1985\"},\n  {\"FieldName\":\"FromDOS\",\"FieldValue\":\"1/1/2026\"},\n  {\"FieldName\":\"ToDOS\",\"FieldValue\":\"9/1/2026\"},\n  {\"FieldName\":\"ProcedureCode\",\"FieldValue\":\"D0150\"},\n  {\"FieldName\":\"SSN\",\"FieldValue\":\"123456789\"}\n]",
+        "automationContents":  [
+                                   {
+                                       "FieldName":  "RegID",
+                                       "FieldValue":  "0005987"
+                                   },
+                                   {
+                                       "FieldName":  "MedicaidBillingNumber",
+                                       "FieldValue":  "0005987"
+                                   },
+                                   {
+                                       "FieldName":  "DateOfBirth",
+                                       "FieldValue":  "6/12/1985"
+                                   },
+                                   {
+                                       "FieldName":  "FromDOS",
+                                       "FieldValue":  "1/1/2026"
+                                   },
+                                   {
+                                       "FieldName":  "ToDOS",
+                                       "FieldValue":  "9/1/2026"
+                                   },
+                                   {
+                                       "FieldName":  "ProcedureCode",
+                                       "FieldValue":  "D0150"
+                                   },
+                                   {
+                                       "FieldName":  "SSN",
+                                       "FieldValue":  "123456789"
+                                   }
+                               ]
+    }
+]

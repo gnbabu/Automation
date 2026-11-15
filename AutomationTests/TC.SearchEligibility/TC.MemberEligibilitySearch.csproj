@@ -24,6 +24,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="localrun.json" Condition="Exists('localrun.json')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="LocalRunData\*.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Selenium.BaseComponents\Selenium.BaseComponents.csproj" />
     <ProjectReference Include="..\TestDataModels\TestDataModels.csproj" />
   </ItemGroup>

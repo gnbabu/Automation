@@ -1,0 +1,12 @@
+﻿{
+    "Provider":  {
+                     "ProviderMedicaidId":  "2422659"
+                 },
+    "SearchCriteria":  {
+                           "MedicaidBillingNumber":  "103798930699",
+                           "Ssn":  "",
+                           "DateOfBirth":  "1960-10-21",
+                           "FromDateOfService":  "2026-01-01",
+                           "ToDateOfService":  "2026-10-14"
+                       }
+}
