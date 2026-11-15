@@ -1,0 +1,22 @@
+﻿{
+    "Browser":  "Chrome",
+    "Environment":  {
+                        "EnvironmentName":  "E2EP3",
+                        "EnvironmentUrl":  "https://ohpnm-e2e.omes.maximus.com/OH_PNM_E2E/Account/Login.aspx",
+                        "RequiresAuthentication":  true,
+                        "EnableSso":  false
+                    },
+    "LoginUser":  {
+                      "UserName":  "autotechadmin",
+                      "Password":  "Abcde123!"
+                  },
+    "LoginUsersByRole":  {
+
+                         },
+    "Otp":  {
+                "TotpKey":  "YPLHD2KL5NQAKBFH",
+                "PnmUserId":  "123",
+                "OhidUserName":  "34277920",
+                "OhidPassword":  "Rnspace@20312031"
+            }
+}
