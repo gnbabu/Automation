@@ -34,7 +34,7 @@ Currently enabled for **TC.MemberEligibilitySearch** (`AutomationTests/TC.Search
 
 ```
 AutomationTests/TC.SearchEligibility/
-├── localrun.example.json          template (committed, no passwords)
+├── localrun.template.json          template (committed, no passwords)
 ├── localrun.json                  your local settings and passwords (NOT committed, see section 3)
 └── LocalRunData/                  test data, one file per test case (committed)
     ├── TC_ELIG_01.json            SearchMemberEligibilityTest
@@ -48,7 +48,7 @@ The project file copies `localrun.json` (when present) and `LocalRunData\*.json`
 
 ## 3. One-time setup on your machine
 
-1. **Create `localrun.json`:** copy `localrun.example.json` to `localrun.json` in the same folder.
+1. **Create `localrun.json`:** copy `localrun.template.json` to `localrun.json` in the same folder.
 2. **Fill in the values:**
 
 ```json
@@ -151,7 +151,7 @@ No code changes are needed; the switch lives in Selenium.BaseComponents.
    </ItemGroup>
    ```
 
-2. Add `localrun.example.json` (copy it from TC.SearchEligibility) and your own `localrun.json`.
+2. Add `localrun.template.json` (copy it from TC.SearchEligibility) and your own `localrun.json`.
 3. Add `LocalRunData/<TestCaseId>.json` for each test case that needs data.
 
 ---
