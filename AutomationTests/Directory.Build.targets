@@ -16,6 +16,13 @@
     <ReleasePackagesDir>$(MSBuildThisFileDirectory)ReleasePackages\</ReleasePackagesDir>
   </PropertyGroup>
 
+  <!-- Visual Studio's fast up-to-date check skips MSBuild entirely when no source changed, so a
+       deleted zip would never come back. Declaring the zip as a build output makes VS treat the
+       project as out of date (and build it) whenever the zip is missing. -->
+  <ItemGroup Condition="'$(CreateReleasePackage)' == 'true'">
+    <UpToDateCheckBuilt Include="$(ReleasePackagesDir)$(AssemblyName).zip" />
+  </ItemGroup>
+
   <Target Name="CreateReleasePackage"
           AfterTargets="Build"
           Condition="'$(CreateReleasePackage)' == 'true' And '$(DesignTimeBuild)' != 'true' And '$(BuildingForLiveUnitTesting)' != 'true'">

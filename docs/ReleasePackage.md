@@ -58,6 +58,7 @@ Every time a test project (`TC.*`) under `AutomationTests` is built, a zip is cr
 ## 4. When the zip is (re)created
 
 - **On every build** of the project: Build, Rebuild, Build Solution, or `dotnet build`. The previous zip is **overwritten**, so it always matches the last build.
+- **If a zip is deleted**, the next Build recreates it. Visual Studio treats the project as out of date while its zip is missing.
 - **Not** on Visual Studio's background (design-time) builds, so the zip doesn't change while you type.
 - **Configuration:** the zip contains whichever configuration was just built (Debug or Release).
 
