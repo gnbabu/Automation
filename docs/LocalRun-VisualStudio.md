@@ -188,3 +188,9 @@ No code changes are needed; the switch lives in Selenium.BaseComponents.
 | `Selenium.BaseComponents/Base/BaseFeatureFixture.cs` | Browser from `localrun.json`; failure screenshot saved locally |
 | `Selenium.BaseComponents/Ohid/OhidSettings.cs`, `OhidFeatureFixture.cs` | OH\|ID key and credentials from `localrun.json` |
 | `Selenium.BaseComponents.Tests/LocalRunTests.cs` | Unit tests for the local-run behaviour |
+
+---
+
+## 9. Release package (zip for the release folder)
+
+Building any `TC.*` test project also creates `AutomationTests\ReleasePackages\<AssemblyName>.zip` with the files a release folder needs. See **[ReleasePackage.md](ReleasePackage.md)** for how to use it.

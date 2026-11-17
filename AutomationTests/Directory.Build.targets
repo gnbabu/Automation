@@ -1,0 +1,46 @@
+<Project>
+
+  <!--
+    Release package: after every build of a TC.* test project, zip exactly the files a Release
+    folder needs (test DLL, Selenium.BaseComponents.dll, TestDataModels.dll, appSettings.json,
+    TestFiles\) into AutomationTests\ReleasePackages\<AssemblyName>.zip, ready to extract into
+    D:\Releases\<Env>\REL-<id>_<name>_v<version>\. Local-run settings, secrets, PDBs and
+    framework DLLs are never included.
+
+    Opt out per project with <CreateReleasePackage>false</CreateReleasePackage>, opt in a project
+    without the TC. prefix with <CreateReleasePackage>true</CreateReleasePackage>, or skip it for
+    one build with -p:CreateReleasePackage=false.
+  -->
+  <PropertyGroup>
+    <CreateReleasePackage Condition="'$(CreateReleasePackage)' == '' And $(MSBuildProjectName.StartsWith('TC.')) And '$(MSBuildProjectName)' != 'TC.OhidEligibilityDemo'">true</CreateReleasePackage>
+    <ReleasePackagesDir>$(MSBuildThisFileDirectory)ReleasePackages\</ReleasePackagesDir>
+  </PropertyGroup>
+
+  <Target Name="CreateReleasePackage"
+          AfterTargets="Build"
+          Condition="'$(CreateReleasePackage)' == 'true' And '$(DesignTimeBuild)' != 'true' And '$(BuildingForLiveUnitTesting)' != 'true'">
+
+    <PropertyGroup>
+      <_ReleaseStagingDir>$(ProjectDir)$(IntermediateOutputPath)ReleasePackage\</_ReleaseStagingDir>
+      <_ReleaseZip>$(ReleasePackagesDir)$(AssemblyName).zip</_ReleaseZip>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ReleaseFile Include="$(TargetPath)" />
+      <_ReleaseFile Include="$(TargetDir)Selenium.BaseComponents.dll" Condition="Exists('$(TargetDir)Selenium.BaseComponents.dll')" />
+      <_ReleaseFile Include="$(TargetDir)TestDataModels.dll" Condition="Exists('$(TargetDir)TestDataModels.dll')" />
+      <_ReleaseFile Include="$(TargetDir)appSettings.json" Condition="Exists('$(TargetDir)appSettings.json')" />
+      <_ReleaseTestFile Include="$(TargetDir)TestFiles\**\*" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(_ReleaseStagingDir)" />
+    <Copy SourceFiles="@(_ReleaseFile)" DestinationFolder="$(_ReleaseStagingDir)" />
+    <Copy SourceFiles="@(_ReleaseTestFile)"
+          DestinationFiles="@(_ReleaseTestFile->'$(_ReleaseStagingDir)TestFiles\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <MakeDir Directories="$(ReleasePackagesDir)" />
+    <ZipDirectory SourceDirectory="$(_ReleaseStagingDir)" DestinationFile="$(_ReleaseZip)" Overwrite="true" />
+
+    <Message Importance="high" Text="Release package: $(_ReleaseZip)" />
+  </Target>
+
+</Project>

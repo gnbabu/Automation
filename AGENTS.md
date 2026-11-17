@@ -4553,3 +4553,9 @@ defaults - use "Reset all to defaults" to run with the recorded values.
   - Enabled in `TC.SearchEligibility` (TC.MemberEligibilitySearch) and `TC.PriorAuthoriztion`.
   - Setup guide: `docs/LocalRun-VisualStudio.md`.
 - **Verified:** TC_ELIG_20 run via `dotnet test` with the API stopped left `aut.TestCaseExecutionLogs`, `aut.TestScreenshots`, `aut.TestCaseExecutionQueue` and the `AssignedTestCases` status checksum unchanged.
+
+## Release package zip on build
+- `AutomationTests/Directory.Build.targets` (target `CreateReleasePackage`, AfterTargets=Build, skipped for design-time builds) zips each `TC.*` project's release files into `AutomationTests/ReleasePackages/<AssemblyName>.zip` (git-ignored, overwritten each build).
+- **Contents:** test DLL, `Selenium.BaseComponents.dll`, `TestDataModels.dll`, `appSettings.json`, `TestFiles\**`. Never local-run files or secrets.
+- **Opt out / opt in:** `<CreateReleasePackage>false/true</CreateReleasePackage>` or `-p:CreateReleasePackage=false`. `TC.OhidEligibilityDemo` is excluded.
+- **Details:** `docs/ReleasePackage.md`.

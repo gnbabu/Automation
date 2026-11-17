@@ -111,3 +111,6 @@ Thumbs.db
 
 # Local run passwords/keys (see docs/LocalRun-VisualStudio.md) - never commit
 **/localrun.secrets.json
+
+# Release zips created by AutomationTests/Directory.Build.targets
+AutomationTests/ReleasePackages/
