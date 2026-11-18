@@ -1,0 +1,20 @@
+{
+  "testSuiteName": "TC.ProviderDataEntry",
+  "version": "1.0.0",
+  "description": "",
+  "entryAssembly": "TC.ProviderDataEntry.dll",
+  "entryType": "TC.ProviderDataEntry.Tests",
+  "author": "TC.ProviderDataEntry",
+  "testCases": [
+    {
+      "testCaseId": "CreateNewProvider",
+      "testCaseName": "CreateNewProvider",
+      "testCaseDescription": "",
+      "entryClass": "TC.ProviderDataEntry.Tests.RegistrationTest",
+      "entryMethod": "CreateNewProvider",
+      "displayOrder": 1,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    }
+  ]
+}

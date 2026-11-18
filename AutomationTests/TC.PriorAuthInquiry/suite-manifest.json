@@ -1,0 +1,20 @@
+{
+  "testSuiteName": "TC.PriorAuthInquiry",
+  "version": "1.0.0",
+  "description": "",
+  "entryAssembly": "TC.PriorAuthInquiry.dll",
+  "entryType": "TC.PriorAuthInquiry.Tests",
+  "author": "TC.PriorAuthInquiry",
+  "testCases": [
+    {
+      "testCaseId": "TCPriorAuthInquiry",
+      "testCaseName": "PriorAuthInquiry",
+      "testCaseDescription": "Prior Auth Inquiry - sample/placeholder",
+      "entryClass": "TC.PriorAuthInquiry.Tests.PriorAuthInquiryTest",
+      "entryMethod": "PriorAuthInquiry",
+      "displayOrder": 1,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    }
+  ]
+}

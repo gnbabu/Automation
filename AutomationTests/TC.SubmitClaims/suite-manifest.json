@@ -1,0 +1,20 @@
+{
+  "testSuiteName": "TC.SubmitClaims",
+  "version": "1.0.0",
+  "description": "",
+  "entryAssembly": "TC.SubmitClaims.dll",
+  "entryType": "TC.SubmitClaims.Tests",
+  "author": "TC.SubmitClaims",
+  "testCases": [
+    {
+      "testCaseId": "TCSubmitClaims",
+      "testCaseName": "SubmitClaims",
+      "testCaseDescription": "Submit Claims - sample/placeholder",
+      "entryClass": "TC.SubmitClaims.Tests.SubmitClaimsTest",
+      "entryMethod": "SubmitClaims",
+      "displayOrder": 1,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    }
+  ]
+}

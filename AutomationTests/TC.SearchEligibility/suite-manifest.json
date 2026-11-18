@@ -1,0 +1,40 @@
+{
+  "testSuiteName": "Member Eligibility Search",
+  "version": "1.0.0",
+  "description": "Member eligibility search automation scenarios, including OH|ID sign-in.",
+  "entryAssembly": "TC.MemberEligibilitySearch.dll",
+  "entryType": "TC.MemberEligibilitySearch.Tests",
+  "author": "Ohio Developer Workspace",
+  "testCases": [
+    {
+      "testCaseId": "TC_ELIG_20",
+      "testCaseName": "OhidLoginAndSearchEligibility",
+      "testCaseDescription": "OH|ID login with authenticator code, then search member eligibility",
+      "entryClass": "TC.MemberEligibilitySearch.Tests.OhidEligibilitySearchTest",
+      "entryMethod": "OhidLoginAndSearchEligibility",
+      "displayOrder": 1,
+      "estimatedDurationSeconds": 900,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TCSearchEligibility",
+      "testCaseName": "SearchMemberEligibility",
+      "testCaseDescription": "Search Member Eligibility",
+      "entryClass": "TC.MemberEligibilitySearch.Tests.SearchEligiblityTest",
+      "entryMethod": "SearchMemberEligibility",
+      "displayOrder": 2,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_ELIG_01",
+      "testCaseName": "SearchMemberEligibility",
+      "testCaseDescription": "Search member eligibility by Medicaid Billing Number, date of birth and dates of service",
+      "entryClass": "TC.MemberEligibilitySearch.Tests.SearchMemberEligibilityTest",
+      "entryMethod": "SearchMemberEligibility",
+      "displayOrder": 3,
+      "estimatedDurationSeconds": 900,
+      "testCaseType": "Integration"
+    }
+  ]
+}

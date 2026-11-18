@@ -1,0 +1,20 @@
+{
+  "testSuiteName": "TC.SearchRA",
+  "version": "1.0.0",
+  "description": "",
+  "entryAssembly": "TC.SearchRA.dll",
+  "entryType": "TC.SearchRA.Tests",
+  "author": "TC.SearchRA",
+  "testCases": [
+    {
+      "testCaseId": "TCSearchRA",
+      "testCaseName": "SearchRA",
+      "testCaseDescription": "Search Remittance Advice",
+      "entryClass": "TC.SearchRA.Tests.SearchRATest",
+      "entryMethod": "SearchRA",
+      "displayOrder": 1,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    }
+  ]
+}

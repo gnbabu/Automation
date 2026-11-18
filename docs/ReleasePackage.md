@@ -26,6 +26,7 @@ Every time a test project (`TC.*`) under `AutomationTests` is built, a zip is cr
 | `Selenium.BaseComponents.dll` | Yes | The shared Selenium framework |
 | `TestDataModels.dll` | If the project uses test data models | e.g. TC.MemberEligibilitySearch, TC.PriorAuthoriztion |
 | `appSettings.json` | Yes | Automation API URL and headless setting |
+| `suite-manifest.json` | Yes | List of the suite's test cases (see section 9) |
 | `TestFiles\...` | If the project has a `TestFiles` folder | e.g. `TestFiles\SampleAttachment.pdf` for Professional PA |
 
 **Never included:**
@@ -116,3 +117,9 @@ If it has a `TestFiles` folder that's copied to the output, the folder is added 
   1. Copies the files from section 2 out of the build output into `obj\<Configuration>\net8.0\ReleasePackage\`.
   2. Zips that folder with MSBuild's built-in `ZipDirectory` task into `AutomationTests\ReleasePackages\<AssemblyName>.zip`.
 - **Git:** `AutomationTests/ReleasePackages/` is in `.gitignore`.
+
+---
+
+## 9. Suite manifest (`suite-manifest.json`)
+
+Every build also writes `suite-manifest.json` into the test project folder and adds it to the zip. See **[SuiteManifest.md](SuiteManifest.md)** for how to use it.

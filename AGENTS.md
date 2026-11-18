@@ -4559,3 +4559,7 @@ defaults - use "Reset all to defaults" to run with the recorded values.
 - **Contents:** test DLL, `Selenium.BaseComponents.dll`, `TestDataModels.dll`, `appSettings.json`, `TestFiles\**`. Never local-run files or secrets.
 - **Opt out / opt in:** `<CreateReleasePackage>false/true</CreateReleasePackage>` or `-p:CreateReleasePackage=false`. `TC.OhidEligibilityDemo` is excluded.
 - **Details:** `docs/ReleasePackage.md`.
+- **Suite manifest:** after each `TC.*` build, `GenerateSuiteManifest` (in `Directory.Build.targets`) runs `AutomationTests/SuiteManifestGenerator` against the built DLL.
+  - It writes `suite-manifest.json` into the test project folder (only when the content changes) and adds it to the release zip.
+  - Suite values come from the csproj `TestSuiteName`, `Version`, `Description` and `Authors`. Test cases come from the NUnit attributes: TestCaseId/Description properties, CancelAfter, Category.
+  - Details: `docs/SuiteManifest.md`.

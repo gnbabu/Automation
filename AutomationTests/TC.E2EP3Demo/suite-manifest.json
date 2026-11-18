@@ -1,0 +1,310 @@
+{
+  "testSuiteName": "TC.E2EP3Demo",
+  "version": "1.0.0",
+  "description": "",
+  "entryAssembly": "TC.E2EP3Demo.dll",
+  "entryType": "TC.E2EP3Demo.DentalPA",
+  "author": "TC.E2EP3Demo",
+  "testCases": [
+    {
+      "testCaseId": "TC_E2EP3_DPA_01",
+      "testCaseName": "DentalPA_Submit",
+      "testCaseDescription": "Submit Dental Prior Authorization",
+      "entryClass": "TC.E2EP3Demo.DentalPA.DentalPATests",
+      "entryMethod": "DentalPA_Submit",
+      "displayOrder": 1,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_DPA_02",
+      "testCaseName": "DentalPA_Save",
+      "testCaseDescription": "Save Dental Prior Authorization",
+      "entryClass": "TC.E2EP3Demo.DentalPA.DentalPATests",
+      "entryMethod": "DentalPA_Save",
+      "displayOrder": 2,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_DPA_03",
+      "testCaseName": "SubmitPriorAuthorization_PayerDropdownPopulates",
+      "testCaseDescription": "Navigate to Submit Prior Authorization and verify the payer dropdown populates",
+      "entryClass": "TC.E2EP3Demo.DentalPA.DentalPATests",
+      "entryMethod": "SubmitPriorAuthorization_PayerDropdownPopulates",
+      "displayOrder": 3,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_DPA_04",
+      "testCaseName": "SubmitPriorAuthorization_RequiresFieldsBeforeSubmit",
+      "testCaseDescription": "Verify Submit Prior Authorization requires fields before submission",
+      "entryClass": "TC.E2EP3Demo.DentalPA.DentalPATests",
+      "entryMethod": "SubmitPriorAuthorization_RequiresFieldsBeforeSubmit",
+      "displayOrder": 4,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_DPA_05",
+      "testCaseName": "SearchPriorAuthorization_ByPatientTrackingNumber",
+      "testCaseDescription": "Search for a previously submitted/saved Prior Authorization by Patient Tracking Number",
+      "entryClass": "TC.E2EP3Demo.DentalPA.DentalPATests",
+      "entryMethod": "SearchPriorAuthorization_ByPatientTrackingNumber",
+      "displayOrder": 5,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_DPA_06",
+      "testCaseName": "SubmitPriorAuthorization_DiagnosisCodeSearchReturnsMatch",
+      "testCaseDescription": "Verify the Diagnosis Code search popup returns a match",
+      "entryClass": "TC.E2EP3Demo.DentalPA.DentalPATests",
+      "entryMethod": "SubmitPriorAuthorization_DiagnosisCodeSearchReturnsMatch",
+      "displayOrder": 6,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_REG_01",
+      "testCaseName": "CreateNewProvider_ReachesRegistrationWizard",
+      "testCaseDescription": "Create a new Standard/Individual provider and reach the Registration wizard",
+      "entryClass": "TC.E2EP3Demo.Registration.RegistrationTests",
+      "entryMethod": "CreateNewProvider_ReachesRegistrationWizard",
+      "displayOrder": 7,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_REG_02",
+      "testCaseName": "Registration_ProviderAndContactInformation",
+      "testCaseDescription": "Fill Provider Information and Primary Contact Information",
+      "entryClass": "TC.E2EP3Demo.Registration.RegistrationTests",
+      "entryMethod": "Registration_ProviderAndContactInformation",
+      "displayOrder": 8,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_REG_03",
+      "testCaseName": "Registration_PrimaryAndBillingAddress",
+      "testCaseDescription": "Fill Primary Address Service and Billing & Payment Address",
+      "entryClass": "TC.E2EP3Demo.Registration.RegistrationTests",
+      "entryMethod": "Registration_PrimaryAndBillingAddress",
+      "displayOrder": 9,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_REG_04",
+      "testCaseName": "Registration_FullWizardThroughSubmission",
+      "testCaseDescription": "Full Registration wizard through Submit for Review",
+      "entryClass": "TC.E2EP3Demo.Registration.RegistrationTests",
+      "entryMethod": "Registration_FullWizardThroughSubmission",
+      "displayOrder": 10,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_REG_05",
+      "testCaseName": "SearchExistingProvider_ByRegId",
+      "testCaseDescription": "Search the Provider Home grid for a just-submitted provider by Reg ID",
+      "entryClass": "TC.E2EP3Demo.Registration.RegistrationTests",
+      "entryMethod": "SearchExistingProvider_ByRegId",
+      "displayOrder": 11,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_REG_06",
+      "testCaseName": "Workflow_LoadsForRegisteredProvider",
+      "testCaseDescription": "Verify the Workflow page loads for a just-registered provider",
+      "entryClass": "TC.E2EP3Demo.Registration.RegistrationTests",
+      "entryMethod": "Workflow_LoadsForRegisteredProvider",
+      "displayOrder": 12,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_ELIG_01",
+      "testCaseName": "SearchEligibility_ByMedicaidBillingNumber",
+      "testCaseDescription": "Search Member Eligibility by Medicaid Billing Number",
+      "entryClass": "TC.E2EP3Demo.SearchEligibility.SearchEligibilityTests",
+      "entryMethod": "SearchEligibility_ByMedicaidBillingNumber",
+      "displayOrder": 13,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_ELIG_02",
+      "testCaseName": "SearchEligibility_BySSN",
+      "testCaseDescription": "Search Member Eligibility by SSN",
+      "entryClass": "TC.E2EP3Demo.SearchEligibility.SearchEligibilityTests",
+      "entryMethod": "SearchEligibility_BySSN",
+      "displayOrder": 14,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_ELIG_03",
+      "testCaseName": "SearchEligibility_ByDateOfBirth",
+      "testCaseDescription": "Search Member Eligibility by Date of Birth",
+      "entryClass": "TC.E2EP3Demo.SearchEligibility.SearchEligibilityTests",
+      "entryMethod": "SearchEligibility_ByDateOfBirth",
+      "displayOrder": 15,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_ELIG_04",
+      "testCaseName": "SearchEligibility_ByDateOfServiceRange",
+      "testCaseDescription": "Search Member Eligibility by date-of-service range",
+      "entryClass": "TC.E2EP3Demo.SearchEligibility.SearchEligibilityTests",
+      "entryMethod": "SearchEligibility_ByDateOfServiceRange",
+      "displayOrder": 16,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_ELIG_05",
+      "testCaseName": "SearchEligibility_ByRegistrationId",
+      "testCaseDescription": "Search Member Eligibility using the Reg ID captured from the Registration flow",
+      "entryClass": "TC.E2EP3Demo.SearchEligibility.SearchEligibilityTests",
+      "entryMethod": "SearchEligibility_ByRegistrationId",
+      "displayOrder": 17,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_ELIG_06",
+      "testCaseName": "SearchEligibility_NoResultsForInvalidCriteria",
+      "testCaseDescription": "Search Member Eligibility with a criteria that returns no results",
+      "entryClass": "TC.E2EP3Demo.SearchEligibility.SearchEligibilityTests",
+      "entryMethod": "SearchEligibility_NoResultsForInvalidCriteria",
+      "displayOrder": 18,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_PA_01",
+      "testCaseName": "SearchPA_ByPriorAuthorizationNumber",
+      "testCaseDescription": "Search Prior Authorization by PA Number",
+      "entryClass": "TC.E2EP3Demo.SearchPA.SearchPATests",
+      "entryMethod": "SearchPA_ByPriorAuthorizationNumber",
+      "displayOrder": 19,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_PA_02",
+      "testCaseName": "SearchPA_ByPatientTrackingNumber",
+      "testCaseDescription": "Search Prior Authorization by Patient Tracking Number",
+      "entryClass": "TC.E2EP3Demo.SearchPA.SearchPATests",
+      "entryMethod": "SearchPA_ByPatientTrackingNumber",
+      "displayOrder": 20,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_PA_03",
+      "testCaseName": "SearchPA_ByDateOfBirthAndProcedureCode",
+      "testCaseDescription": "Search Prior Authorization by Date of Birth and Procedure Code",
+      "entryClass": "TC.E2EP3Demo.SearchPA.SearchPATests",
+      "entryMethod": "SearchPA_ByDateOfBirthAndProcedureCode",
+      "displayOrder": 21,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_PA_04",
+      "testCaseName": "SearchPA_ByPayerNameAndStatus",
+      "testCaseDescription": "Search Prior Authorization by Payer Name and Status",
+      "entryClass": "TC.E2EP3Demo.SearchPA.SearchPATests",
+      "entryMethod": "SearchPA_ByPayerNameAndStatus",
+      "displayOrder": 22,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_PA_05",
+      "testCaseName": "SearchPA_ByCombinedCriteria",
+      "testCaseDescription": "Search Prior Authorization by combined criteria (Diagnosis Code, Revenue Code, Ordering Provider NPI)",
+      "entryClass": "TC.E2EP3Demo.SearchPA.SearchPATests",
+      "entryMethod": "SearchPA_ByCombinedCriteria",
+      "displayOrder": 23,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_PA_06",
+      "testCaseName": "SearchPA_NoResultsForInvalidCriteria",
+      "testCaseDescription": "Search Prior Authorization with a criteria that returns no results",
+      "entryClass": "TC.E2EP3Demo.SearchPA.SearchPATests",
+      "entryMethod": "SearchPA_NoResultsForInvalidCriteria",
+      "displayOrder": 24,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_RA_01",
+      "testCaseName": "SearchRA_ByRANumber",
+      "testCaseDescription": "Search Remittance Advice by RA Number",
+      "entryClass": "TC.E2EP3Demo.SearchRA.SearchRATests",
+      "entryMethod": "SearchRA_ByRANumber",
+      "displayOrder": 25,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_RA_02",
+      "testCaseName": "SearchRA_ByICN",
+      "testCaseDescription": "Search Remittance Advice by ICN",
+      "entryClass": "TC.E2EP3Demo.SearchRA.SearchRATests",
+      "entryMethod": "SearchRA_ByICN",
+      "displayOrder": 26,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_RA_03",
+      "testCaseName": "SearchRA_ByDestinationPayer",
+      "testCaseDescription": "Search Remittance Advice by Destination Payer",
+      "entryClass": "TC.E2EP3Demo.SearchRA.SearchRATests",
+      "entryMethod": "SearchRA_ByDestinationPayer",
+      "displayOrder": 27,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_RA_04",
+      "testCaseName": "SearchRA_ByDateRange",
+      "testCaseDescription": "Search Remittance Advice by report run date range",
+      "entryClass": "TC.E2EP3Demo.SearchRA.SearchRATests",
+      "entryMethod": "SearchRA_ByDateRange",
+      "displayOrder": 28,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_RA_05",
+      "testCaseName": "SearchRA_ByCombinedCriteria",
+      "testCaseDescription": "Search Remittance Advice by combined criteria",
+      "entryClass": "TC.E2EP3Demo.SearchRA.SearchRATests",
+      "entryMethod": "SearchRA_ByCombinedCriteria",
+      "displayOrder": 29,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_E2EP3_RA_06",
+      "testCaseName": "SearchRA_NoResultsForInvalidCriteria",
+      "testCaseDescription": "Search Remittance Advice with a criteria that returns no results",
+      "entryClass": "TC.E2EP3Demo.SearchRA.SearchRATests",
+      "entryMethod": "SearchRA_NoResultsForInvalidCriteria",
+      "displayOrder": 30,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "testSuiteName": "Prior Authorization",
+  "version": "1.2.0",
+  "description": "Professional and Dental Prior Authorization automation scenarios.",
+  "entryAssembly": "TC.PriorAuthoriztion.dll",
+  "entryType": "TC.PriorAuthoriztion.Tests",
+  "author": "Ohio Developer Workspace",
+  "testCases": [
+    {
+      "testCaseId": "TCDentalPASubmit",
+      "testCaseName": "DentalPA_Submit",
+      "testCaseDescription": "Submit Dental Prior Authorization",
+      "entryClass": "TC.PriorAuthoriztion.Tests.PriorAuthorizationTest",
+      "entryMethod": "DentalPA_Submit",
+      "displayOrder": 1,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TCDentalPASave",
+      "testCaseName": "DentalPA_Save",
+      "testCaseDescription": "Save Dental Prior Authorization",
+      "entryClass": "TC.PriorAuthoriztion.Tests.PriorAuthorizationTest",
+      "entryMethod": "DentalPA_Save",
+      "displayOrder": 2,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_PA_PROF_01",
+      "testCaseName": "ProfessionalPA_Save",
+      "testCaseDescription": "Submit a Professional PA with two diagnoses, two service lines and an attachment",
+      "entryClass": "TC.PriorAuthoriztion.Tests.SubmitPAProfessionalTest",
+      "entryMethod": "ProfessionalPA_Save",
+      "displayOrder": 3,
+      "estimatedDurationSeconds": 900,
+      "testCaseType": "Integration"
+    },
+    {
+      "testCaseId": "TC_PA_PROF_02",
+      "testCaseName": "ProfessionalPA_SaveMultipleDiagnosesWithoutOrderingProvider",
+      "testCaseDescription": "Save a Professional Prior Authorization with multiple diagnoses and no ordering provider",
+      "entryClass": "TC.PriorAuthoriztion.Tests.SubmitPAProfessionalTest",
+      "entryMethod": "ProfessionalPA_SaveMultipleDiagnosesWithoutOrderingProvider",
+      "displayOrder": 4,
+      "estimatedDurationSeconds": 600,
+      "testCaseType": "Integration"
+    }
+  ]
+}

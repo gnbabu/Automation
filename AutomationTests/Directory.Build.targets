@@ -21,10 +21,44 @@
        project as out of date (and build it) whenever the zip is missing. -->
   <ItemGroup Condition="'$(CreateReleasePackage)' == 'true'">
     <UpToDateCheckBuilt Include="$(ReleasePackagesDir)$(AssemblyName).zip" />
+    <UpToDateCheckBuilt Include="$(MSBuildProjectDirectory)\suite-manifest.json" />
+    <!-- Builds the manifest tool first; its DLL is not referenced or copied into the test output. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)SuiteManifestGenerator\SuiteManifestGenerator.csproj"
+                      ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
+
+  <!--
+    Suite manifest: suite-manifest.json in the test project folder, listing every test case with
+    its NUnit attributes (TestCaseId, Description, CancelAfter, Category). Suite-level values come
+    from the project's .csproj: TestSuiteName, Version, Description, Authors.
+  -->
+  <PropertyGroup Condition="'$(CreateReleasePackage)' == 'true'">
+    <TestSuiteName Condition="'$(TestSuiteName)' == ''">$(MSBuildProjectName)</TestSuiteName>
+    <SuiteManifestPath>$(MSBuildProjectDirectory)\suite-manifest.json</SuiteManifestPath>
+    <SuiteManifestTool>$(MSBuildThisFileDirectory)SuiteManifestGenerator\bin\$(Configuration)\net8.0\SuiteManifestGenerator.dll</SuiteManifestTool>
+  </PropertyGroup>
+
+  <Target Name="GenerateSuiteManifest"
+          AfterTargets="Build"
+          Condition="'$(CreateReleasePackage)' == 'true' And '$(DesignTimeBuild)' != 'true' And '$(BuildingForLiveUnitTesting)' != 'true'">
+    <PropertyGroup>
+      <_SuiteManifestSettings>$(ProjectDir)$(IntermediateOutputPath)suite-manifest.settings</_SuiteManifestSettings>
+    </PropertyGroup>
+    <ItemGroup>
+      <_SuiteManifestLine Include="Assembly=$(TargetPath)" />
+      <_SuiteManifestLine Include="Output=$(SuiteManifestPath)" />
+      <_SuiteManifestLine Include="TestSuiteName=$(TestSuiteName)" />
+      <_SuiteManifestLine Include="Version=$(Version)" />
+      <_SuiteManifestLine Include="Description=$(Description)" />
+      <_SuiteManifestLine Include="Author=$(Authors)" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_SuiteManifestSettings)" Lines="@(_SuiteManifestLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <Exec Command="dotnet &quot;$(SuiteManifestTool)&quot; &quot;$(_SuiteManifestSettings)&quot;" />
+  </Target>
 
   <Target Name="CreateReleasePackage"
           AfterTargets="Build"
+          DependsOnTargets="GenerateSuiteManifest"
           Condition="'$(CreateReleasePackage)' == 'true' And '$(DesignTimeBuild)' != 'true' And '$(BuildingForLiveUnitTesting)' != 'true'">
 
     <PropertyGroup>
@@ -37,6 +71,7 @@
       <_ReleaseFile Include="$(TargetDir)Selenium.BaseComponents.dll" Condition="Exists('$(TargetDir)Selenium.BaseComponents.dll')" />
       <_ReleaseFile Include="$(TargetDir)TestDataModels.dll" Condition="Exists('$(TargetDir)TestDataModels.dll')" />
       <_ReleaseFile Include="$(TargetDir)appSettings.json" Condition="Exists('$(TargetDir)appSettings.json')" />
+      <_ReleaseFile Include="$(SuiteManifestPath)" Condition="Exists('$(SuiteManifestPath)')" />
       <_ReleaseTestFile Include="$(TargetDir)TestFiles\**\*" />
     </ItemGroup>
 

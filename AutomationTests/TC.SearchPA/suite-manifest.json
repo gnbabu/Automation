@@ -1,0 +1,20 @@
+{
+  "testSuiteName": "TC.PriorAuthSearch",
+  "version": "1.0.0",
+  "description": "",
+  "entryAssembly": "TC.PriorAuthSearch.dll",
+  "entryType": "TC.PriorAuthSearch.Tests",
+  "author": "TC.PriorAuthSearch",
+  "testCases": [
+    {
+      "testCaseId": "TCSearchPA",
+      "testCaseName": "NavigateToSeachPAPage",
+      "testCaseDescription": "Navigate to Search PA Page",
+      "entryClass": "TC.PriorAuthSearch.Tests.SearchPATest",
+      "entryMethod": "NavigateToSeachPAPage",
+      "displayOrder": 1,
+      "estimatedDurationSeconds": null,
+      "testCaseType": "Integration"
+    }
+  ]
+}
